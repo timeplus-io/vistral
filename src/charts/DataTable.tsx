@@ -303,8 +303,10 @@ export const DataTable: React.FC<DataTableProps> = ({
     return widths;
   });
 
-  // Track sparkline data per row/column
-  const [sparklineHistory, setSparklineHistory] = useState<Record<string, number[]>>({});
+  // Track sparkline data per row/column using ref to avoid infinite loops
+  const sparklineHistoryRef = useRef<Record<string, number[]>>({});
+  // Version counter to trigger re-renders when sparkline data changes
+  const [, setSparklineVersion] = useState(0);
 
   // Process data for display
   const displayData = useMemo(() => {
@@ -318,12 +320,12 @@ export const DataTable: React.FC<DataTableProps> = ({
       const keyIndex = columns.findIndex((c) => c.name === updateKey);
       if (keyIndex >= 0) {
         const groups = new Map<string, unknown[]>();
-        
+
         processedData.forEach((row) => {
           const key = String(row[keyIndex]);
           groups.set(key, row);
         });
-        
+
         processedData = Array.from(groups.values());
       }
     }
@@ -332,15 +334,22 @@ export const DataTable: React.FC<DataTableProps> = ({
     return processedData.slice(-maxRows);
   }, [dataSource, config, maxRows]);
 
-  // Update sparkline history
+  // Update sparkline history - use ref to avoid infinite loop
+  const prevDataLengthRef = useRef(0);
   useEffect(() => {
     if (!config.tableStyles) return;
 
-    const newHistory = { ...sparklineHistory };
     const sparklineCols = Object.entries(config.tableStyles)
       .filter(([_, style]) => style?.miniChart === 'sparkline')
       .map(([name]) => name);
 
+    // Only update if we have sparkline columns and data changed
+    if (sparklineCols.length === 0) return;
+    if (displayData.length === prevDataLengthRef.current && displayData.length > 0) return;
+
+    prevDataLengthRef.current = displayData.length;
+
+    let hasChanges = false;
     displayData.forEach((row, rowIndex) => {
       sparklineCols.forEach((colName) => {
         const colIndex = dataSource.columns.findIndex((c) => c.name === colName);
@@ -348,14 +357,21 @@ export const DataTable: React.FC<DataTableProps> = ({
           const key = `${rowIndex}-${colName}`;
           const value = Number(row[colIndex]);
           if (!isNaN(value)) {
-            const existing = newHistory[key] || [];
-            newHistory[key] = [...existing, value].slice(-20);
+            const existing = sparklineHistoryRef.current[key] || [];
+            const lastValue = existing[existing.length - 1];
+            if (lastValue !== value || existing.length === 0) {
+              sparklineHistoryRef.current[key] = [...existing, value].slice(-20);
+              hasChanges = true;
+            }
           }
         }
       });
     });
 
-    setSparklineHistory(newHistory);
+    // Only trigger re-render if there were actual changes
+    if (hasChanges) {
+      setSparklineVersion((v) => v + 1);
+    }
   }, [displayData, config.tableStyles, dataSource.columns]);
 
   // Handle column resize
@@ -474,7 +490,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                     value={value}
                     isNumeric={isNumericColumn(col.type)}
                     miniChart={colStyle?.miniChart}
-                    sparklineData={sparklineHistory[sparklineKey]}
+                    sparklineData={sparklineHistoryRef.current[sparklineKey]}
                     color={colStyle?.color}
                     wrap={config.tableWrap}
                     theme={theme}
