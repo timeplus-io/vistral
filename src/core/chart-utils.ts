@@ -95,17 +95,39 @@ export function applyLegend(
   node: MarkNode,
   enabled: boolean,
   onItemClick?: (index: number) => void,
-  values?: string[]
+  values?: string[],
+  theme: 'dark' | 'light' = 'dark'
 ): MarkNode {
   if (!enabled || !values || values.length > MAX_LEGEND_ITEMS) {
     return node.legend(false);
   }
+
+  const themeColors = getChartThemeColors(theme);
 
   return node.legend('color', {
     position: 'bottom',
     layout: {
       justifyContent: 'flex-start',
       alignItems: 'center',
+    },
+    itemLabelFill: themeColors.text,
+    itemValueFill: themeColors.text,
+    titleFill: themeColors.text,
+    // Additional label styling for G2 5.x
+    label: {
+      fill: themeColors.text,
+      fontSize: 12,
+    },
+    itemLabel: {
+      style: {
+        fill: themeColors.text,
+        fontSize: 12,
+      },
+    },
+    itemName: {
+      style: {
+        fill: themeColors.text,
+      },
     },
     click: onItemClick
       ? (e: { __data__?: { index?: number } }) => {
@@ -164,7 +186,9 @@ export function truncateLabel(value: string, maxChar: number | null): string {
 /**
  * Render chart with standard interactions
  */
-export async function renderChart(chart: Chart): Promise<void> {
+export async function renderChart(chart: Chart, theme: 'dark' | 'light' = 'dark'): Promise<void> {
+  const themeColors = getChartThemeColors(theme);
+
   chart.interaction('tooltip', {
     mount: document.body,
     css: {
@@ -180,6 +204,53 @@ export async function renderChart(chart: Chart): Promise<void> {
   });
   chart.interaction('legendFilter', false);
   await chart.render();
+
+  // Apply CSS-based legend text styling after render
+  // This ensures legend text is visible regardless of G2's default styling
+  const container = chart.getContainer();
+  if (container) {
+    // Query for legend text elements using various possible selectors
+    const legendSelectors = [
+      'g[class*="bindClick"] text',
+      'g[class*="bindChange"] text',
+      'g[class*="legend"] text',
+      'g[class*="Legend"] text',
+      // G2 5.x legend item selectors
+      '[class*="category"] text',
+      '[class*="item-label"] text',
+      '[class*="itemLabel"] text',
+    ];
+
+    legendSelectors.forEach((selector) => {
+      try {
+        const elements = container.querySelectorAll(selector);
+        elements.forEach((el) => {
+          if (el instanceof SVGElement) {
+            el.setAttribute('fill', themeColors.text);
+          }
+        });
+      } catch {
+        // Ignore invalid selectors
+      }
+    });
+
+    // Also inject a style element for broader coverage
+    const styleId = 'vistral-legend-style';
+    let styleEl = container.querySelector(`#${styleId}`) as HTMLStyleElement;
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      container.appendChild(styleEl);
+    }
+    styleEl.textContent = `
+      g[bindClick] text,
+      g[bindChange] text,
+      [class*="legend"] text,
+      [class*="Legend"] text {
+        fill: ${themeColors.text} !important;
+      }
+    `;
+  }
 }
 
 /**
@@ -282,30 +353,80 @@ export function createDefaultConfig(
 }
 
 /**
+ * Get theme colors for charts
+ */
+export function getChartThemeColors(theme: 'dark' | 'light') {
+  return theme === 'dark'
+    ? {
+        text: '#E5E7EB',
+        textSecondary: '#9CA3AF',
+        line: '#374151',
+        gridline: '#374151',
+        background: 'transparent',
+      }
+    : {
+        text: '#1F2937',
+        textSecondary: '#6B7280',
+        line: '#E5E7EB',
+        gridline: '#E5E7EB',
+        background: 'transparent',
+      };
+}
+
+/**
  * Apply chart theme
  */
 export function applyChartTheme(
   chart: Chart,
   theme: 'dark' | 'light' = 'dark'
 ): void {
-  const themeConfig =
-    theme === 'dark'
-      ? {
-          view: { viewFill: 'transparent' },
-          label: { fill: '#E5E5E5' },
-          axis: {
-            x: { line: { stroke: '#374151' }, tick: { stroke: '#374151' } },
-            y: { line: { stroke: '#374151' }, tick: { stroke: '#374151' } },
-          },
-        }
-      : {
-          view: { viewFill: 'transparent' },
-          label: { fill: '#1F2937' },
-          axis: {
-            x: { line: { stroke: '#E5E7EB' }, tick: { stroke: '#E5E7EB' } },
-            y: { line: { stroke: '#E5E7EB' }, tick: { stroke: '#E5E7EB' } },
-          },
-        };
+  const colors = getChartThemeColors(theme);
+
+  const themeConfig = {
+    view: { viewFill: colors.background },
+    // Data labels on points/bars
+    label: {
+      fill: colors.text,
+      fontSize: 11,
+    },
+    // Axis configuration
+    axis: {
+      x: {
+        line: { stroke: colors.line },
+        tick: { stroke: colors.line },
+        label: { fill: colors.text, fontSize: 11 },
+        title: { fill: colors.text, fontSize: 12, fontWeight: 500 },
+        grid: { stroke: colors.gridline },
+      },
+      y: {
+        line: { stroke: colors.line },
+        tick: { stroke: colors.line },
+        label: { fill: colors.text, fontSize: 11 },
+        title: { fill: colors.text, fontSize: 12, fontWeight: 500 },
+        grid: { stroke: colors.gridline },
+      },
+    },
+    // Legend configuration
+    legend: {
+      label: { fill: colors.text, fontSize: 12 },
+      title: { fill: colors.text, fontSize: 12 },
+      marker: { size: 8 },
+      itemLabel: { fill: colors.text, fontSize: 12 },
+      itemName: { fill: colors.text, fontSize: 12 },
+      itemValue: { fill: colors.textSecondary, fontSize: 12 },
+    },
+    // Legend category specific
+    legendCategory: {
+      itemLabel: { fill: colors.text },
+      itemName: { fill: colors.text },
+    },
+    // Title configuration
+    title: {
+      fill: colors.text,
+      fontSize: 14,
+      fontWeight: 600,
+    },
+  };
 
   chart.theme(themeConfig);
 }

@@ -5,7 +5,7 @@
  * All examples use simulated real-time data updates.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   StreamChart,
   SingleValueChart,
@@ -16,7 +16,15 @@ import {
   type BarColumnConfig,
   type SingleValueConfig,
   type TableConfig,
+  type GeoChartConfig,
 } from '@timeplus/vistral';
+import { ThemeContext } from './App';
+
+// Hook to get current theme
+function useTheme() {
+  const context = useContext(ThemeContext);
+  return context?.theme || 'dark';
+}
 
 // =============================================================================
 // Helper: Generate random value with some continuity
@@ -32,6 +40,7 @@ function generateNextValue(current: number, min: number, max: number, volatility
 // =============================================================================
 
 export function BasicLineChart() {
+  const theme = useTheme();
   const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
     // Initialize with some historical data
     const now = Date.now();
@@ -86,7 +95,7 @@ export function BasicLineChart() {
 
   return (
     <div style={{ width: '100%', height: '400px' }}>
-      <StreamChart config={config} data={data} theme="dark" />
+      <StreamChart config={config} data={data} theme={theme} />
     </div>
   );
 }
@@ -96,6 +105,7 @@ export function BasicLineChart() {
 // =============================================================================
 
 export function MultiSeriesAreaChart() {
+  const theme = useTheme();
   const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
     const now = Date.now();
     const points: unknown[][] = [];
@@ -161,7 +171,7 @@ export function MultiSeriesAreaChart() {
 
   return (
     <div style={{ width: '100%', height: '400px' }}>
-      <StreamChart config={config} data={data} theme="dark" />
+      <StreamChart config={config} data={data} theme={theme} />
     </div>
   );
 }
@@ -171,6 +181,7 @@ export function MultiSeriesAreaChart() {
 // =============================================================================
 
 export function StackedBarChart() {
+  const theme = useTheme();
   const [revenues, setRevenues] = useState({
     Q1: { A: 45000, B: 32000, C: 28000 },
     Q2: { A: 52000, B: 38000, C: 35000 },
@@ -246,7 +257,7 @@ export function StackedBarChart() {
 
   return (
     <div style={{ width: '100%', height: '400px' }}>
-      <StreamChart config={config} data={data} theme="dark" />
+      <StreamChart config={config} data={data} theme={theme} />
     </div>
   );
 }
@@ -256,6 +267,7 @@ export function StackedBarChart() {
 // =============================================================================
 
 export function GroupedBarChart() {
+  const theme = useTheme();
   const [values, setValues] = useState({
     Electronics: { '2023': 85, '2024': 92 },
     Clothing: { '2023': 62, '2024': 71 },
@@ -321,7 +333,7 @@ export function GroupedBarChart() {
 
   return (
     <div style={{ width: '100%', height: '400px' }}>
-      <StreamChart config={config} data={data} theme="dark" />
+      <StreamChart config={config} data={data} theme={theme} />
     </div>
   );
 }
@@ -331,6 +343,7 @@ export function GroupedBarChart() {
 // =============================================================================
 
 export function SingleValueWithSparkline() {
+  const theme = useTheme();
   const [value, setValue] = useState(1234);
 
   useEffect(() => {
@@ -365,7 +378,7 @@ export function SingleValueWithSparkline() {
 
   return (
     <div style={{ width: '300px', height: '200px' }}>
-      <StreamChart config={config} data={data} theme="dark" />
+      <StreamChart config={config} data={data} theme={theme} />
     </div>
   );
 }
@@ -375,6 +388,7 @@ export function SingleValueWithSparkline() {
 // =============================================================================
 
 export function StreamingDataTable() {
+  const theme = useTheme();
   const { data, append } = useStreamingData<unknown[]>([], 50);
 
   useEffect(() => {
@@ -439,7 +453,7 @@ export function StreamingDataTable() {
 
   return (
     <div style={{ width: '100%', height: '400px' }}>
-      <StreamChart config={config} data={dataSource} theme="dark" />
+      <StreamChart config={config} data={dataSource} theme={theme} />
     </div>
   );
 }
@@ -449,6 +463,7 @@ export function StreamingDataTable() {
 // =============================================================================
 
 export function MetricsDashboard() {
+  const theme = useTheme();
   const [metrics, setMetrics] = useState({
     cpu: 45,
     memory: 62,
@@ -490,7 +505,7 @@ export function MetricsDashboard() {
             delta: true,
           }}
           data={createMetricData(metrics.cpu)}
-          theme="dark"
+          theme={theme}
         />
         <div style={{ textAlign: 'center', color: '#9CA3AF' }}>CPU Usage</div>
       </div>
@@ -508,7 +523,7 @@ export function MetricsDashboard() {
             delta: true,
           }}
           data={createMetricData(metrics.memory)}
-          theme="dark"
+          theme={theme}
         />
         <div style={{ textAlign: 'center', color: '#9CA3AF' }}>Memory Usage</div>
       </div>
@@ -525,7 +540,7 @@ export function MetricsDashboard() {
             delta: true,
           }}
           data={createMetricData(metrics.requests)}
-          theme="dark"
+          theme={theme}
         />
         <div style={{ textAlign: 'center', color: '#9CA3AF' }}>Total Requests</div>
       </div>
@@ -542,7 +557,7 @@ export function MetricsDashboard() {
             delta: true,
           }}
           data={createMetricData(metrics.errors)}
-          theme="dark"
+          theme={theme}
         />
         <div style={{ textAlign: 'center', color: '#9CA3AF' }}>Errors</div>
       </div>
@@ -555,6 +570,7 @@ export function MetricsDashboard() {
 // =============================================================================
 
 export function ChartWithTableToggle() {
+  const theme = useTheme();
   const [showTable, setShowTable] = useState(false);
   const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
     const now = Date.now();
@@ -629,10 +645,98 @@ export function ChartWithTableToggle() {
         <StreamChart
           config={config}
           data={data}
-          theme="dark"
+          theme={theme}
           showTable={showTable}
         />
       </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Example 9: Streaming Geo Chart
+// =============================================================================
+
+export function StreamingGeoChart() {
+  const theme = useTheme();
+  const [points, setPoints] = useState<unknown[][]>(() => {
+    // Initialize with some random points around the world
+    const initialPoints: unknown[][] = [];
+    const cities = [
+      { lat: 40.7128, lng: -74.006, name: 'New York' },
+      { lat: 51.5074, lng: -0.1278, name: 'London' },
+      { lat: 35.6762, lng: 139.6503, name: 'Tokyo' },
+      { lat: -33.8688, lng: 151.2093, name: 'Sydney' },
+      { lat: 48.8566, lng: 2.3522, name: 'Paris' },
+      { lat: 55.7558, lng: 37.6173, name: 'Moscow' },
+      { lat: -23.5505, lng: -46.6333, name: 'São Paulo' },
+      { lat: 19.4326, lng: -99.1332, name: 'Mexico City' },
+      { lat: 31.2304, lng: 121.4737, name: 'Shanghai' },
+      { lat: 1.3521, lng: 103.8198, name: 'Singapore' },
+    ];
+
+    cities.forEach((city) => {
+      // Add some random variation
+      for (let i = 0; i < 3; i++) {
+        initialPoints.push([
+          city.lat + (Math.random() - 0.5) * 2,
+          city.lng + (Math.random() - 0.5) * 2,
+          Math.floor(Math.random() * 100),
+          city.name,
+        ]);
+      }
+    });
+    return initialPoints;
+  });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Add a new random point
+      const lat = (Math.random() - 0.5) * 140; // -70 to 70
+      const lng = (Math.random() - 0.5) * 360; // -180 to 180
+      const value = Math.floor(Math.random() * 100);
+      const categories = ['Category A', 'Category B', 'Category C'];
+      const category = categories[Math.floor(Math.random() * categories.length)];
+
+      setPoints((prev) => {
+        const updated = [...prev, [lat, lng, value, category]];
+        return updated.slice(-100); // Keep last 100 points
+      });
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const data: StreamDataSource = {
+    columns: [
+      { name: 'latitude', type: 'float64' },
+      { name: 'longitude', type: 'float64' },
+      { name: 'value', type: 'int64' },
+      { name: 'category', type: 'string' },
+    ],
+    data: points,
+    isStreaming: true,
+  };
+
+  const config: GeoChartConfig = {
+    chartType: 'geo',
+    latitude: 'latitude',
+    longitude: 'longitude',
+    color: 'category',
+    size: {
+      key: 'value',
+      min: 4,
+      max: 16,
+    },
+    zoom: 2,
+    showZoomControl: true,
+    showCenterDisplay: true,
+    pointOpacity: 0.7,
+  };
+
+  return (
+    <div style={{ width: '100%', height: '500px' }}>
+      <StreamChart config={config} data={data} theme={theme} />
     </div>
   );
 }
@@ -650,4 +754,5 @@ export default {
   StreamingDataTable,
   MetricsDashboard,
   ChartWithTableToggle,
+  StreamingGeoChart,
 };

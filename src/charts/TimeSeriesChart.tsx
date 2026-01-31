@@ -17,6 +17,8 @@ import {
   applyTooltip,
   truncateLabel,
   renderChart,
+  applyChartTheme,
+  getChartThemeColors,
   MAX_LEGEND_ITEMS,
 } from '../core/chart-utils';
 import { getTimeMask } from '../utils';
@@ -132,12 +134,22 @@ export const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({
 
     chart.clear();
 
+    // Apply theme
+    applyChartTheme(chart, theme);
+
+    // Get theme colors for explicit styling
+    const themeColors = getChartThemeColors(theme);
+
     // Configure axes
     chart.axis({
       x: {
         size: config.xTitle ? AXIS_HEIGHT_WITH_TITLE : AXIS_HEIGHT_WITHOUT_TITLE,
         title: config.xTitle || false,
         grid: false,
+        line: true,
+        lineStroke: themeColors.line,
+        labelFill: themeColors.text,
+        titleFill: themeColors.text,
         ...horizontalAxisLabelConfig,
       },
     });
@@ -145,6 +157,11 @@ export const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({
     chart
       .axisY()
       .attr('grid', config.gridlines ? true : false)
+      .attr('gridStroke', themeColors.gridline)
+      .attr('line', true)
+      .attr('lineStroke', themeColors.line)
+      .attr('labelFill', themeColors.text)
+      .attr('titleFill', themeColors.text)
       .attr('labelFormatter', (v: number | string = '') => {
         const unit = config.unit;
         if (unit?.position === 'right') {
@@ -238,7 +255,8 @@ export const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({
       mainMark,
       !!config.legend && source.z.values.length <= MAX_LEGEND_ITEMS,
       (index) => setActiveColor((prev) => (prev === index ? -1 : index)),
-      source.z.values
+      source.z.values,
+      theme
     );
   }, [
     chart,
@@ -249,6 +267,7 @@ export const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({
     isMouseOver,
     activeColor,
     setActiveColor,
+    theme,
   ]);
 
   // Update chart when data or options change
@@ -283,8 +302,8 @@ export const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({
       ]);
     }
 
-    renderChart(chart);
-  }, [chart, source, updateOptions, domain, config.chartType]);
+    renderChart(chart, theme);
+  }, [chart, source, updateOptions, domain, config.chartType, theme]);
 
   // Warning for too many series
   const hasWarning = source && source.z.values.length > MAX_LEGEND_ITEMS;

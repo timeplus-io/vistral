@@ -12,10 +12,12 @@ export {
   BarColumnChart,
   SingleValueChart,
   DataTable,
+  GeoChart,
   getTimeSeriesDefaults,
   getBarColumnDefaults,
   getSingleValueDefaults,
   getTableDefaults,
+  getGeoChartDefaults,
 } from './charts';
 
 // Chart Component Props
@@ -25,6 +27,7 @@ export type {
   BarColumnChartProps,
   SingleValueChartProps,
   DataTableProps,
+  GeoChartProps,
 } from './charts';
 
 // Types
@@ -39,6 +42,7 @@ export type {
   SingleValueConfig,
   TableConfig,
   OHLCConfig,
+  GeoChartConfig,
   ChartConfig,
   ColorPalette,
   ColumnStatistics,
@@ -118,6 +122,7 @@ export {
   renderChart,
   createDefaultConfig,
   applyChartTheme,
+  getChartThemeColors,
 } from './core';
 
 // Default export

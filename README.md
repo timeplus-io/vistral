@@ -14,6 +14,7 @@ A powerful streaming data visualization library built on [AntV G2](https://g2.an
   - [Column Chart](#column-chart-vertical)
   - [Single Value](#single-value)
   - [Data Table](#data-table)
+  - [Geo Chart](#geo-chart)
 - [Using Individual Chart Components](#using-individual-chart-components)
 - [Data Format](#data-format)
 - [Streaming Data with Hooks](#streaming-data-with-hooks)
@@ -216,6 +217,32 @@ Display streaming data in a tabular format with column configuration.
     },
     updateMode: 'key', // Deduplicate by key
     updateKey: 'id',
+  }}
+  data={data}
+/>
+```
+
+### Geo Chart
+
+Display geographic data points on an interactive map with pan and zoom.
+
+```tsx
+<StreamChart
+  config={{
+    chartType: 'geo',
+    latitude: 'lat',
+    longitude: 'lng',
+    color: 'category', // Color points by category
+    size: {
+      key: 'value',    // Size points by value
+      min: 4,
+      max: 20,
+    },
+    zoom: 3,
+    center: [40.7128, -74.006], // [lat, lng]
+    showZoomControl: true,
+    showCenterDisplay: true,
+    pointOpacity: 0.8,
   }}
   data={data}
 />
@@ -441,6 +468,24 @@ const palette = findPaletteByLabel('Dawn');
 | `tableWrap` | `boolean` | `false` | Enable text wrapping |
 | `updateMode` | `'all' \| 'key' \| 'time'` | `'all'` | Update strategy |
 | `updateKey` | `string` | - | Key field for deduplication |
+
+### GeoChartConfig
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `chartType` | `'geo'` | required | Chart type |
+| `latitude` | `string` | required | Latitude field name |
+| `longitude` | `string` | required | Longitude field name |
+| `color` | `string` | - | Color grouping field |
+| `size` | `{ key?, min?, max? }` | - | Point size configuration |
+| `center` | `[number, number]` | auto | Initial center [lat, lng] |
+| `zoom` | `number` | `2` | Initial zoom level (1-18) |
+| `updateKey` | `string` | - | Key field for deduplication |
+| `updateMode` | `'all' \| 'key' \| 'time'` | `'all'` | Update strategy |
+| `showZoomControl` | `boolean` | `true` | Show zoom buttons |
+| `showCenterDisplay` | `boolean` | `false` | Show center coordinates |
+| `pointOpacity` | `number` | `0.8` | Point opacity (0-1) |
+| `pointColor` | `string` | `'#3B82F6'` | Default point color |
 
 ## Hooks
 

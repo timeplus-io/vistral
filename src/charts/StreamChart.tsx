@@ -11,11 +11,13 @@ import type {
   BarColumnConfig,
   SingleValueConfig,
   TableConfig,
+  GeoChartConfig,
 } from '../types';
 import { TimeSeriesChart } from './TimeSeriesChart';
 import { BarColumnChart } from './BarColumnChart';
 import { SingleValueChart } from './SingleValueChart';
 import { DataTable } from './DataTable';
+import { GeoChart } from './GeoChart';
 
 export interface StreamChartProps {
   /** Chart configuration */
@@ -60,6 +62,13 @@ function isSingleValueConfig(config: ChartConfig): config is SingleValueConfig {
  */
 function isTableConfig(config: ChartConfig): config is TableConfig {
   return config.chartType === 'table';
+}
+
+/**
+ * Check if configuration is for a geo chart
+ */
+function isGeoConfig(config: ChartConfig): config is GeoChartConfig {
+  return config.chartType === 'geo';
 }
 
 /**
@@ -175,7 +184,7 @@ const UnsupportedChart: React.FC<{ chartType: string; theme: 'dark' | 'light' }>
         color: theme === 'dark' ? '#FDE68A' : '#F59E0B',
       }}
     >
-      Supported types: line, area, bar, column, singleValue, table
+      Supported types: line, area, bar, column, singleValue, table, geo
     </p>
   </div>
 );
@@ -289,6 +298,18 @@ export const StreamChart: React.FC<StreamChartProps> = ({
       );
     }
 
+    if (isGeoConfig(config)) {
+      return (
+        <GeoChart
+          config={config}
+          data={data}
+          theme={theme}
+          className={className}
+          style={style}
+        />
+      );
+    }
+
     // Unsupported chart type
     return <UnsupportedChart chartType={config.chartType} theme={theme} />;
   }, [config, data, theme, className, style, onConfigChange]);
@@ -303,3 +324,4 @@ export { TimeSeriesChart } from './TimeSeriesChart';
 export { BarColumnChart } from './BarColumnChart';
 export { SingleValueChart } from './SingleValueChart';
 export { DataTable } from './DataTable';
+export { GeoChart } from './GeoChart';

@@ -17,6 +17,8 @@ import {
   applyDataLabel,
   truncateLabel,
   renderChart,
+  applyChartTheme,
+  getChartThemeColors,
   MAX_LEGEND_ITEMS,
 } from '../core/chart-utils';
 
@@ -114,6 +116,12 @@ export const BarColumnChart: React.FC<BarColumnChartProps> = ({
 
     chart.clear();
 
+    // Apply theme
+    applyChartTheme(chart, theme);
+
+    // Get theme colors for explicit styling
+    const themeColors = getChartThemeColors(theme);
+
     // Apply coordinate transform for bar chart (horizontal)
     if (isBarChart) {
       chart.coordinate({ transform: [{ type: 'transpose' }] });
@@ -139,11 +147,20 @@ export const BarColumnChart: React.FC<BarColumnChartProps> = ({
       x: {
         title: config.xTitle || false,
         ...(isBarChart ? verticalConfig : horizontalConfig),
+        line: true,
+        lineStroke: themeColors.line,
+        labelFill: themeColors.text,
+        titleFill: themeColors.text,
         labelFormatter: (v: string = '') =>
           truncateLabel(v, config.xTickLabel?.maxChar ?? 10),
       },
       y: {
         title: config.yTitle || false,
+        line: true,
+        lineStroke: themeColors.line,
+        labelFill: themeColors.text,
+        titleFill: themeColors.text,
+        gridStroke: themeColors.gridline,
         labelFormatter: (v: number | string = '') => {
           const unit = config.unit;
           if (unit?.position === 'right') {
@@ -203,7 +220,8 @@ export const BarColumnChart: React.FC<BarColumnChartProps> = ({
       intervalMark,
       !!config.legend && source.z.values.length <= MAX_LEGEND_ITEMS,
       (index) => setActiveColor((prev) => (prev === index ? -1 : index)),
-      source.z.values
+      source.z.values,
+      theme
     );
   }, [
     chart,
@@ -214,6 +232,7 @@ export const BarColumnChart: React.FC<BarColumnChartProps> = ({
     isMouseOver,
     activeColor,
     setActiveColor,
+    theme,
   ]);
 
   // Update chart when data or options change
@@ -236,10 +255,10 @@ export const BarColumnChart: React.FC<BarColumnChartProps> = ({
         orderBy: source.z.index >= 0 ? 'series' : null,
       });
 
-    renderChart(chart)
+    renderChart(chart, theme)
       .then(() => setHasError(false))
       .catch(() => setHasError(true));
-  }, [chart, source, updateOptions, config.groupType]);
+  }, [chart, source, updateOptions, config.groupType, theme]);
 
   // Warning for too many series
   const hasWarning = source && source.z.values.length > MAX_LEGEND_ITEMS;

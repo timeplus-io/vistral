@@ -199,10 +199,16 @@ export const SingleValueChart: React.FC<SingleValueChartProps> = ({
     }
   }, [currentValue]);
 
-  // Calculate delta
-  const delta = useMemo(() => {
-    if (isNaN(currentValue) || isNaN(previousValue)) return 0;
-    return currentValue - previousValue;
+  // Calculate delta and keep last non-zero value
+  const [displayedDelta, setDisplayedDelta] = useState<number>(0);
+
+  useEffect(() => {
+    if (isNaN(currentValue) || isNaN(previousValue)) return;
+    const newDelta = currentValue - previousValue;
+    // Only update displayed delta if it's non-zero
+    if (newDelta !== 0) {
+      setDisplayedDelta(newDelta);
+    }
   }, [currentValue, previousValue]);
 
   // Decimal places
@@ -296,8 +302,8 @@ export const SingleValueChart: React.FC<SingleValueChartProps> = ({
         {renderUnit('right')}
       </div>
 
-      {/* Delta Indicator */}
-      {config.delta && delta !== 0 && (
+      {/* Delta Indicator - always shows last non-zero delta to prevent layout shift */}
+      {config.delta && (
         <div
           style={{
             fontSize: `${Math.ceil(fontSize / 3)}px`,
@@ -305,9 +311,11 @@ export const SingleValueChart: React.FC<SingleValueChartProps> = ({
             fontFamily: 'Menlo, Monaco, monospace',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '4px',
-            color: delta > 0 ? increaseColor : decreaseColor,
+            color: displayedDelta > 0 ? increaseColor : displayedDelta < 0 ? decreaseColor : theme === 'dark' ? '#6B7280' : '#9CA3AF',
             marginTop: '8px',
+            minHeight: `${Math.ceil(fontSize / 3) + 4}px`,
           }}
         >
           <span
@@ -315,15 +323,15 @@ export const SingleValueChart: React.FC<SingleValueChartProps> = ({
               width: 0,
               height: 0,
               borderStyle: 'solid',
-              borderWidth: delta > 0 ? '0 4px 8px 4px' : '8px 4px 0 4px',
-              borderColor: delta > 0
-                ? `transparent transparent ${increaseColor} transparent`
+              borderWidth: displayedDelta >= 0 ? '0 4px 8px 4px' : '8px 4px 0 4px',
+              borderColor: displayedDelta >= 0
+                ? `transparent transparent ${displayedDelta > 0 ? increaseColor : (theme === 'dark' ? '#6B7280' : '#9CA3AF')} transparent`
                 : `${decreaseColor} transparent transparent transparent`,
             }}
           />
           <span>
-            {delta > 0 ? '+' : ''}
-            {delta.toLocaleString('en-US', {
+            {displayedDelta >= 0 ? '+' : ''}
+            {displayedDelta.toLocaleString('en-US', {
               minimumFractionDigits: decimals,
               maximumFractionDigits: decimals,
             })}

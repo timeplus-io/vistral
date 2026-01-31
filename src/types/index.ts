@@ -194,13 +194,49 @@ export interface OHLCConfig extends ChartConfigBase {
   bearishColor?: string;
 }
 
+// Geo/Map Chart Configuration
+export interface GeoChartConfig extends ChartConfigBase {
+  chartType: 'geo';
+  /** Longitude field name */
+  longitude: string;
+  /** Latitude field name */
+  latitude: string;
+  /** Color field for point coloring */
+  color?: string;
+  /** Size configuration for points */
+  size?: {
+    key?: string;
+    min?: number;
+    max?: number;
+  };
+  /** Initial map center [lat, lng] */
+  center?: [number, number];
+  /** Initial zoom level (1-18) */
+  zoom?: number;
+  /** Update key for streaming deduplication */
+  updateKey?: string;
+  /** Update mode: 'all' | 'key' | 'time' */
+  updateMode?: 'all' | 'key' | 'time';
+  /** Map tile provider */
+  tileProvider?: 'openstreetmap' | 'cartodb-dark' | 'cartodb-light';
+  /** Show zoom controls */
+  showZoomControl?: boolean;
+  /** Show center coordinates */
+  showCenterDisplay?: boolean;
+  /** Point opacity (0-1) */
+  pointOpacity?: number;
+  /** Default point color */
+  pointColor?: string;
+}
+
 // Union of all chart configurations
 export type ChartConfig =
   | TimeSeriesConfig
   | BarColumnConfig
   | SingleValueConfig
   | TableConfig
-  | OHLCConfig;
+  | OHLCConfig
+  | GeoChartConfig;
 
 // Chart Props
 export interface StreamChartProps<T extends ChartConfig = ChartConfig> {

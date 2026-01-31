@@ -16,4 +16,5 @@ export {
   renderChart,
   createDefaultConfig,
   applyChartTheme,
+  getChartThemeColors,
 } from './chart-utils';
