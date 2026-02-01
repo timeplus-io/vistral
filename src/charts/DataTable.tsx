@@ -6,7 +6,7 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import type { TableConfig, StreamDataSource, ColumnDefinition } from '../types';
 import { useChart } from '../hooks';
-import { isNumericColumn, rowToArray, formatNumber } from '../utils';
+import { isNumericColumn, rowToArray, formatNumber, applyTemporalFilter } from '../utils';
 
 // Type alias for table cell color config
 type TableCellColorConfig = {
@@ -58,8 +58,6 @@ export function getTableDefaults(
     chartType: 'table',
     tableStyles,
     tableWrap: false,
-    updateMode: 'all',
-    updateKey: '',
   };
 }
 
@@ -311,23 +309,13 @@ export const DataTable: React.FC<DataTableProps> = ({
   // Process data for display
   const displayData = useMemo(() => {
     const { columns, data } = dataSource;
-    const { updateMode, updateKey } = config;
+    const { temporal } = config;
 
     let processedData = data.map((row) => rowToArray(row, columns));
 
-    // Apply update mode filtering
-    if (updateKey && updateMode !== 'all') {
-      const keyIndex = columns.findIndex((c) => c.name === updateKey);
-      if (keyIndex >= 0) {
-        const groups = new Map<string, unknown[]>();
-
-        processedData.forEach((row) => {
-          const key = String(row[keyIndex]);
-          groups.set(key, row);
-        });
-
-        processedData = Array.from(groups.values());
-      }
+    // Apply temporal filtering if configured
+    if (temporal) {
+      processedData = applyTemporalFilter(processedData, columns, temporal);
     }
 
     // Limit rows

@@ -9,6 +9,12 @@ import {
   MetricsDashboard,
   ChartWithTableToggle,
   StreamingGeoChart,
+  // Temporal binding examples
+  FrameBoundTable,
+  KeyBoundTable,
+  KeyBoundGeoChart,
+  FrameBoundBarChart,
+  AxisBoundLineChart,
 } from './basic-examples';
 
 // Theme context
@@ -32,6 +38,12 @@ const examples = [
   { name: 'Metrics Dashboard', component: MetricsDashboard },
   { name: 'Chart with Table Toggle', component: ChartWithTableToggle },
   { name: 'Streaming Geo Chart', component: StreamingGeoChart },
+  // Temporal Binding Examples
+  { name: 'Frame-Bound Table', component: FrameBoundTable },
+  { name: 'Key-Bound Table', component: KeyBoundTable },
+  { name: 'Key-Bound Geo Chart', component: KeyBoundGeoChart },
+  { name: 'Frame-Bound Bar Chart', component: FrameBoundBarChart },
+  { name: 'Axis-Bound Line Chart', component: AxisBoundLineChart },
 ];
 
 export default function App() {

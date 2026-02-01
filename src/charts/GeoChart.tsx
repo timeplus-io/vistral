@@ -5,7 +5,7 @@
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import type { GeoChartConfig, StreamDataSource, ColumnDefinition } from '../types';
-import { findColumnIndex, rowToArray } from '../utils';
+import { findColumnIndex, rowToArray, applyTemporalFilter } from '../utils';
 import { multiColorPalettes } from '../themes';
 
 export interface GeoChartProps {
@@ -185,6 +185,16 @@ export const GeoChart: React.FC<GeoChartProps> = ({
     if (latIndex < 0 || lngIndex < 0) return [];
 
     const { columns, data } = dataSource;
+    const { temporal } = config;
+
+    // Convert data to array format and apply temporal filtering
+    let processedData = data.map((row) => rowToArray(row, columns));
+
+    // Apply temporal filtering if configured
+    if (temporal) {
+      processedData = applyTemporalFilter(processedData, columns, temporal);
+    }
+
     const result: Array<{
       lat: number;
       lng: number;
@@ -196,8 +206,7 @@ export const GeoChart: React.FC<GeoChartProps> = ({
     // Get unique color values for categorical coloring
     const colorValues: string[] = [];
     if (colorIndex >= 0) {
-      data.forEach((row) => {
-        const arr = rowToArray(row, columns);
+      processedData.forEach((arr) => {
         const val = String(arr[colorIndex] ?? '');
         if (!colorValues.includes(val)) {
           colorValues.push(val);
@@ -212,8 +221,7 @@ export const GeoChart: React.FC<GeoChartProps> = ({
     let sizeMin = Infinity;
     let sizeMax = -Infinity;
     if (sizeIndex >= 0) {
-      data.forEach((row) => {
-        const arr = rowToArray(row, columns);
+      processedData.forEach((arr) => {
         const val = Number(arr[sizeIndex]);
         if (!isNaN(val)) {
           sizeMin = Math.min(sizeMin, val);
@@ -222,8 +230,7 @@ export const GeoChart: React.FC<GeoChartProps> = ({
       });
     }
 
-    data.forEach((row) => {
-      const arr = rowToArray(row, columns);
+    processedData.forEach((arr) => {
       const lat = Number(arr[latIndex]);
       const lng = Number(arr[lngIndex]);
 

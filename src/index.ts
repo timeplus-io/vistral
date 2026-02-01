@@ -47,6 +47,8 @@ export type {
   ColorPalette,
   ColumnStatistics,
   ProcessedDataSource,
+  TemporalMode,
+  TemporalConfig,
 } from './types';
 
 // Themes and Colors
@@ -105,6 +107,10 @@ export {
   processDataSource,
   mergeDeep,
   generateId,
+  // Temporal utilities
+  applyTemporalFilter,
+  filterByLatestTimestamp,
+  filterByKey,
 } from './utils';
 
 // Core utilities for advanced usage

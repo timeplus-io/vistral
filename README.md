@@ -15,6 +15,7 @@ A powerful streaming data visualization library built on [AntV G2](https://g2.an
   - [Single Value](#single-value)
   - [Data Table](#data-table)
   - [Geo Chart](#geo-chart)
+- [Temporal Binding Modes](#temporal-binding-modes)
 - [Using Individual Chart Components](#using-individual-chart-components)
 - [Data Format](#data-format)
 - [Streaming Data with Hooks](#streaming-data-with-hooks)
@@ -26,8 +27,9 @@ A powerful streaming data visualization library built on [AntV G2](https://g2.an
 
 ## Features
 
-- 📊 **Multiple Chart Types**: Line, Area, Bar, Column, Single Value, and Data Table
+- 📊 **Multiple Chart Types**: Line, Area, Bar, Column, Single Value, Data Table, and Geo Map
 - 🔄 **Streaming Support**: Built for real-time data with efficient updates
+- ⏱️ **Temporal Binding**: Three modes for handling streaming data (axis-bound, frame-bound, key-bound)
 - 🎨 **Beautiful Themes**: Dark and light themes with customizable color palettes
 - 📱 **Responsive**: Auto-fit to container with resize detection
 - 🎯 **TypeScript**: Full TypeScript support with comprehensive types
@@ -110,7 +112,11 @@ import { StreamChart } from '@timeplus/vistral';
     points: true,
     legend: true,
     gridlines: true,
-    xRange: 5, // Show last 5 minutes
+    temporal: {
+      mode: 'axis',
+      field: 'timestamp',
+      range: 5, // Show last 5 minutes
+    },
     fractionDigits: 2,
   }}
   data={data}
@@ -201,8 +207,8 @@ Display streaming data in a tabular format with column configuration.
     chartType: 'table',
     tableStyles: {
       timestamp: { name: 'Time', width: 200 },
-      value: { 
-        name: 'Value', 
+      value: {
+        name: 'Value',
         miniChart: 'sparkline',
         color: {
           type: 'condition',
@@ -213,8 +219,10 @@ Display streaming data in a tabular format with column configuration.
         },
       },
     },
-    updateMode: 'key', // Deduplicate by key
-    updateKey: 'id',
+    temporal: {
+      mode: 'key',    // Deduplicate by key
+      field: 'id',
+    },
   }}
   data={data}
 />
@@ -241,6 +249,72 @@ Display geographic data points on an interactive map with pan and zoom.
     showZoomControl: true,
     showCenterDisplay: true,
     pointOpacity: 0.8,
+  }}
+  data={data}
+/>
+```
+
+## Temporal Binding Modes
+
+Vistral provides three temporal binding modes for handling streaming data:
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| **axis** | Time mapped to axis with sliding window | Time-series trends |
+| **frame** | Only latest timestamp visible | Real-time snapshots |
+| **key** | Latest value per unique key | Live dashboards |
+
+### Axis-Bound (Sliding Window)
+
+For time series charts, shows a sliding time window:
+
+```tsx
+<StreamChart
+  config={{
+    chartType: 'line',
+    xAxis: 'timestamp',
+    yAxis: 'value',
+    temporal: {
+      mode: 'axis',
+      field: 'timestamp',
+      range: 5, // 5-minute window
+    },
+  }}
+  data={data}
+/>
+```
+
+### Frame-Bound (Latest Timestamp)
+
+Shows only rows with the latest timestamp - useful for real-time snapshots:
+
+```tsx
+<StreamChart
+  config={{
+    chartType: 'table',
+    temporal: {
+      mode: 'frame',
+      field: 'timestamp',
+    },
+  }}
+  data={data}
+/>
+```
+
+### Key-Bound (Deduplicate by Key)
+
+Keeps the latest value for each unique key - useful for live dashboards:
+
+```tsx
+<StreamChart
+  config={{
+    chartType: 'geo',
+    latitude: 'lat',
+    longitude: 'lng',
+    temporal: {
+      mode: 'key',
+      field: 'vehicle_id',
+    },
   }}
   data={data}
 />

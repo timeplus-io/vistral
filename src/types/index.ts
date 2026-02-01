@@ -42,12 +42,27 @@ export interface StreamDataSource {
   isStreaming?: boolean;
 }
 
+// Temporal Binding Modes
+export type TemporalMode = 'axis' | 'frame' | 'key';
+
+// Temporal Configuration
+export interface TemporalConfig {
+  /** Temporal binding mode */
+  mode: TemporalMode;
+  /** Field used for temporal binding */
+  field: string;
+  /** Time range in minutes (for axis mode only) */
+  range?: number | 'Infinity';
+}
+
 // Chart Configuration Base
 export interface ChartConfigBase {
   /** Chart type identifier */
   chartType: string;
   /** Custom color palette */
   colors?: string[];
+  /** Temporal binding configuration */
+  temporal?: TemporalConfig;
 }
 
 // Time Series Chart Configuration
@@ -63,8 +78,6 @@ export interface TimeSeriesConfig extends ChartConfigBase {
   xTitle?: string;
   /** Y-axis title */
   yTitle?: string;
-  /** Time range in minutes (default: all) */
-  xRange?: number | 'Infinity';
   /** Y-axis range */
   yRange?: { min?: number | null; max?: number | null };
   /** Show data labels */
@@ -169,10 +182,6 @@ export interface TableConfig extends ChartConfigBase {
   >;
   /** Enable text wrapping */
   tableWrap?: boolean;
-  /** Update key for streaming deduplication */
-  updateKey?: string;
-  /** Update mode: 'all' | 'key' | 'time' */
-  updateMode?: 'all' | 'key' | 'time';
 }
 
 // OHLC/Candlestick Chart Configuration
@@ -213,10 +222,6 @@ export interface GeoChartConfig extends ChartConfigBase {
   center?: [number, number];
   /** Initial zoom level (1-18) */
   zoom?: number;
-  /** Update key for streaming deduplication */
-  updateKey?: string;
-  /** Update mode: 'all' | 'key' | 'time' */
-  updateMode?: 'all' | 'key' | 'time';
   /** Map tile provider */
   tileProvider?: 'openstreetmap' | 'cartodb-dark' | 'cartodb-light';
   /** Show zoom controls */

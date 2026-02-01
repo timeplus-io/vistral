@@ -230,7 +230,6 @@ export const StreamChart: React.FC<StreamChartProps> = ({
       chartType: 'table',
       tableStyles: {},
       tableWrap: false,
-      updateMode: 'all',
     };
 
     return (

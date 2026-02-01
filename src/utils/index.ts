@@ -2,7 +2,7 @@
  * Utility functions for stream visualization
  */
 
-import type { ColumnDefinition, DataRow, ProcessedDataSource, StreamDataSource } from '../types';
+import type { ColumnDefinition, DataRow, ProcessedDataSource, StreamDataSource, TemporalConfig } from '../types';
 
 // Type detection constants
 const NUMBER_TYPES = [
@@ -378,4 +378,77 @@ function isObject(item: unknown): item is Record<string, unknown> {
  */
 export function generateId(prefix = 'stream-viz'): string {
   return `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// ============================================================
+// Temporal Binding Utilities
+// ============================================================
+
+/**
+ * Filter data by latest timestamp (frame-bound mode)
+ * Keeps only rows with the maximum timestamp value
+ */
+export function filterByLatestTimestamp(
+  data: unknown[][],
+  timeIndex: number
+): unknown[][] {
+  if (data.length === 0 || timeIndex < 0) return data;
+
+  // Find the maximum timestamp
+  let maxTimestamp = -Infinity;
+  for (const row of data) {
+    const ts = parseDateTime(row[timeIndex]);
+    if (ts > maxTimestamp) {
+      maxTimestamp = ts;
+    }
+  }
+
+  // Filter to only rows with the max timestamp
+  return data.filter((row) => parseDateTime(row[timeIndex]) === maxTimestamp);
+}
+
+/**
+ * Filter data by unique key (key-bound mode)
+ * Keeps only the latest row for each unique key value
+ */
+export function filterByKey(
+  data: unknown[][],
+  keyIndex: number
+): unknown[][] {
+  if (data.length === 0 || keyIndex < 0) return data;
+
+  // Use a map to keep the latest value for each key
+  const groups = new Map<string, unknown[]>();
+
+  for (const row of data) {
+    const key = String(row[keyIndex] ?? '');
+    groups.set(key, row);
+  }
+
+  return Array.from(groups.values());
+}
+
+/**
+ * Apply temporal filtering based on configuration
+ */
+export function applyTemporalFilter(
+  data: unknown[][],
+  columns: ColumnDefinition[],
+  temporal: TemporalConfig
+): unknown[][] {
+  const fieldIndex = findColumnIndex(columns, temporal.field);
+  if (fieldIndex < 0) return data;
+
+  switch (temporal.mode) {
+    case 'frame':
+      return filterByLatestTimestamp(data, fieldIndex);
+    case 'key':
+      return filterByKey(data, fieldIndex);
+    case 'axis':
+      // Axis mode filtering is handled by the chart component itself
+      // (e.g., through domain clamping in TimeSeriesChart)
+      return data;
+    default:
+      return data;
+  }
 }

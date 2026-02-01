@@ -742,6 +742,394 @@ export function StreamingGeoChart() {
 }
 
 // =============================================================================
+// Example 10: Table with Frame-Bound Temporal Mode
+// Shows only rows from the latest timestamp (real-time snapshot)
+// =============================================================================
+
+export function FrameBoundTable() {
+  const theme = useTheme();
+  const { data, append } = useStreamingData<unknown[]>([], 200);
+
+  useEffect(() => {
+    const servers = ['server-01', 'server-02', 'server-03', 'server-04'];
+
+    const interval = setInterval(() => {
+      const now = new Date().toISOString();
+      // Add metrics for all servers at the same timestamp
+      const newRows = servers.map(server => [
+        now,
+        server,
+        generateNextValue(50, 10, 95, 0.2), // CPU
+        generateNextValue(60, 20, 90, 0.15), // Memory
+        Math.floor(Math.random() * 1000) + 100, // Requests
+      ]);
+      append(newRows);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [append]);
+
+  const dataSource: StreamDataSource = {
+    columns: [
+      { name: 'timestamp', type: 'datetime64' },
+      { name: 'server', type: 'string' },
+      { name: 'cpu', type: 'float64' },
+      { name: 'memory', type: 'float64' },
+      { name: 'requests', type: 'int64' },
+    ],
+    data,
+    isStreaming: true,
+  };
+
+  // Using new temporal config for frame-bound mode
+  const config: TableConfig = {
+    chartType: 'table',
+    temporal: {
+      mode: 'frame',
+      field: 'timestamp',
+    },
+    tableStyles: {
+      timestamp: { name: 'Time', width: 200 },
+      server: { name: 'Server', width: 120 },
+      cpu: { name: 'CPU %', width: 100 },
+      memory: { name: 'Memory %', width: 100 },
+      requests: { name: 'Requests', width: 100 },
+    },
+  };
+
+  return (
+    <div>
+      <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
+        Frame-bound mode: Shows only the latest timestamp snapshot
+      </p>
+      <div style={{ width: '100%', height: '300px' }}>
+        <StreamChart config={config} data={dataSource} theme={theme} />
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Example 11: Table with Key-Bound Temporal Mode
+// Keeps latest value per unique key (live dashboard)
+// =============================================================================
+
+export function KeyBoundTable() {
+  const theme = useTheme();
+  const { data, append } = useStreamingData<unknown[]>([], 500);
+
+  useEffect(() => {
+    const services = ['auth-service', 'api-gateway', 'user-service', 'payment-service', 'notification-service'];
+
+    const interval = setInterval(() => {
+      // Update a random service
+      const service = services[Math.floor(Math.random() * services.length)];
+      const statuses = ['healthy', 'healthy', 'healthy', 'degraded', 'down'];
+      const status = statuses[Math.floor(Math.random() * statuses.length)];
+
+      append([[
+        new Date().toISOString(),
+        service,
+        status,
+        Math.floor(Math.random() * 200) + 10, // latency
+        generateNextValue(99, 95, 100, 0.02), // uptime
+      ]]);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [append]);
+
+  const dataSource: StreamDataSource = {
+    columns: [
+      { name: 'last_updated', type: 'datetime64' },
+      { name: 'service', type: 'string' },
+      { name: 'status', type: 'string' },
+      { name: 'latency_ms', type: 'int64' },
+      { name: 'uptime', type: 'float64' },
+    ],
+    data,
+    isStreaming: true,
+  };
+
+  // Using new temporal config for key-bound mode
+  const config: TableConfig = {
+    chartType: 'table',
+    temporal: {
+      mode: 'key',
+      field: 'service',
+    },
+    tableStyles: {
+      last_updated: { name: 'Last Updated', width: 200 },
+      service: { name: 'Service', width: 150 },
+      status: {
+        name: 'Status',
+        width: 100,
+        color: {
+          type: 'condition',
+          conditions: [
+            { operator: 'eq', value: 'down' as unknown as number, color: 'rgba(239, 68, 68, 0.3)' },
+            { operator: 'eq', value: 'degraded' as unknown as number, color: 'rgba(251, 146, 60, 0.3)' },
+          ],
+        },
+      },
+      latency_ms: { name: 'Latency (ms)', width: 120 },
+      uptime: { name: 'Uptime %', width: 100 },
+    },
+  };
+
+  return (
+    <div>
+      <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
+        Key-bound mode: Shows latest value per service (deduplication by key)
+      </p>
+      <div style={{ width: '100%', height: '300px' }}>
+        <StreamChart config={config} data={dataSource} theme={theme} />
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Example 12: GeoChart with Key-Bound Mode
+// Shows latest position per vehicle ID
+// =============================================================================
+
+export function KeyBoundGeoChart() {
+  const theme = useTheme();
+  const [points, setPoints] = useState<unknown[][]>(() => {
+    // Initialize vehicles with starting positions
+    const vehicles: unknown[][] = [];
+    for (let i = 1; i <= 10; i++) {
+      vehicles.push([
+        new Date().toISOString(),
+        `vehicle-${i}`,
+        40 + Math.random() * 5,  // lat around NYC area
+        -74 + Math.random() * 2, // lng around NYC area
+        Math.floor(Math.random() * 60) + 20, // speed
+      ]);
+    }
+    return vehicles;
+  });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Update a random vehicle's position
+      const vehicleId = `vehicle-${Math.floor(Math.random() * 10) + 1}`;
+
+      setPoints(prev => {
+        // Find current position of this vehicle
+        const currentVehicle = prev.find(p => p[1] === vehicleId);
+        const currentLat = currentVehicle ? Number(currentVehicle[2]) : 42;
+        const currentLng = currentVehicle ? Number(currentVehicle[3]) : -73;
+
+        // Move slightly
+        const newLat = currentLat + (Math.random() - 0.5) * 0.1;
+        const newLng = currentLng + (Math.random() - 0.5) * 0.1;
+
+        return [
+          ...prev,
+          [
+            new Date().toISOString(),
+            vehicleId,
+            newLat,
+            newLng,
+            Math.floor(Math.random() * 60) + 20,
+          ],
+        ].slice(-200); // Keep history for key-bound deduplication
+      });
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const data: StreamDataSource = {
+    columns: [
+      { name: 'timestamp', type: 'datetime64' },
+      { name: 'vehicle_id', type: 'string' },
+      { name: 'lat', type: 'float64' },
+      { name: 'lng', type: 'float64' },
+      { name: 'speed', type: 'int64' },
+    ],
+    data: points,
+    isStreaming: true,
+  };
+
+  // Using new temporal config for key-bound mode
+  const config: GeoChartConfig = {
+    chartType: 'geo',
+    latitude: 'lat',
+    longitude: 'lng',
+    temporal: {
+      mode: 'key',
+      field: 'vehicle_id',
+    },
+    size: {
+      key: 'speed',
+      min: 6,
+      max: 14,
+    },
+    center: [41, -73],
+    zoom: 7,
+    showZoomControl: true,
+    showCenterDisplay: true,
+    pointOpacity: 0.9,
+    pointColor: '#10B981',
+  };
+
+  return (
+    <div>
+      <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
+        Key-bound GeoChart: Shows latest position per vehicle (10 vehicles tracking)
+      </p>
+      <div style={{ width: '100%', height: '500px' }}>
+        <StreamChart config={config} data={data} theme={theme} />
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Example 13: BarColumnChart with Frame-Bound Mode
+// Shows current snapshot of category values
+// =============================================================================
+
+export function FrameBoundBarChart() {
+  const theme = useTheme();
+  const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
+    const now = new Date().toISOString();
+    return [
+      [now, 'Widgets', 120],
+      [now, 'Gadgets', 85],
+      [now, 'Gizmos', 95],
+      [now, 'Doodads', 65],
+    ];
+  });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date().toISOString();
+      setDataPoints(prev => [
+        ...prev,
+        [now, 'Widgets', generateNextValue(Number(prev[prev.length-4]?.[2] || 120), 80, 160, 0.1)],
+        [now, 'Gadgets', generateNextValue(Number(prev[prev.length-3]?.[2] || 85), 50, 120, 0.1)],
+        [now, 'Gizmos', generateNextValue(Number(prev[prev.length-2]?.[2] || 95), 60, 130, 0.1)],
+        [now, 'Doodads', generateNextValue(Number(prev[prev.length-1]?.[2] || 65), 40, 100, 0.1)],
+      ].slice(-100)); // Keep some history
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const data: StreamDataSource = {
+    columns: [
+      { name: 'timestamp', type: 'datetime64' },
+      { name: 'product', type: 'string' },
+      { name: 'sales', type: 'float64' },
+    ],
+    data: dataPoints,
+    isStreaming: true,
+  };
+
+  // Using new temporal config for frame-bound mode
+  const config: BarColumnConfig = {
+    chartType: 'column',
+    xAxis: 'product',
+    yAxis: 'sales',
+    temporal: {
+      mode: 'frame',
+      field: 'timestamp',
+    },
+    dataLabel: true,
+    gridlines: true,
+    yTitle: 'Sales',
+    fractionDigits: 0,
+    colors: findPaletteByLabel('Ocean')?.values,
+  };
+
+  return (
+    <div>
+      <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
+        Frame-bound BarChart: Shows only the latest timestamp snapshot
+      </p>
+      <div style={{ width: '100%', height: '400px' }}>
+        <StreamChart config={config} data={data} theme={theme} />
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Example 14: TimeSeriesChart with Axis-Bound Temporal Mode
+// Uses temporal config for sliding time window
+// =============================================================================
+
+export function AxisBoundLineChart() {
+  const theme = useTheme();
+  const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
+    const now = Date.now();
+    const points: unknown[][] = [];
+    let value = 50;
+    for (let i = 120; i >= 0; i--) {
+      value = generateNextValue(value, 20, 80, 0.15);
+      points.push([new Date(now - i * 1000).toISOString(), value]);
+    }
+    return points;
+  });
+
+  useEffect(() => {
+    let currentValue = dataPoints.length > 0
+      ? (dataPoints[dataPoints.length - 1][1] as number)
+      : 50;
+
+    const interval = setInterval(() => {
+      currentValue = generateNextValue(currentValue, 20, 80, 0.15);
+      const newPoint = [new Date().toISOString(), currentValue];
+
+      setDataPoints(prev => [...prev, newPoint].slice(-300)); // Keep 5 minutes of data
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const data: StreamDataSource = {
+    columns: [
+      { name: 'timestamp', type: 'datetime64' },
+      { name: 'value', type: 'float64' },
+    ],
+    data: dataPoints,
+    isStreaming: true,
+  };
+
+  // Using new temporal config for axis-bound mode (sliding window)
+  const config: TimeSeriesConfig = {
+    chartType: 'line',
+    xAxis: 'timestamp',
+    yAxis: 'value',
+    temporal: {
+      mode: 'axis',
+      field: 'timestamp',
+      range: 1, // 1 minute sliding window
+    },
+    lineStyle: 'curve',
+    gridlines: true,
+    yTitle: 'Metric Value',
+    yRange: { min: 0, max: 100 },
+    fractionDigits: 1,
+  };
+
+  return (
+    <div>
+      <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
+        Axis-bound mode: 1-minute sliding window
+      </p>
+      <div style={{ width: '100%', height: '400px' }}>
+        <StreamChart config={config} data={data} theme={theme} />
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
 // Default Export - All Examples
 // =============================================================================
 
@@ -755,4 +1143,10 @@ export default {
   MetricsDashboard,
   ChartWithTableToggle,
   StreamingGeoChart,
+  // New temporal binding examples
+  FrameBoundTable,
+  KeyBoundTable,
+  KeyBoundGeoChart,
+  FrameBoundBarChart,
+  AxisBoundLineChart,
 };

@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { BarColumnConfig, StreamDataSource } from '../types';
 import { findPaletteByValues, DEFAULT_PALETTE } from '../themes';
 import { useChart, useDataSource } from '../hooks';
+import { rowToArray, applyTemporalFilter } from '../utils';
 import {
   AXIS_HEIGHT_WITH_TITLE,
   AXIS_HEIGHT_WITHOUT_TITLE,
@@ -101,8 +102,28 @@ export const BarColumnChart: React.FC<BarColumnChartProps> = ({
     [config.colors]
   );
 
+  // Apply temporal filtering to data source
+  const filteredDataSource = useMemo(() => {
+    const { temporal } = config;
+    const { columns, data } = dataSource;
+
+    // If no temporal config, return original data source
+    if (!temporal) {
+      return dataSource;
+    }
+
+    // Apply temporal filtering
+    const processedData = data.map((row) => rowToArray(row, columns));
+    const filteredData = applyTemporalFilter(processedData, columns, temporal);
+
+    return {
+      ...dataSource,
+      data: filteredData,
+    };
+  }, [dataSource, config]);
+
   // Process data source
-  const source = useDataSource(dataSource, config.xAxis, config.yAxis, config.color);
+  const source = useDataSource(filteredDataSource, config.xAxis, config.yAxis, config.color);
 
   // Initialize chart
   const { chart, chartRef, isMouseOver, activeColor, setActiveColor } = useChart();

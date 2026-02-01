@@ -70,7 +70,6 @@ export function getTimeSeriesDefaults(
     showAll: false,
     lineStyle: 'curve',
     points: false,
-    xRange: 'Infinity',
     yRange: { min: null, max: null },
     yTickLabel: { maxChar: 25 },
     xFormat: '',
@@ -97,6 +96,19 @@ export const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({
     [configRaw, defaults]
   );
 
+  // Get time range from temporal config (axis-bound mode)
+  const timeRange = useMemo(() => {
+    const { temporal } = config;
+
+    // If temporal config is provided with axis mode, use its range
+    if (temporal?.mode === 'axis' && temporal.range !== undefined) {
+      return temporal.range;
+    }
+
+    // Default: show all data
+    return 'Infinity' as const;
+  }, [config]);
+
   // Get color palette
   const colorPalette = useMemo(
     () => findPaletteByValues(config.colors || [], DEFAULT_PALETTE),
@@ -109,24 +121,23 @@ export const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({
   // Initialize chart
   const { chart, chartRef, isMouseOver, activeColor, setActiveColor } = useChart();
 
-  // Calculate time domain
+  // Calculate time domain (axis-bound temporal mode)
   const domain = useMemo(() => {
     if (!source) return { min: 0, max: 0 };
 
     const xMin = source.x.min ?? 0;
     const xMax = source.x.max ?? 0;
-    const xRange = config.xRange;
 
-    if (xRange === 'Infinity' || xRange === undefined) {
+    if (timeRange === 'Infinity') {
       return { min: xMin, max: xMax };
     }
 
-    const rangeMs = Number(xRange) * 60 * 1000;
+    const rangeMs = Number(timeRange) * 60 * 1000;
     return {
       min: Math.max(xMin, xMax - rangeMs),
       max: Math.max(xMin + rangeMs, xMax),
     };
-  }, [source, config.xRange]);
+  }, [source, timeRange]);
 
   // Update chart options
   const updateOptions = useCallback(() => {
