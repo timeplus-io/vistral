@@ -1,7 +1,7 @@
 {
   "name": "@timeplus/vistral",
   "version": "1.0.0",
-  "description": "A powerful streaming data visualization library built on AntV G2",
+  "description": "A powerful streaming data visualization library follow grammar of graphics",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
