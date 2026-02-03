@@ -19,6 +19,7 @@ import type {
   AxisChannelSpec,
 } from '../types/spec';
 import { parseDateTime } from '../utils';
+import { getChartThemeColors } from './chart-utils';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -380,4 +381,74 @@ export function translateToG2Spec(
   g2.children = children;
 
   return g2;
+}
+
+// ---------------------------------------------------------------------------
+// Theme
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a G2 theme configuration object from a Vistral theme name.
+ * Defaults to 'dark' when the theme argument is undefined.
+ */
+export function applySpecTheme(
+  theme: 'dark' | 'light' | undefined
+): Record<string, any> {
+  const colors = getChartThemeColors(theme ?? 'dark');
+
+  return {
+    view: { viewFill: colors.background },
+    label: { fill: colors.text, fontSize: 11 },
+    axis: {
+      x: {
+        line: { stroke: colors.line },
+        tick: { stroke: colors.line },
+        label: { fill: colors.text, fontSize: 11 },
+        title: { fill: colors.text, fontSize: 12, fontWeight: 500 },
+        grid: { stroke: colors.gridline },
+      },
+      y: {
+        line: { stroke: colors.line },
+        tick: { stroke: colors.line },
+        label: { fill: colors.text, fontSize: 11 },
+        title: { fill: colors.text, fontSize: 12, fontWeight: 500 },
+        grid: { stroke: colors.gridline },
+      },
+    },
+    legend: {
+      label: { fill: colors.text, fontSize: 12 },
+      title: { fill: colors.text, fontSize: 12 },
+      itemLabel: { fill: colors.text, fontSize: 12 },
+      itemName: { fill: colors.text, fontSize: 12 },
+      itemValue: { fill: colors.textSecondary, fontSize: 12 },
+    },
+    legendCategory: {
+      itemLabel: { fill: colors.text },
+      itemName: { fill: colors.text },
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Pipeline
+// ---------------------------------------------------------------------------
+
+/**
+ * Main pipeline — combines temporal transforms, G2 spec translation, and
+ * theme application into a single G2-ready options object.
+ *
+ * 1. `applyTemporalTransforms(spec, data)` — inject time-based transforms
+ * 2. `translateToG2Spec(specWithTemporal)` — produce G2 options
+ * 3. `applySpecTheme(spec.theme)` — attach theme configuration
+ *
+ * The returned object is ready for `chart.options(result)`.
+ */
+export function buildG2Options(
+  spec: VistralSpec,
+  data: Record<string, unknown>[]
+): Record<string, any> {
+  const specWithTemporal = applyTemporalTransforms(spec, data);
+  const g2Spec = translateToG2Spec(specWithTemporal);
+  g2Spec.theme = applySpecTheme(spec.theme);
+  return g2Spec;
 }

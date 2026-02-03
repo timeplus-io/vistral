@@ -18,3 +18,10 @@ export {
   applyChartTheme,
   getChartThemeColors,
 } from './chart-utils';
+
+export {
+  applyTemporalTransforms,
+  translateToG2Spec,
+  applySpecTheme,
+  buildG2Options,
+} from './spec-engine';
