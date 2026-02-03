@@ -20,9 +20,11 @@ describe('VistralChart spec integration', () => {
     expect(g2Options.children[0].type).toBe('line');
     expect(g2Options.children[0].encode.x).toBe('time');
     expect(g2Options.theme.view.viewFill).toBe('transparent');
+    // Data should be attached to children
+    expect(g2Options.children[0].data).toEqual(data);
   });
 
-  it('produces valid G2 options for multi-mark spec with temporal', () => {
+  it('produces valid G2 options for multi-mark spec with temporal and visual transforms', () => {
     const spec: VistralSpec = {
       marks: [
         {
@@ -48,8 +50,12 @@ describe('VistralChart spec integration', () => {
     expect(g2Options.children).toHaveLength(2);
     expect(g2Options.children[0].type).toBe('area');
     expect(g2Options.children[0].style.opacity).toBe(0.5);
-    // Both should have temporal + stackY transforms
-    expect(g2Options.children[0].transform.length).toBeGreaterThanOrEqual(2);
+    // Only visual transforms (stackY) should be on children — temporal
+    // filtering is done in JavaScript, not via G2 transforms.
+    expect(g2Options.children[0].transform).toEqual([{ type: 'stackY' }]);
+    expect(g2Options.children[1].transform).toEqual([{ type: 'stackY' }]);
+    // Data should be attached
+    expect(g2Options.children[0].data).toBeDefined();
   });
 
   it('handles bar chart with transpose coordinate', () => {

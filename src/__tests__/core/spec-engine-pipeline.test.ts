@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applySpecTheme, buildG2Options } from '../../core/spec-engine';
+import { applySpecTheme, buildG2Options, filterDataByTemporal } from '../../core/spec-engine';
 import type { VistralSpec } from '../../types/spec';
 
 describe('applySpecTheme', () => {
@@ -36,8 +36,73 @@ describe('applySpecTheme', () => {
   });
 });
 
+describe('filterDataByTemporal', () => {
+  it('should filter data by axis mode with time window', () => {
+    const now = Date.now();
+    const spec: VistralSpec = {
+      temporal: { mode: 'axis', field: 'time', range: 1 },
+      marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+    };
+    const data = [
+      { time: new Date(now - 120_000).toISOString(), value: 1 }, // 2 min ago — outside
+      { time: new Date(now - 30_000).toISOString(), value: 2 },  // 30 sec ago — inside
+      { time: new Date(now).toISOString(), value: 3 },            // now — inside
+    ];
+
+    const result = filterDataByTemporal(spec, data);
+    expect(result).toHaveLength(2);
+    expect(result[0].value).toBe(2);
+    expect(result[1].value).toBe(3);
+  });
+
+  it('should sort data by temporal field in axis mode', () => {
+    const now = Date.now();
+    const spec: VistralSpec = {
+      temporal: { mode: 'axis', field: 'time' },
+      marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+    };
+    const data = [
+      { time: new Date(now).toISOString(), value: 3 },
+      { time: new Date(now - 60_000).toISOString(), value: 1 },
+      { time: new Date(now - 30_000).toISOString(), value: 2 },
+    ];
+
+    const result = filterDataByTemporal(spec, data);
+    expect(result[0].value).toBe(1);
+    expect(result[1].value).toBe(2);
+    expect(result[2].value).toBe(3);
+  });
+
+  it('should filter data by frame mode (latest timestamp only)', () => {
+    const now = Date.now();
+    const ts1 = new Date(now - 60_000).toISOString();
+    const ts2 = new Date(now).toISOString();
+    const spec: VistralSpec = {
+      temporal: { mode: 'frame', field: 'time' },
+      marks: [{ type: 'interval', encode: { x: 'cat', y: 'val' } }],
+    };
+    const data = [
+      { time: ts1, cat: 'A', val: 10 },
+      { time: ts2, cat: 'B', val: 20 },
+      { time: ts1, cat: 'C', val: 30 },
+    ];
+
+    const result = filterDataByTemporal(spec, data);
+    expect(result).toHaveLength(1);
+    expect(result[0].cat).toBe('B');
+  });
+
+  it('should return data as-is when no temporal config', () => {
+    const spec: VistralSpec = {
+      marks: [{ type: 'line', encode: { x: 'x', y: 'y' } }],
+    };
+    const data = [{ x: 1, y: 2 }];
+    expect(filterDataByTemporal(spec, data)).toBe(data);
+  });
+});
+
 describe('buildG2Options', () => {
-  it('should produce complete G2 options from a line spec with temporal', () => {
+  it('should produce complete G2 options with pre-filtered data (axis temporal)', () => {
     const spec: VistralSpec = {
       theme: 'dark',
       temporal: { mode: 'axis', field: 'time', range: 5 },
@@ -57,13 +122,13 @@ describe('buildG2Options', () => {
     expect(g2.children).toHaveLength(1);
     expect(g2.children[0].type).toBe('line');
 
-    // Temporal transforms should be injected into children's transforms
-    // axis mode injects filter + sortBy
-    const transforms = g2.children[0].transform;
-    expect(transforms).toBeDefined();
-    expect(transforms.length).toBeGreaterThanOrEqual(2);
-    expect(transforms[0].type).toBe('filter');
-    expect(transforms[1].type).toBe('sortBy');
+    // Temporal transforms are NOT injected into child.transform — data is
+    // pre-filtered in JavaScript. No spec-level transforms → no child.transform.
+    expect(g2.children[0].transform).toBeUndefined();
+
+    // Data should be pre-filtered and attached to children
+    expect(g2.children[0].data).toBeDefined();
+    expect(g2.children[0].data.length).toBe(2); // both within 5 min window
 
     // Theme should be applied
     expect(g2.theme).toBeDefined();
@@ -91,12 +156,15 @@ describe('buildG2Options', () => {
     // No temporal → no transforms injected
     expect(g2.children[0].transform).toBeUndefined();
 
+    // Data should be attached
+    expect(g2.children[0].data).toEqual(data);
+
     // No theme specified → defaults to dark
     expect(g2.theme).toBeDefined();
     expect(g2.theme.axis.x.label.fill).toBe('#E5E7EB');
   });
 
-  it('should apply frame temporal mode correctly (filter injected in children transforms)', () => {
+  it('should apply frame temporal mode — data pre-filtered, no transform on children', () => {
     const now = Date.now();
     const ts1 = new Date(now - 60_000).toISOString();
     const ts2 = new Date(now).toISOString();
@@ -115,16 +183,12 @@ describe('buildG2Options', () => {
 
     const g2 = buildG2Options(spec, data);
 
-    // Frame mode injects a filter transform
-    const transforms = g2.children[0].transform;
-    expect(transforms).toBeDefined();
-    expect(transforms.length).toBeGreaterThanOrEqual(1);
-    expect(transforms[0].type).toBe('filter');
+    // Frame mode: data pre-filtered to latest timestamp only
+    expect(g2.children[0].data).toHaveLength(1);
+    expect(g2.children[0].data[0].category).toBe('B');
 
-    // The filter callback should keep only the latest timestamp rows
-    const filterFn = transforms[0].callback;
-    expect(filterFn({ time: ts2, category: 'B', value: 20 })).toBe(true);
-    expect(filterFn({ time: ts1, category: 'A', value: 10 })).toBe(false);
+    // No temporal transforms on child — data filtering done in JS
+    expect(g2.children[0].transform).toBeUndefined();
 
     // Theme should be light
     expect(g2.theme.axis.x.label.fill).toBe('#1F2937');

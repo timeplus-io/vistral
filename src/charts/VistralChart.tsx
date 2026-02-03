@@ -162,14 +162,12 @@ export const VistralChart = forwardRef<ChartHandle, VistralChartProps>(
       if (!chart) return;
 
       const data = dataRef.current;
-      const g2Options = buildG2Options(spec, data);
 
-      // Attach data to each child mark
-      if (g2Options.children) {
-        for (const child of g2Options.children) {
-          child.data = data;
-        }
-      }
+      // Skip rendering when there is no data — avoids putting G2 into a
+      // broken empty state that prevents subsequent renders from showing.
+      if (data.length === 0) return;
+
+      const g2Options = buildG2Options(spec, data);
 
       // Apply explicit dimensions if provided
       if (width !== undefined) g2Options.width = width;
@@ -263,6 +261,14 @@ export const VistralChart = forwardRef<ChartHandle, VistralChartProps>(
       chartRef.current = chart;
       handleRef.current.g2 = chart;
 
+      // Fire onReady after the chart instance is created.  This happens
+      // synchronously inside the effect so the handle is available by the
+      // time any sibling effects or the caller's own effects run.
+      if (!readyFired && onReady) {
+        onReady(handleRef.current);
+        setReadyFired(true);
+      }
+
       return () => {
         // Cleanup throttle timer
         if (throttleTimerRef.current !== null) {
@@ -273,6 +279,7 @@ export const VistralChart = forwardRef<ChartHandle, VistralChartProps>(
         chartRef.current = null;
         handleRef.current.g2 = null;
       };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // ----- React to source / spec changes -----
@@ -285,15 +292,6 @@ export const VistralChart = forwardRef<ChartHandle, VistralChartProps>(
 
       scheduleRender();
     }, [source, scheduleRender]);
-
-    // ----- onReady callback -----
-
-    useEffect(() => {
-      if (!readyFired && chartRef.current && onReady) {
-        onReady(handleRef.current);
-        setReadyFired(true);
-      }
-    }, [readyFired, onReady]);
 
     // ----- Render -----
 

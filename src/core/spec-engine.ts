@@ -430,16 +430,94 @@ export function applySpecTheme(
 }
 
 // ---------------------------------------------------------------------------
+// Temporal data filtering (in JavaScript)
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply temporal filtering and sorting to data **in JavaScript** rather than
+ * relying on G2 data transforms.  This is the preferred approach for the
+ * declarative `chart.options()` API because G2 mark-level `transform` is
+ * intended for visual transforms (stackY, dodgeX, …) — not data filtering.
+ *
+ * Returns a new array; the input is never mutated.
+ */
+export function filterDataByTemporal(
+  spec: VistralSpec,
+  data: Record<string, unknown>[]
+): Record<string, unknown>[] {
+  const { temporal } = spec;
+  if (!temporal || data.length === 0) return data;
+
+  const { mode, field } = temporal;
+  let result = data;
+
+  switch (mode) {
+    case 'axis': {
+      const { range } = temporal;
+
+      // Time-window filter
+      if (typeof range === 'number' && range !== Infinity) {
+        const maxTs = getMaxTimestamp(data, field);
+        const windowMs = range * 60_000;
+        const minTs = maxTs - windowMs;
+
+        result = result.filter((d) => {
+          const ts = parseDateTime(d[field]);
+          return ts >= minTs && ts <= maxTs;
+        });
+      }
+
+      // Sort by temporal field
+      result = [...result].sort(
+        (a, b) => parseDateTime(a[field]) - parseDateTime(b[field])
+      );
+      break;
+    }
+
+    case 'frame': {
+      const maxTs = getMaxTimestamp(data, field);
+      result = result.filter((d) => parseDateTime(d[field]) === maxTs);
+      break;
+    }
+
+    case 'key': {
+      const { keyField } = temporal;
+      if (!keyField) break;
+
+      const latestByKey = new Map<string, number>();
+      for (const row of data) {
+        const key = String(row[keyField] ?? '');
+        const ts = parseDateTime(row[field]);
+        const prev = latestByKey.get(key);
+        if (prev === undefined || ts > prev) {
+          latestByKey.set(key, ts);
+        }
+      }
+
+      result = result.filter((d) => {
+        const key = String(d[keyField] ?? '');
+        const ts = parseDateTime(d[field]);
+        return latestByKey.get(key) === ts;
+      });
+      break;
+    }
+  }
+
+  return result;
+}
+
+// ---------------------------------------------------------------------------
 // Pipeline
 // ---------------------------------------------------------------------------
 
 /**
- * Main pipeline — combines temporal transforms, G2 spec translation, and
+ * Main pipeline — combines temporal data filtering, G2 spec translation, and
  * theme application into a single G2-ready options object.
  *
- * 1. `applyTemporalTransforms(spec, data)` — inject time-based transforms
- * 2. `translateToG2Spec(specWithTemporal)` — produce G2 options
+ * 1. `filterDataByTemporal(spec, data)` — filter/sort data in JavaScript
+ * 2. `translateToG2Spec(spec)` — produce G2 options (no temporal transforms)
  * 3. `applySpecTheme(spec.theme)` — attach theme configuration
+ * 4. Attach filtered data to each child mark
  *
  * The returned object is ready for `chart.options(result)`.
  */
@@ -447,8 +525,19 @@ export function buildG2Options(
   spec: VistralSpec,
   data: Record<string, unknown>[]
 ): Record<string, any> {
-  const specWithTemporal = applyTemporalTransforms(spec, data);
-  const g2Spec = translateToG2Spec(specWithTemporal);
+  // Filter/sort data in JS — do NOT inject temporal transforms into G2
+  const filteredData = filterDataByTemporal(spec, data);
+
+  // Translate spec to G2 (only visual transforms like stackY/dodgeX reach G2)
+  const g2Spec = translateToG2Spec(spec);
   g2Spec.theme = applySpecTheme(spec.theme);
+
+  // Attach filtered data to each child mark
+  if (g2Spec.children) {
+    for (const child of g2Spec.children) {
+      child.data = filteredData;
+    }
+  }
+
   return g2Spec;
 }

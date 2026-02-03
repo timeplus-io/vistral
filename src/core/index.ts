@@ -21,6 +21,7 @@ export {
 
 export {
   applyTemporalTransforms,
+  filterDataByTemporal,
   translateToG2Spec,
   applySpecTheme,
   buildG2Options,
