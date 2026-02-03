@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Spec Engine — converts VistralSpec + data into renderable configuration.
  *
@@ -7,7 +8,16 @@
  * (e.g. AntV G2) can consume.
  */
 
-import type { VistralSpec, TransformSpec } from '../types/spec';
+import type {
+  VistralSpec,
+  TransformSpec,
+  MarkSpec,
+  LabelSpec,
+  AnnotationSpec,
+  CoordinateSpec,
+  AxesSpec,
+  AxisChannelSpec,
+} from '../types/spec';
 import { parseDateTime } from '../utils';
 
 // ---------------------------------------------------------------------------
@@ -140,4 +150,234 @@ export function applyTemporalTransforms(
     ...spec,
     transforms: [...newTransforms, ...existingTransforms],
   };
+}
+
+// ---------------------------------------------------------------------------
+// G2 Spec Translation
+// ---------------------------------------------------------------------------
+
+/**
+ * Translate a CoordinateSpec to G2 format.
+ * Renames `transforms` to `transform`.
+ */
+function translateCoordinate(
+  coord: CoordinateSpec
+): Record<string, any> {
+  const { transforms, ...rest } = coord;
+  const result: Record<string, any> = { ...rest };
+  if (transforms) {
+    result.transform = transforms;
+  }
+  return result;
+}
+
+/**
+ * Translate an AxisChannelSpec to G2 axis channel format.
+ */
+function translateAxisChannel(
+  axis: AxisChannelSpec
+): Record<string, any> {
+  const result: Record<string, any> = {};
+
+  if (axis.title !== undefined) {
+    result.title = axis.title;
+  }
+  if (axis.grid !== undefined) {
+    result.grid = axis.grid;
+  }
+  if (axis.line !== undefined) {
+    result.line = axis.line;
+  }
+
+  if (axis.labels) {
+    if (axis.labels.format !== undefined) {
+      result.labelFormatter = axis.labels.format;
+    }
+    if (axis.labels.rotate !== undefined) {
+      result.labelTransform = [{ type: 'rotate', angle: axis.labels.rotate }];
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Translate AxesSpec to G2 axis format.
+ */
+function translateAxes(
+  axes: AxesSpec
+): Record<string, any> {
+  const result: Record<string, any> = {};
+
+  for (const channel of ['x', 'y'] as const) {
+    const value = axes[channel];
+    if (value === undefined) continue;
+    if (value === false) {
+      result[channel] = false;
+    } else {
+      result[channel] = translateAxisChannel(value);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Translate a LabelSpec to G2 label format.
+ * Converts `overlapHide` to `transform: [{ type: 'overlapHide' }]`.
+ */
+function translateLabel(
+  label: LabelSpec
+): Record<string, any> {
+  const { overlapHide, ...rest } = label;
+  const result: Record<string, any> = { ...rest };
+
+  if (overlapHide) {
+    result.transform = [{ type: 'overlapHide' }];
+  }
+
+  return result;
+}
+
+/**
+ * Translate an AnnotationSpec to a G2 child entry.
+ */
+function translateAnnotation(
+  annotation: AnnotationSpec
+): Record<string, any> {
+  const child: Record<string, any> = {
+    type: annotation.type,
+  };
+
+  if (annotation.encode) {
+    child.encode = annotation.encode;
+  }
+  if (annotation.style) {
+    child.style = annotation.style;
+  }
+  if (annotation.value !== undefined) {
+    child.data = [annotation.value];
+  }
+  if (annotation.label !== undefined) {
+    child.labels = [{ text: annotation.label }];
+  }
+
+  return child;
+}
+
+/**
+ * Translate a single MarkSpec to a G2 child entry.
+ */
+function translateMark(
+  mark: MarkSpec,
+  spec: VistralSpec
+): Record<string, any> {
+  const child: Record<string, any> = {
+    type: mark.type,
+  };
+
+  // Encode
+  if (mark.encode) {
+    child.encode = { ...mark.encode };
+  }
+
+  // Scale: merge top-level scales with per-mark scales (per-mark wins)
+  const topScales = spec.scales ?? {};
+  const markScales = mark.scales ?? {};
+  const mergedScales = { ...topScales, ...markScales };
+  if (Object.keys(mergedScales).length > 0) {
+    child.scale = mergedScales;
+  }
+
+  // Transforms: prepend top-level transforms before mark transforms
+  const topTransforms = spec.transforms ?? [];
+  const markTransforms = mark.transforms ?? [];
+  const allTransforms = [...topTransforms, ...markTransforms];
+  if (allTransforms.length > 0) {
+    child.transform = allTransforms;
+  }
+
+  // Style
+  if (mark.style) {
+    child.style = mark.style;
+  }
+
+  // Labels
+  if (mark.labels) {
+    child.labels = mark.labels.map(translateLabel);
+  }
+
+  // Tooltip
+  if (mark.tooltip !== undefined) {
+    child.tooltip = mark.tooltip === false ? false : mark.tooltip;
+  }
+
+  // Animate: per-mark overrides top-level
+  const animate = mark.animate ?? spec.animate;
+  if (animate !== undefined) {
+    child.animate = animate;
+  }
+
+  return child;
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Translate a VistralSpec into a G2-compatible options object.
+ *
+ * This is a **pure function** — no G2 imports, no DOM access, no side effects.
+ * It produces a plain object that can be handed to `chart.options(result)`.
+ */
+export function translateToG2Spec(
+  spec: VistralSpec
+): Record<string, any> {
+  const g2: Record<string, any> = {
+    type: 'view',
+  };
+
+  // Coordinate
+  if (spec.coordinate) {
+    g2.coordinate = translateCoordinate(spec.coordinate);
+  }
+
+  // Axes
+  if (spec.axes) {
+    g2.axis = translateAxes(spec.axes);
+  }
+
+  // Legend
+  if (spec.legend !== undefined) {
+    if (spec.legend === false) {
+      g2.legend = false;
+    } else {
+      g2.legend = { color: { position: spec.legend.position } };
+    }
+  }
+
+  // Interactions: array → object map
+  if (spec.interactions) {
+    const interaction: Record<string, any> = {};
+    for (const { type, ...options } of spec.interactions) {
+      interaction[type] = options;
+    }
+    g2.interaction = interaction;
+  }
+
+  // Children: marks + annotations
+  const children: Record<string, any>[] = spec.marks.map((mark) =>
+    translateMark(mark, spec)
+  );
+
+  if (spec.annotations) {
+    for (const annotation of spec.annotations) {
+      children.push(translateAnnotation(annotation));
+    }
+  }
+
+  g2.children = children;
+
+  return g2;
 }
