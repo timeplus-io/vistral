@@ -1,5 +1,185 @@
 # API Reference
 
+Vistral provides two API levels:
+
+1. **Grammar API** (`VistralSpec` + `VistralChart`) — composable, low-level, full control over marks, scales, transforms, coordinates, and streaming behavior.
+2. **Chart Config API** (`TimeSeriesConfig`, `BarColumnConfig`, etc. + `StreamChart`) — high-level, opinionated presets that compile down to VistralSpec internally.
+
+---
+
+## Grammar API
+
+### VistralSpec
+
+The core specification type. Every visualization in Vistral is described by a `VistralSpec`.
+
+```tsx
+import { VistralChart, type VistralSpec } from '@timeplus/vistral';
+
+const spec: VistralSpec = {
+  marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+  scales: { x: { type: 'time' }, y: { type: 'linear', nice: true } },
+  temporal: { mode: 'axis', field: 'time', range: 5 },
+  streaming: { maxItems: 2000 },
+  theme: 'dark',
+  animate: false,
+};
+
+<VistralChart spec={spec} source={dataSource} height={400} />
+```
+
+#### Top-Level Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `marks` | `MarkSpec[]` | **Required.** Visual marks to render (line, area, interval, point, cell, rect, text, etc.) |
+| `scales` | `Record<string, ScaleSpec>` | Scale configs shared across all marks. Per-mark scales override these. |
+| `transforms` | `TransformSpec[]` | Transforms applied to all marks (stackY, dodgeX, bin, group, etc.) |
+| `coordinate` | `CoordinateSpec` | Coordinate system (cartesian, polar, theta, radar, transpose, etc.) |
+| `streaming` | `StreamingSpec` | Streaming data management (maxItems, append/replace mode, throttle) |
+| `temporal` | `TemporalSpec` | Temporal bounding (axis sliding window, frame snapshot, key deduplication) |
+| `axes` | `AxesSpec` | X/Y axis configuration (title, grid, labels) |
+| `legend` | `LegendSpec \| false` | Legend configuration or false to hide |
+| `tooltip` | `TooltipSpec \| false` | Tooltip configuration or false to hide |
+| `annotations` | `AnnotationSpec[]` | Reference lines, ranges, text annotations |
+| `interactions` | `InteractionSpec[]` | Interactions (tooltip, brush, element highlight, etc.) |
+| `theme` | `'dark' \| 'light'` | Theme. Default: `'dark'` |
+| `animate` | `boolean` | Enable/disable animations. Default: `false` for streaming |
+
+### MarkSpec
+
+A mark is an atomic visual element — what to draw.
+
+```tsx
+{
+  type: 'line',                         // Any G2 5.x mark type
+  encode: { x: 'time', y: 'value', color: 'series' },
+  scales: { y: { type: 'log' } },      // Per-mark scale overrides
+  transforms: [{ type: 'stackY' }],    // Per-mark transforms
+  style: { shape: 'smooth', opacity: 0.8 },
+  labels: [{ text: 'value', overlapHide: true }],
+  tooltip: { title: 'time', items: [{ field: 'value' }] },
+  animate: false,
+}
+```
+
+**Supported mark types:** `line`, `area`, `interval`, `point`, `rect`, `cell`, `link`, `polygon`, `vector`, `text`, `image`, `shape`, `box`, `boxplot`, `connector`, `lineX`, `lineY`, `range`, `rangeX`, `rangeY`, `density`, `heatmap`, `chord`, `gauge`, `liquid`, `sunburst`, `wordCloud`, `forceGraph`, `sankey`, `tree`, `treemap`, `pack`, `geoPath`, `geoView`
+
+### StreamingSpec
+
+Controls how streaming data is managed.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `maxItems` | `number` | `1000` | Maximum data rows retained in memory |
+| `mode` | `'append' \| 'replace'` | `'append'` | How new data is incorporated |
+| `throttle` | `number` | `0` | Minimum ms between render updates |
+
+### TemporalSpec
+
+Controls temporal bounding — how time governs data lifecycle on the canvas.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `mode` | `'axis' \| 'frame' \| 'key'` | **Required.** Temporal binding mode |
+| `field` | `string` | **Required.** Data field containing the temporal value |
+| `range` | `number \| 'Infinity'` | Axis-mode only. Time window in minutes |
+| `keyField` | `string` | Key-mode only. Field identifying unique entities |
+
+### ScaleSpec
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `type` | `string` | `'linear'`, `'log'`, `'pow'`, `'sqrt'`, `'time'`, `'ordinal'`, `'band'`, `'point'`, `'quantile'`, `'quantize'`, `'threshold'`, `'sequential'` |
+| `domain` | `unknown[]` | Explicit domain |
+| `range` | `unknown[]` | Explicit range |
+| `nice` | `boolean` | Round to nice numbers |
+| `clamp` | `boolean` | Clamp values to domain |
+| `padding` | `number` | Padding for band/point scales |
+| `mask` | `string` | Time format mask (time scales) |
+
+### CoordinateSpec
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `type` | `string` | `'cartesian'`, `'polar'`, `'theta'`, `'radial'`, `'parallel'`, `'radar'`, `'helix'`, `'fisheye'` |
+| `transforms` | `Array<{type: string}>` | Coordinate transforms, e.g. `[{ type: 'transpose' }]` |
+
+### VistralChart Component
+
+```tsx
+import { VistralChart, type ChartHandle } from '@timeplus/vistral';
+
+const ref = useRef<ChartHandle>(null);
+
+<VistralChart
+  ref={ref}
+  spec={spec}
+  source={dataSource}
+  height={400}
+  onReady={(handle) => {
+    // handle.append(newRows)
+    // handle.replace(allRows)
+    // handle.clear()
+    // handle.g2 — underlying G2 instance
+  }}
+/>
+```
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `spec` | `VistralSpec` | **Required.** The visualization specification |
+| `source` | `StreamDataSource` | Initial/declarative data source |
+| `width` | `number` | Explicit width in pixels (defaults to 100% of container) |
+| `height` | `number` | Explicit height in pixels (defaults to 100% of container) |
+| `className` | `string` | CSS class for wrapper div |
+| `style` | `CSSProperties` | Inline styles for wrapper div |
+| `onReady` | `(handle: ChartHandle) => void` | Called when chart is ready |
+
+### ChartHandle (ref)
+
+| Method | Description |
+|--------|-------------|
+| `append(rows)` | Add rows to data buffer, re-render |
+| `replace(rows)` | Replace all data, re-render |
+| `clear()` | Empty data buffer, re-render |
+| `g2` | Direct access to G2 Chart instance |
+
+### Config Compilers
+
+Convert high-level configs to VistralSpec:
+
+```tsx
+import { compileTimeSeriesConfig, compileBarColumnConfig } from '@timeplus/vistral';
+
+const spec = compileTimeSeriesConfig({
+  chartType: 'line',
+  xAxis: 'timestamp',
+  yAxis: 'value',
+  color: 'series',
+  lineStyle: 'curve',
+  temporal: { mode: 'axis', field: 'timestamp', range: 5 },
+});
+// spec is a VistralSpec — can be further customized before rendering
+```
+
+### Spec Engine
+
+For advanced use, the spec engine functions are exported:
+
+```tsx
+import { buildG2Options, translateToG2Spec, applyTemporalTransforms } from '@timeplus/vistral';
+
+// Full pipeline: VistralSpec + data → G2 options
+const g2Options = buildG2Options(spec, data);
+
+// Individual steps
+const specWithTemporal = applyTemporalTransforms(spec, data);
+const g2Spec = translateToG2Spec(specWithTemporal);
+```
+
+---
+
 ## Temporal Configuration
 
 All chart types support a unified `temporal` configuration for handling streaming data:

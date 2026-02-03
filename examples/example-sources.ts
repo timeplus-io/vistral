@@ -620,4 +620,283 @@ function AxisBoundLineChart() {
 
   return <StreamChart config={config} data={data} theme="dark" />;
 }`,
+
+  // =========================================================================
+  // Grammar API Examples
+  // =========================================================================
+
+  'Grammar: Line Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+
+// Streaming line chart using VistralSpec directly
+function GrammarLineChart() {
+  const handleRef = useRef<ChartHandle | null>(null);
+  const valueRef = useRef(50);
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'line',
+        encode: { x: 'time', y: 'value' },
+        style: { connect: true, shape: 'smooth' },
+      },
+    ],
+    scales: {
+      x: { type: 'time' },
+      y: { type: 'linear', nice: true, domain: [0, 100] },
+    },
+    temporal: { mode: 'axis', field: 'time', range: 1 },
+    streaming: { maxItems: 500, throttle: 100 },
+    axes: {
+      x: { title: false, grid: false },
+      y: { title: 'CPU Usage (%)', grid: true },
+    },
+    legend: false,
+    theme: 'dark',
+    animate: false,
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        valueRef.current = generateNextValue(valueRef.current, 10, 90, 0.15);
+        handleRef.current.append([
+          { time: new Date().toISOString(), value: valueRef.current },
+        ]);
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <VistralChart
+      spec={spec}
+      height={400}
+      onReady={(handle) => { handleRef.current = handle; }}
+    />
+  );
+}`,
+
+  'Grammar: Multi-Mark': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+
+// Multi-mark composition: line + point for two series
+function GrammarMultiMark() {
+  const handleRef = useRef<ChartHandle | null>(null);
+  const valuesRef = useRef({ cpu: 55, memory: 65 });
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'line',
+        encode: { x: 'time', y: 'value', color: 'series' },
+        style: { connect: true, shape: 'smooth' },
+      },
+      {
+        type: 'point',
+        encode: { x: 'time', y: 'value', color: 'series' },
+        tooltip: false,
+      },
+    ],
+    scales: {
+      x: { type: 'time' },
+      y: { type: 'linear', nice: true },
+    },
+    temporal: { mode: 'axis', field: 'time', range: 2 },
+    streaming: { maxItems: 1000, throttle: 100 },
+    legend: { position: 'bottom', interactive: true },
+    theme: 'dark',
+    animate: false,
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        const time = new Date().toISOString();
+        valuesRef.current.cpu = generateNextValue(valuesRef.current.cpu, 20, 90, 0.12);
+        valuesRef.current.memory = generateNextValue(valuesRef.current.memory, 30, 95, 0.1);
+        handleRef.current.append([
+          { time, value: valuesRef.current.cpu, series: 'cpu' },
+          { time, value: valuesRef.current.memory, series: 'memory' },
+        ]);
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <VistralChart
+      spec={spec}
+      height={400}
+      onReady={(handle) => { handleRef.current = handle; }}
+    />
+  );
+}`,
+
+  'Grammar: Bar Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+
+// Bar chart with transposed coordinate using handle.replace()
+function GrammarBarChart() {
+  const handleRef = useRef<ChartHandle | null>(null);
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'interval',
+        encode: { x: 'category', y: 'value', color: 'category' },
+      },
+    ],
+    scales: {
+      x: { padding: 0.5 },
+      y: { type: 'linear', nice: true },
+    },
+    coordinate: {
+      transforms: [{ type: 'transpose' }],
+    },
+    temporal: { mode: 'frame', field: 'snapshot' },
+    streaming: { maxItems: 500 },
+    legend: false,
+    theme: 'dark',
+    animate: false,
+  };
+
+  useEffect(() => {
+    const categories = ['Widgets', 'Gadgets', 'Gizmos', 'Doodads', 'Thingamajigs'];
+    const currentValues = { Widgets: 120, Gadgets: 85, Gizmos: 95, Doodads: 65, Thingamajigs: 110 };
+
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        const snapshot = new Date().toISOString();
+        const rows = categories.map((category) => {
+          currentValues[category] = generateNextValue(currentValues[category], 30, 160, 0.1);
+          return { snapshot, category, value: Math.round(currentValues[category]) };
+        });
+        // replace() swaps the entire dataset each update
+        handleRef.current.replace(rows);
+      }
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <VistralChart
+      spec={spec}
+      height={400}
+      onReady={(handle) => { handleRef.current = handle; }}
+    />
+  );
+}`,
+
+  'Grammar: Stacked Area': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+
+// Stacked area chart with stackY transform and label on last point
+function GrammarStackedArea() {
+  const handleRef = useRef<ChartHandle | null>(null);
+  const valuesRef = useRef({ requests: 200, errors: 30, timeouts: 15 });
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'area',
+        encode: { x: 'time', y: 'value', color: 'series' },
+        style: { connect: true },
+        labels: [
+          { text: 'value', selector: 'last', overlapHide: true },
+        ],
+      },
+    ],
+    scales: {
+      x: { type: 'time' },
+      y: { type: 'linear', nice: true },
+    },
+    transforms: [{ type: 'stackY' }],
+    temporal: { mode: 'axis', field: 'time', range: 2 },
+    streaming: { maxItems: 1000, throttle: 100 },
+    legend: { position: 'bottom', interactive: true },
+    theme: 'dark',
+    animate: false,
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        const time = new Date().toISOString();
+        valuesRef.current.requests = generateNextValue(valuesRef.current.requests, 100, 400, 0.1);
+        valuesRef.current.errors = generateNextValue(valuesRef.current.errors, 5, 80, 0.15);
+        valuesRef.current.timeouts = generateNextValue(valuesRef.current.timeouts, 2, 40, 0.12);
+        handleRef.current.append([
+          { time, value: valuesRef.current.requests, series: 'requests' },
+          { time, value: valuesRef.current.errors, series: 'errors' },
+          { time, value: valuesRef.current.timeouts, series: 'timeouts' },
+        ]);
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <VistralChart
+      spec={spec}
+      height={400}
+      onReady={(handle) => { handleRef.current = handle; }}
+    />
+  );
+}`,
+
+  'Grammar: Compiled Config': `import {
+  VistralChart, compileTimeSeriesConfig,
+  type VistralSpec, type ChartHandle, type TimeSeriesConfig,
+} from '@timeplus/vistral';
+
+// Demonstrates bridging a high-level TimeSeriesConfig to VistralSpec
+function GrammarCompiledChart() {
+  const handleRef = useRef<ChartHandle | null>(null);
+  const valueRef = useRef(50);
+
+  // Start with the familiar high-level config
+  const config: TimeSeriesConfig = {
+    chartType: 'line',
+    xAxis: 'timestamp',
+    yAxis: 'cpu_usage',
+    lineStyle: 'curve',
+    gridlines: true,
+    yTitle: 'CPU Usage (%)',
+    yRange: { min: 0, max: 100 },
+    temporal: { mode: 'axis', field: 'timestamp', range: 1 },
+  };
+
+  // Compile it into a VistralSpec
+  const spec: VistralSpec = {
+    ...compileTimeSeriesConfig(config),
+    theme: 'dark', // override theme from context
+  };
+
+  // The compiled spec is equivalent to:
+  // {
+  //   marks: [{ type: 'line', encode: { x: 'timestamp', y: 'cpu_usage' },
+  //             style: { connect: true, shape: 'smooth' } }],
+  //   scales: { x: { type: 'time' }, y: { type: 'linear', nice: true, domain: [0, 100] } },
+  //   temporal: { mode: 'axis', field: 'timestamp', range: 1 },
+  //   streaming: { maxItems: 1000 },
+  //   ...
+  // }
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        valueRef.current = generateNextValue(valueRef.current, 10, 90, 0.15);
+        handleRef.current.append([
+          { timestamp: new Date().toISOString(), cpu_usage: valueRef.current },
+        ]);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <VistralChart
+      spec={spec}
+      height={400}
+      onReady={(handle) => { handleRef.current = handle; }}
+    />
+  );
+}`,
 };
