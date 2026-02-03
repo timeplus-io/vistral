@@ -51,6 +51,24 @@ export type {
   TemporalConfig,
 } from './types';
 
+// VistralSpec types
+export type {
+  VistralSpec,
+  MarkSpec,
+  EncodeSpec,
+  EncodeFn,
+  ScaleSpec,
+  TransformSpec,
+  CoordinateSpec,
+  StreamingSpec,
+  TemporalSpec,
+  AxesSpec,
+  LegendSpec,
+  TooltipSpec,
+  AnnotationSpec,
+  InteractionSpec,
+} from './types';
+
 // Themes and Colors
 export {
   singleColorPalettes,
