@@ -13,6 +13,7 @@ export {
   SingleValueChart,
   DataTable,
   GeoChart,
+  VistralChart,
   getTimeSeriesDefaults,
   getBarColumnDefaults,
   getSingleValueDefaults,
@@ -28,6 +29,8 @@ export type {
   SingleValueChartProps,
   DataTableProps,
   GeoChartProps,
+  VistralChartProps,
+  ChartHandle,
 } from './charts';
 
 // Types
