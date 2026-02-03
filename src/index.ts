@@ -150,6 +150,8 @@ export {
   createDefaultConfig,
   applyChartTheme,
   getChartThemeColors,
+  compileTimeSeriesConfig,
+  compileBarColumnConfig,
 } from './core';
 
 // Default export

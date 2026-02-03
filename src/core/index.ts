@@ -25,3 +25,5 @@ export {
   applySpecTheme,
   buildG2Options,
 } from './spec-engine';
+
+export { compileTimeSeriesConfig, compileBarColumnConfig } from './compilers';
