@@ -18,7 +18,7 @@ import type {
   AxesSpec,
   AxisChannelSpec,
 } from '../types/spec';
-import { parseDateTime } from '../utils';
+import { parseDateTime, getTimeMask } from '../utils';
 import { getChartThemeColors } from './chart-utils';
 
 // ---------------------------------------------------------------------------
@@ -515,9 +515,9 @@ export function filterDataByTemporal(
  * theme application into a single G2-ready options object.
  *
  * 1. `filterDataByTemporal(spec, data)` — filter/sort data in JavaScript
- * 2. `translateToG2Spec(spec)` — produce G2 options (no temporal transforms)
+ * 2. `translateToG2Spec(spec)` — produce G2 options (no visual transforms)
  * 3. `applySpecTheme(spec.theme)` — attach theme configuration
- * 4. Attach filtered data to each child mark
+ * 4. Attach filtered data + sliding time domain to each child mark
  *
  * The returned object is ready for `chart.options(result)`.
  */
@@ -536,6 +536,46 @@ export function buildG2Options(
   if (g2Spec.children) {
     for (const child of g2Spec.children) {
       child.data = filteredData;
+    }
+  }
+
+  // --- Axis-mode temporal: set sliding time domain on x scale ---------------
+  // This makes the x-axis scroll forward as new data arrives, matching
+  // the behaviour of the imperative TimeSeriesChart path.
+  if (spec.temporal?.mode === 'axis' && filteredData.length > 0) {
+    const field = spec.temporal.field;
+    const maxTs = getMaxTimestamp(filteredData, field);
+    const range = spec.temporal.range;
+
+    let minTs: number;
+    if (typeof range === 'number' && range !== Infinity) {
+      minTs = maxTs - range * 60_000;
+    } else {
+      // No finite range — span the full data extent
+      minTs = maxTs;
+      for (const row of filteredData) {
+        const ts = parseDateTime(row[field]);
+        if (ts < minTs) minTs = ts;
+      }
+    }
+
+    // Auto-detect a suitable time format mask
+    const mask =
+      (spec.scales?.x as Record<string, unknown> | undefined)?.mask as
+        | string
+        | undefined ?? getTimeMask(minTs, maxTs);
+
+    if (g2Spec.children) {
+      for (const child of g2Spec.children) {
+        if (!child.scale) child.scale = {};
+        child.scale.x = {
+          ...(child.scale.x ?? {}),
+          type: 'time',
+          domainMin: new Date(minTs),
+          domainMax: new Date(maxTs),
+          mask,
+        };
+      }
     }
   }
 

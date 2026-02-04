@@ -130,6 +130,19 @@ describe('buildG2Options', () => {
     expect(g2.children[0].data).toBeDefined();
     expect(g2.children[0].data.length).toBe(2); // both within 5 min window
 
+    // Axis temporal mode: x scale should have domainMin/domainMax for scrolling
+    const xScale = g2.children[0].scale?.x;
+    expect(xScale).toBeDefined();
+    expect(xScale.type).toBe('time');
+    expect(xScale.domainMin).toBeInstanceOf(Date);
+    expect(xScale.domainMax).toBeInstanceOf(Date);
+    // domainMax should be close to the latest data point
+    expect(xScale.domainMax.getTime()).toBe(now);
+    // domainMin should be range minutes before domainMax
+    expect(xScale.domainMin.getTime()).toBe(now - 5 * 60_000);
+    // mask should be auto-detected
+    expect(xScale.mask).toBeDefined();
+
     // Theme should be applied
     expect(g2.theme).toBeDefined();
     expect(g2.theme.view.viewFill).toBe('transparent');
