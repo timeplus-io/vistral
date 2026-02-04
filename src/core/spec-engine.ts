@@ -507,6 +507,41 @@ export function filterDataByTemporal(
 }
 
 // ---------------------------------------------------------------------------
+// Pipeline helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Collect the set of data-field names that are encoded to a channel whose
+ * scale `type` is `'time'`.  G2 needs Date objects (or epoch numbers) for
+ * time scales — raw ISO strings are not parsed automatically.
+ */
+function collectTimeFields(spec: VistralSpec): Set<string> {
+  const timeFields = new Set<string>();
+  const topScales: Record<string, any> = spec.scales ?? {};
+
+  for (const mark of spec.marks) {
+    const markScales: Record<string, any> = mark.scales ?? {};
+    const merged = { ...topScales, ...markScales };
+
+    for (const [channel, scaleConfig] of Object.entries(merged)) {
+      if (scaleConfig?.type === 'time') {
+        const fieldName = mark.encode?.[channel];
+        if (typeof fieldName === 'string') {
+          timeFields.add(fieldName);
+        }
+      }
+    }
+  }
+
+  // The temporal field is always a date even if no explicit scale is declared.
+  if (spec.temporal?.field) {
+    timeFields.add(spec.temporal.field);
+  }
+
+  return timeFields;
+}
+
+// ---------------------------------------------------------------------------
 // Pipeline
 // ---------------------------------------------------------------------------
 
@@ -526,18 +561,33 @@ export function buildG2Options(
   data: Record<string, unknown>[]
 ): Record<string, any> {
   // Filter/sort data in JS — do NOT inject temporal transforms into G2
-  const filteredData = filterDataByTemporal(spec, data);
+  let filteredData = filterDataByTemporal(spec, data);
+
+  // --- Convert time-scale fields to Date objects ----------------------------
+  // G2's time scale cannot parse ISO 8601 strings directly; it needs Date
+  // objects (or epoch numbers).  Collect every data field that is encoded to a
+  // channel whose scale `type` is `'time'` and convert those field values.
+  const timeFields = collectTimeFields(spec);
+  if (timeFields.size > 0 && filteredData.length > 0) {
+    filteredData = filteredData.map((row) => {
+      const newRow = { ...row };
+      for (const f of timeFields) {
+        if (newRow[f] !== undefined) {
+          newRow[f] = new Date(parseDateTime(newRow[f]));
+        }
+      }
+      return newRow;
+    });
+  }
 
   // Translate spec to G2 (only visual transforms like stackY/dodgeX reach G2)
   const g2Spec = translateToG2Spec(spec);
   g2Spec.theme = applySpecTheme(spec.theme);
 
-  // Attach filtered data to each child mark
-  if (g2Spec.children) {
-    for (const child of g2Spec.children) {
-      child.data = filteredData;
-    }
-  }
+  // Attach filtered data at the view level.  Child marks inherit from the
+  // view; annotations that already carry their own `data` (set by
+  // translateAnnotation) keep it — G2 lets child-level data override.
+  g2Spec.data = filteredData;
 
   // --- Axis-mode temporal: set sliding time domain on x scale ---------------
   // This makes the x-axis scroll forward as new data arrives, matching

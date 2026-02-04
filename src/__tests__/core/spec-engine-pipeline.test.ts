@@ -126,9 +126,9 @@ describe('buildG2Options', () => {
     // pre-filtered in JavaScript. No spec-level transforms → no child.transform.
     expect(g2.children[0].transform).toBeUndefined();
 
-    // Data should be pre-filtered and attached to children
-    expect(g2.children[0].data).toBeDefined();
-    expect(g2.children[0].data.length).toBe(2); // both within 5 min window
+    // Data should be pre-filtered and attached at the view level
+    expect(g2.data).toBeDefined();
+    expect(g2.data.length).toBe(2); // both within 5 min window
 
     // Axis temporal mode: x scale should have domainMin/domainMax for scrolling
     const xScale = g2.children[0].scale?.x;
@@ -169,8 +169,8 @@ describe('buildG2Options', () => {
     // No temporal → no transforms injected
     expect(g2.children[0].transform).toBeUndefined();
 
-    // Data should be attached
-    expect(g2.children[0].data).toEqual(data);
+    // Data should be attached at the view level
+    expect(g2.data).toEqual(data);
 
     // No theme specified → defaults to dark
     expect(g2.theme).toBeDefined();
@@ -197,8 +197,8 @@ describe('buildG2Options', () => {
     const g2 = buildG2Options(spec, data);
 
     // Frame mode: data pre-filtered to latest timestamp only
-    expect(g2.children[0].data).toHaveLength(1);
-    expect(g2.children[0].data[0].category).toBe('B');
+    expect(g2.data).toHaveLength(1);
+    expect(g2.data[0].category).toBe('B');
 
     // No temporal transforms on child — data filtering done in JS
     expect(g2.children[0].transform).toBeUndefined();
