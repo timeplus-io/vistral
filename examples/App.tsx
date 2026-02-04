@@ -23,6 +23,7 @@ import {
   GrammarCompiledChart,
 } from './grammar-examples';
 import { Playground } from './Playground';
+import { GrammarPlayground } from './GrammarPlayground';
 import { exampleSources } from './example-sources';
 
 // Theme context
@@ -31,7 +32,7 @@ export const ThemeContext = createContext<{
   setTheme: (theme: 'dark' | 'light') => void;
 }>({
   theme: 'dark',
-  setTheme: () => {},
+  setTheme: () => { },
 });
 
 export const useTheme = () => useContext(ThemeContext);
@@ -46,6 +47,7 @@ interface ExampleItem {
 const examples: ExampleItem[] = [
   // Playground - Interactive Grammar Builder
   { name: 'Playground', component: Playground, isPlayground: true },
+  { name: 'Grammar Playground', component: GrammarPlayground, isPlayground: true },
   // Chart Examples
   { name: 'Line Chart', component: BasicLineChart, category: 'examples' },
   { name: 'Area Chart', component: MultiSeriesAreaChart, category: 'examples' },
@@ -80,8 +82,8 @@ export default function App() {
   const isDark = theme === 'dark';
   const sourceCode = exampleSources[currentExample.name] || '// Source code not available';
 
-  // Separate playground from other examples
-  const playgroundExample = examples.find(e => e.isPlayground);
+  // Separate playgrounds from other examples
+  const playgroundExamples = examples.filter(e => e.isPlayground);
   const chartExamples = examples.filter(e => !e.isPlayground && e.category === 'examples');
   const grammarExamples = examples.filter(e => e.category === 'grammar');
 
@@ -190,8 +192,8 @@ export default function App() {
           </div>
 
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {/* Playground */}
-            {playgroundExample && renderNavButton(playgroundExample, examples.indexOf(playgroundExample))}
+            {/* Playgrounds */}
+            {playgroundExamples.map(example => renderNavButton(example, examples.indexOf(example)))}
 
             {/* Chart Examples */}
             <div style={categoryTitleStyle}>Examples</div>

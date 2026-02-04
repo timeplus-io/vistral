@@ -574,9 +574,30 @@ function collectTimeFields(spec: VistralSpec): Set<string> {
     }
   }
 
-  // The temporal field is always a date even if no explicit scale is declared.
+  // The temporal field is usually a date...
+  // BUT if it is encoded to a 'band' scale (e.g. in a Bar Chart), 
+  // we must NOT convert it to a Date object, otherwise G2 will override the band scale with a time scale.
   if (spec.temporal?.field) {
-    timeFields.add(spec.temporal.field);
+    const field = spec.temporal.field;
+    let isBand = false;
+
+    for (const mark of spec.marks) {
+      const markScales: Record<string, any> = mark.scales ?? {};
+      const merged = { ...topScales, ...markScales };
+
+      for (const [channel, encodedField] of Object.entries(mark.encode ?? {})) {
+        if (encodedField === field) {
+          const type = merged[channel]?.type;
+          if (type === 'band') {
+            isBand = true;
+          }
+        }
+      }
+    }
+
+    if (!isBand) {
+      timeFields.add(field);
+    }
   }
 
   return timeFields;
@@ -659,6 +680,14 @@ export function buildG2Options(
     if (g2Spec.children) {
       for (const child of g2Spec.children) {
         if (!child.scale) child.scale = {};
+
+        // Don't override an explicit 'band' scale with 'time'
+        // (This happens in Bar Charts where x is the categorical axis)
+        const existingType = child.scale.x?.type || (spec.scales?.x as any)?.type;
+        if (existingType === 'band') {
+          continue;
+        }
+
         child.scale.x = {
           ...(child.scale.x ?? {}),
           type: 'time',

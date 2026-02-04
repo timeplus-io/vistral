@@ -182,7 +182,14 @@ export function compileBarColumnConfig(
   config: BarColumnConfig,
   theme: 'dark' | 'light' = 'dark'
 ): VistralSpec {
-  const { xAxis, yAxis, color } = config;
+  const { xAxis, yAxis, color, chartType } = config;
+  const isBar = chartType === 'bar';
+
+  // Standard Mapping:
+  // xAxis -> Independent Variable (Category) -> x channel (Band scale)
+  // yAxis -> Dependent Variable (Value)    -> y channel (Linear scale)
+  //
+  // For Bar Charts, we apply 'transpose' to flip the visual axes.
 
   // -- Primary mark ----------------------------------------------------------
   const mark: MarkSpec = {
@@ -194,7 +201,7 @@ export function compileBarColumnConfig(
     },
   };
 
-  // Labels
+  // Labels: Always display the VALUE (yAxis)
   if (config.dataLabel) {
     mark.labels = [
       {
@@ -213,18 +220,20 @@ export function compileBarColumnConfig(
   }
 
   // -- Coordinate ------------------------------------------------------------
-  const coordinate =
-    config.chartType === 'bar'
-      ? { transforms: [{ type: 'transpose' }] }
-      : undefined;
+  const coordinate = isBar
+    ? { transforms: [{ type: 'transpose' }] }
+    : undefined;
 
   // -- Scales ----------------------------------------------------------------
+  // G2 Interval Mark expects 'x' to be the discrete (band) axis.
+  // We use Transpose for Bar Charts to flip it to the vertical axis.
   const scales = {
-    x: { padding: 0.5 },
+    x: { type: 'band' as const, padding: 0.5 },
     y: { type: 'linear' as const, nice: true },
   };
 
   // -- Temporal --------------------------------------------------------------
+  // Default temporal field is the Category field (xAxis)
   const temporal = mapTemporal(config.temporal, xAxis);
 
   // -- Axes ------------------------------------------------------------------

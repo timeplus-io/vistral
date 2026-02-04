@@ -6,10 +6,17 @@
 import React, { useState, useEffect, useMemo, useContext, useCallback } from 'react';
 import {
   StreamChart,
+  VistralChart,
+  compileTimeSeriesConfig,
+  compileBarColumnConfig,
   useStreamingData,
   type StreamDataSource,
   type ChartConfig,
   type TemporalMode,
+  type VistralSpec,
+  type ChartHandle,
+  type TimeSeriesConfig,
+  type BarColumnConfig,
 } from '@timeplus/vistral';
 import { ThemeContext } from './App';
 
@@ -304,13 +311,37 @@ export function Playground() {
     const latCol = cols.find(c => c.name.includes('lat'))?.name || '';
     const lngCol = cols.find(c => c.name.includes('lon') || c.name.includes('lng'))?.name || '';
 
-    setXAxis(timeCol);
-    setYAxis(numCol);
+    // Smart defaults based on chart type
+    if (chartType === 'bar') {
+      // Horizontal Bar: X is Value/Numeric, Y is Category/Time
+      setXAxis(numCol);
+      setYAxis(timeCol || strCol);
+    } else {
+      // Standard: X is Time/Category, Y is Value
+      setXAxis(timeCol);
+      setYAxis(numCol);
+    }
+
     setColorField(strCol);
     setTemporalField(timeCol);
     setLatitudeField(latCol);
     setLongitudeField(lngCol);
-  }, [dataSourceKey, generator, clear]);
+  }, [dataSourceKey, generator, clear, chartType]);
+
+  // Adjust temporal mode when chart type changes
+  // We derive the effective mode during render to avoid race conditions
+  const chartTypeInfoItem = chartTypeInfo[chartType];
+  const isTemporalModeSupported = temporalMode !== '' && chartTypeInfoItem.supportedTemporal.includes(temporalMode as TemporalMode);
+  const effectiveTemporalMode = temporalMode === ''
+    ? ''
+    : (isTemporalModeSupported ? temporalMode : chartTypeInfoItem.supportedTemporal[0] || '');
+
+  // Sync state (optional, for UI consistency)
+  useEffect(() => {
+    if (temporalMode !== '' && temporalMode !== effectiveTemporalMode) {
+      setTemporalMode(effectiveTemporalMode as TemporalMode);
+    }
+  }, [chartType, temporalMode, effectiveTemporalMode]);
 
   // Generate streaming data
   useEffect(() => {
@@ -331,10 +362,10 @@ export function Playground() {
 
   // Build chart config
   const chartConfig: ChartConfig = useMemo(() => {
-    const temporal = temporalMode ? {
-      mode: temporalMode,
+    const temporal = effectiveTemporalMode ? {
+      mode: effectiveTemporalMode,
       field: temporalField,
-      ...(temporalMode === 'axis' ? { range: temporalRange } : {}),
+      ...(effectiveTemporalMode === 'axis' ? { range: temporalRange } : {}),
     } : undefined;
 
     const baseConfig = {
@@ -358,19 +389,35 @@ export function Playground() {
           fractionDigits: 2,
         };
       case 'bar':
-      case 'column':
+        // Bar Chart: Transposed.
+        // User inputs Visual X (Horizontal) -> config.yAxis (Value role)
+        // User inputs Visual Y (Vertical) -> config.xAxis (Category role)
         return {
           ...baseConfig,
-          chartType,
-          xAxis,
-          yAxis,
+          chartType: 'bar',
+          xAxis: yAxis, // Category
+          yAxis: xAxis, // Value
           color: colorField || undefined,
           legend: showLegend,
           gridlines: showGridlines,
           dataLabel: showDataLabels,
           groupType,
           fractionDigits: 2,
-        };
+        } as BarColumnConfig;
+      case 'column':
+        // Column Chart: Standard.
+        return {
+          ...baseConfig,
+          chartType: 'column',
+          xAxis, // Category
+          yAxis, // Value
+          color: colorField || undefined,
+          legend: showLegend,
+          gridlines: showGridlines,
+          dataLabel: showDataLabels,
+          groupType,
+          fractionDigits: 2,
+        } as BarColumnConfig;
       case 'table':
         return {
           ...baseConfig,
@@ -409,7 +456,7 @@ export function Playground() {
         } as ChartConfig;
     }
   }, [
-    chartType, xAxis, yAxis, colorField, temporalMode, temporalField, temporalRange,
+    chartType, xAxis, yAxis, colorField, effectiveTemporalMode, temporalField, temporalRange,
     showLegend, showGridlines, showDataLabels, lineStyle, groupType,
     latitudeField, longitudeField, sizeField,
   ]);
@@ -518,7 +565,7 @@ export function Playground() {
                 color: isDark ? '#C4B5FD' : '#6D28D9',
               }}>
                 {temporalMode === 'axis' ? `Axis (${temporalRange}min)` :
-                 temporalMode === 'frame' ? 'Frame' : 'Key'}: {temporalField}
+                  temporalMode === 'frame' ? 'Frame' : 'Key'}: {temporalField}
               </span>
             )}
           </div>
@@ -661,16 +708,20 @@ export function Playground() {
 
             {chartType !== 'table' && chartType !== 'geo' && chartType !== 'singleValue' && (
               <>
-                <label style={labelStyle}>X-Axis</label>
+                <label style={labelStyle}>
+                  {chartType === 'bar' ? 'X-Axis (Value)' : 'X-Axis'}
+                </label>
                 <select value={xAxis} onChange={(e) => setXAxis(e.target.value)} style={selectStyle}>
-                  {columns.map(col => (
+                  {(chartType === 'bar' ? numericColumns : columns).map(col => (
                     <option key={col.name} value={col.name}>{col.name}</option>
                   ))}
                 </select>
 
-                <label style={{ ...labelStyle, marginTop: '10px' }}>Y-Axis</label>
+                <label style={{ ...labelStyle, marginTop: '10px' }}>
+                  {chartType === 'bar' ? 'Y-Axis (Category)' : 'Y-Axis'}
+                </label>
                 <select value={yAxis} onChange={(e) => setYAxis(e.target.value)} style={selectStyle}>
-                  {numericColumns.map(col => (
+                  {(chartType === 'bar' ? stringColumns.concat(columns.filter(c => c.type.includes('datetime'))) : numericColumns).map(col => (
                     <option key={col.name} value={col.name}>{col.name}</option>
                   ))}
                 </select>
