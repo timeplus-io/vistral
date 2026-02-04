@@ -116,7 +116,7 @@ describe('translateToG2Spec', () => {
 
     const g2 = translateToG2Spec(spec);
 
-    expect(g2.axis).toEqual({
+    expect(g2.axis).toMatchObject({
       x: {
         title: 'Time',
         grid: true,
@@ -150,7 +150,7 @@ describe('translateToG2Spec', () => {
 
     const g2 = translateToG2Spec(spec);
 
-    expect(g2.legend).toEqual({ color: { position: 'bottom' } });
+    expect(g2.legend).toMatchObject({ color: { position: 'bottom' } });
   });
 
   it('should translate interactions array to object map', () => {

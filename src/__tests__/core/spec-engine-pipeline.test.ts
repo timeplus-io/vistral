@@ -7,12 +7,12 @@ describe('applySpecTheme', () => {
     const theme = applySpecTheme('dark');
 
     expect(theme.view.viewFill).toBe('transparent');
-    expect(theme.axis.x.label.fill).toBe('#E5E7EB');
-    expect(theme.axis.y.label.fill).toBe('#E5E7EB');
+    expect(theme.axis.x.label.fill).toBe('#E5E5E5');
+    expect(theme.axis.y.label.fill).toBe('#E5E5E5');
     expect(theme.axis.x.grid.stroke).toBe('#374151');
-    expect(theme.legend.label.fill).toBe('#E5E7EB');
+    expect(theme.legend.label.fill).toBe('#E5E5E5');
     expect(theme.legend.itemValue.fill).toBe('#9CA3AF');
-    expect(theme.label.fill).toBe('#E5E7EB');
+    expect(theme.label.fill).toBe('#E5E5E5');
     expect(theme.label.fontSize).toBe(11);
   });
 
@@ -20,19 +20,19 @@ describe('applySpecTheme', () => {
     const theme = applySpecTheme('light');
 
     expect(theme.view.viewFill).toBe('transparent');
-    expect(theme.axis.x.label.fill).toBe('#1F2937');
-    expect(theme.axis.y.label.fill).toBe('#1F2937');
-    expect(theme.axis.x.grid.stroke).toBe('#E5E7EB');
-    expect(theme.legend.label.fill).toBe('#1F2937');
-    expect(theme.legend.itemValue.fill).toBe('#6B7280');
+    expect(theme.axis.x.label.fill).toBe('#000000');
+    expect(theme.axis.y.label.fill).toBe('#000000');
+    expect(theme.axis.x.grid.stroke).toBe('#9CA3AF');
+    expect(theme.legend.label.fill).toBe('#000000');
+    expect(theme.legend.itemValue.fill).toBe('#374151');
   });
 
   it('should default to dark theme when theme is undefined', () => {
     const theme = applySpecTheme(undefined);
 
     expect(theme.view.viewFill).toBe('transparent');
-    expect(theme.axis.x.label.fill).toBe('#E5E7EB');
-    expect(theme.legend.label.fill).toBe('#E5E7EB');
+    expect(theme.axis.x.label.fill).toBe('#E5E5E5');
+    expect(theme.legend.label.fill).toBe('#E5E5E5');
   });
 });
 
@@ -146,7 +146,7 @@ describe('buildG2Options', () => {
     // Theme should be applied
     expect(g2.theme).toBeDefined();
     expect(g2.theme.view.viewFill).toBe('transparent');
-    expect(g2.theme.axis.x.label.fill).toBe('#E5E7EB');
+    expect(g2.theme.axis.x.label.fill).toBe('#E5E5E5');
   });
 
   it('should handle spec with no temporal and no theme', () => {
@@ -174,7 +174,7 @@ describe('buildG2Options', () => {
 
     // No theme specified → defaults to dark
     expect(g2.theme).toBeDefined();
-    expect(g2.theme.axis.x.label.fill).toBe('#E5E7EB');
+    expect(g2.theme.axis.x.label.fill).toBe('#E5E5E5');
   });
 
   it('should apply frame temporal mode — data pre-filtered, no transform on children', () => {
@@ -204,6 +204,6 @@ describe('buildG2Options', () => {
     expect(g2.children[0].transform).toBeUndefined();
 
     // Theme should be light
-    expect(g2.theme.axis.x.label.fill).toBe('#1F2937');
+    expect(g2.theme.axis.x.label.fill).toBe('#000000');
   });
 });

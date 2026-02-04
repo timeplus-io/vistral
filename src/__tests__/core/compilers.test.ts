@@ -77,7 +77,7 @@ describe('compileTimeSeriesConfig', () => {
   it('should use xAxis as temporal field when temporal.field is not set', () => {
     const config: TimeSeriesConfig = {
       ...baseConfig,
-      temporal: { mode: 'axis', range: 5 },
+      temporal: { mode: 'axis', field: '', range: 5 },
     };
     const spec = compileTimeSeriesConfig(config);
     expect(spec.temporal?.field).toBe('timestamp');
@@ -178,15 +178,15 @@ describe('compileTimeSeriesConfig', () => {
       yTitle: 'Value Check',
       gridlines: false,
     });
-    expect(spec.axes?.x?.title).toBe('Time Check');
-    expect(spec.axes?.y?.title).toBe('Value Check');
-    expect(spec.axes?.y?.grid).toBe(false);
+    expect((spec.axes?.x as { title?: unknown; grid?: unknown })?.title).toBe('Time Check');
+    expect((spec.axes?.y as { title?: unknown; grid?: unknown })?.title).toBe('Value Check');
+    expect((spec.axes?.y as { title?: unknown; grid?: unknown })?.grid).toBe(false);
   });
 
   it('should default x grid to false and y grid to true', () => {
     const spec = compileTimeSeriesConfig(baseConfig);
-    expect(spec.axes?.x?.grid).toBe(false);
-    expect(spec.axes?.y?.grid).toBe(true);
+    expect((spec.axes?.x as { grid?: unknown })?.grid).toBe(false);
+    expect((spec.axes?.y as { grid?: unknown })?.grid).toBe(true);
   });
 });
 
