@@ -3,6 +3,9 @@
  *
  * This file demonstrates the VistralSpec + VistralChart grammar-level API
  * for building streaming data visualizations declaratively.
+ *
+ * All examples pre-populate with historical data so the chart looks complete
+ * from the start, then stream new data points via handle.append().
  */
 
 import React, { useEffect, useRef, useContext } from 'react';
@@ -70,6 +73,21 @@ export function GrammarLineChart() {
   };
 
   useEffect(() => {
+    // Pre-populate with 30 historical data points
+    const now = Date.now();
+    const history: Record<string, unknown>[] = [];
+    let v = 50;
+    for (let i = 30; i >= 0; i--) {
+      v = generateNextValue(v, 10, 90, 0.15);
+      history.push({ time: new Date(now - i * 1000).toISOString(), value: v });
+    }
+    valueRef.current = v;
+
+    if (handleRef.current) {
+      handleRef.current.append(history);
+    }
+
+    // Continue streaming
     const interval = setInterval(() => {
       if (handleRef.current) {
         valueRef.current = generateNextValue(valueRef.current, 10, 90, 0.15);
@@ -143,6 +161,24 @@ export function GrammarMultiMark() {
   };
 
   useEffect(() => {
+    // Pre-populate with 20 historical points for each series
+    const now = Date.now();
+    const history: Record<string, unknown>[] = [];
+    let cpu = 55, mem = 65;
+    for (let i = 20; i >= 0; i--) {
+      const time = new Date(now - i * 2000).toISOString();
+      cpu = generateNextValue(cpu, 20, 90, 0.12);
+      mem = generateNextValue(mem, 30, 95, 0.1);
+      history.push({ time, value: cpu, series: 'cpu' });
+      history.push({ time, value: mem, series: 'memory' });
+    }
+    valuesRef.current = { cpu, memory: mem };
+
+    if (handleRef.current) {
+      handleRef.current.append(history);
+    }
+
+    // Continue streaming
     const interval = setInterval(() => {
       if (handleRef.current) {
         const time = new Date().toISOString();
@@ -177,6 +213,13 @@ export function GrammarMultiMark() {
 export function GrammarBarChart() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
+  const currentValues = useRef<Record<string, number>>({
+    Widgets: 120,
+    Gadgets: 85,
+    Gizmos: 95,
+    Doodads: 65,
+    Thingamajigs: 110,
+  });
 
   const spec: VistralSpec = {
     marks: [
@@ -208,21 +251,24 @@ export function GrammarBarChart() {
   };
 
   useEffect(() => {
-    const categories = ['Widgets', 'Gadgets', 'Gizmos', 'Doodads', 'Thingamajigs'];
-    const currentValues: Record<string, number> = {
-      Widgets: 120,
-      Gadgets: 85,
-      Gizmos: 95,
-      Doodads: 65,
-      Thingamajigs: 110,
-    };
+    const categories = Object.keys(currentValues.current);
 
+    // Pre-populate with initial data
+    const snapshot = new Date().toISOString();
+    const initialRows = categories.map((category) => ({
+      snapshot, category, value: Math.round(currentValues.current[category]),
+    }));
+    if (handleRef.current) {
+      handleRef.current.replace(initialRows);
+    }
+
+    // Continue streaming updates
     const interval = setInterval(() => {
       if (handleRef.current) {
-        const snapshot = new Date().toISOString();
+        const snap = new Date().toISOString();
         const rows = categories.map((category) => {
-          currentValues[category] = generateNextValue(currentValues[category], 30, 160, 0.1);
-          return { snapshot, category, value: Math.round(currentValues[category]) };
+          currentValues.current[category] = generateNextValue(currentValues.current[category], 30, 160, 0.1);
+          return { snapshot: snap, category, value: Math.round(currentValues.current[category]) };
         });
         handleRef.current.replace(rows);
       }
@@ -290,6 +336,26 @@ export function GrammarStackedArea() {
   };
 
   useEffect(() => {
+    // Pre-populate with 20 historical points for each series
+    const now = Date.now();
+    const history: Record<string, unknown>[] = [];
+    let req = 200, err = 30, tout = 15;
+    for (let i = 20; i >= 0; i--) {
+      const time = new Date(now - i * 2000).toISOString();
+      req = generateNextValue(req, 100, 400, 0.1);
+      err = generateNextValue(err, 5, 80, 0.15);
+      tout = generateNextValue(tout, 2, 40, 0.12);
+      history.push({ time, value: req, series: 'requests' });
+      history.push({ time, value: err, series: 'errors' });
+      history.push({ time, value: tout, series: 'timeouts' });
+    }
+    valuesRef.current = { requests: req, errors: err, timeouts: tout };
+
+    if (handleRef.current) {
+      handleRef.current.append(history);
+    }
+
+    // Continue streaming
     const interval = setInterval(() => {
       if (handleRef.current) {
         const time = new Date().toISOString();
@@ -345,19 +411,6 @@ export function GrammarCompiledChart() {
   };
 
   // Compile it into a VistralSpec using the config compiler
-  // This bridges the high-level config API with the grammar API.
-  //
-  // The compiled spec will look like:
-  // {
-  //   marks: [{ type: 'line', encode: { x: 'timestamp', y: 'cpu_usage' }, style: { connect: true, shape: 'smooth' } }],
-  //   scales: { x: { type: 'time' }, y: { type: 'linear', nice: true, domain: [0, 100] } },
-  //   temporal: { mode: 'axis', field: 'timestamp', range: 1 },
-  //   streaming: { maxItems: 1000 },
-  //   axes: { x: { title: false, grid: false }, y: { title: 'CPU Usage (%)', grid: true } },
-  //   legend: { position: 'bottom', interactive: true },
-  //   theme: 'dark',
-  //   animate: false,
-  // }
   const compiledSpec = compileTimeSeriesConfig(config);
 
   // Override the theme to match the current context
@@ -367,6 +420,21 @@ export function GrammarCompiledChart() {
   };
 
   useEffect(() => {
+    // Pre-populate with 30 historical data points
+    const now = Date.now();
+    const history: Record<string, unknown>[] = [];
+    let v = 50;
+    for (let i = 30; i >= 0; i--) {
+      v = generateNextValue(v, 10, 90, 0.15);
+      history.push({ timestamp: new Date(now - i * 1000).toISOString(), cpu_usage: v });
+    }
+    valueRef.current = v;
+
+    if (handleRef.current) {
+      handleRef.current.append(history);
+    }
+
+    // Continue streaming
     const interval = setInterval(() => {
       if (handleRef.current) {
         valueRef.current = generateNextValue(valueRef.current, 10, 90, 0.15);

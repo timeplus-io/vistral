@@ -656,6 +656,18 @@ function GrammarLineChart() {
   };
 
   useEffect(() => {
+    // Pre-populate with 30 historical points
+    const now = Date.now();
+    const history = [];
+    let v = 50;
+    for (let i = 30; i >= 0; i--) {
+      v = generateNextValue(v, 10, 90, 0.15);
+      history.push({ time: new Date(now - i * 1000).toISOString(), value: v });
+    }
+    valueRef.current = v;
+    handleRef.current?.append(history);
+
+    // Continue streaming new points
     const interval = setInterval(() => {
       if (handleRef.current) {
         valueRef.current = generateNextValue(valueRef.current, 10, 90, 0.15);
@@ -708,6 +720,21 @@ function GrammarMultiMark() {
   };
 
   useEffect(() => {
+    // Pre-populate with 20 historical points per series
+    const now = Date.now();
+    const history = [];
+    let cpu = 55, mem = 65;
+    for (let i = 20; i >= 0; i--) {
+      const time = new Date(now - i * 2000).toISOString();
+      cpu = generateNextValue(cpu, 20, 90, 0.12);
+      mem = generateNextValue(mem, 30, 95, 0.1);
+      history.push({ time, value: cpu, series: 'cpu' });
+      history.push({ time, value: mem, series: 'memory' });
+    }
+    valuesRef.current = { cpu, memory: mem };
+    handleRef.current?.append(history);
+
+    // Continue streaming
     const interval = setInterval(() => {
       if (handleRef.current) {
         const time = new Date().toISOString();
@@ -762,14 +789,21 @@ function GrammarBarChart() {
     const categories = ['Widgets', 'Gadgets', 'Gizmos', 'Doodads', 'Thingamajigs'];
     const currentValues = { Widgets: 120, Gadgets: 85, Gizmos: 95, Doodads: 65, Thingamajigs: 110 };
 
+    // Pre-populate with initial snapshot
+    const snapshot = new Date().toISOString();
+    const initial = categories.map((cat) => ({
+      snapshot, category: cat, value: Math.round(currentValues[cat]),
+    }));
+    handleRef.current?.replace(initial);
+
+    // Continue streaming updates
     const interval = setInterval(() => {
       if (handleRef.current) {
-        const snapshot = new Date().toISOString();
+        const snap = new Date().toISOString();
         const rows = categories.map((category) => {
           currentValues[category] = generateNextValue(currentValues[category], 30, 160, 0.1);
-          return { snapshot, category, value: Math.round(currentValues[category]) };
+          return { snapshot: snap, category, value: Math.round(currentValues[category]) };
         });
-        // replace() swaps the entire dataset each update
         handleRef.current.replace(rows);
       }
     }, 1500);
@@ -816,6 +850,23 @@ function GrammarStackedArea() {
   };
 
   useEffect(() => {
+    // Pre-populate with 20 historical points per series
+    const now = Date.now();
+    const history = [];
+    let req = 200, err = 30, tout = 15;
+    for (let i = 20; i >= 0; i--) {
+      const time = new Date(now - i * 2000).toISOString();
+      req = generateNextValue(req, 100, 400, 0.1);
+      err = generateNextValue(err, 5, 80, 0.15);
+      tout = generateNextValue(tout, 2, 40, 0.12);
+      history.push({ time, value: req, series: 'requests' });
+      history.push({ time, value: err, series: 'errors' });
+      history.push({ time, value: tout, series: 'timeouts' });
+    }
+    valuesRef.current = { requests: req, errors: err, timeouts: tout };
+    handleRef.current?.append(history);
+
+    // Continue streaming
     const interval = setInterval(() => {
       if (handleRef.current) {
         const time = new Date().toISOString();
@@ -866,20 +917,22 @@ function GrammarCompiledChart() {
   // Compile it into a VistralSpec
   const spec: VistralSpec = {
     ...compileTimeSeriesConfig(config),
-    theme: 'dark', // override theme from context
+    theme: 'dark',
   };
 
-  // The compiled spec is equivalent to:
-  // {
-  //   marks: [{ type: 'line', encode: { x: 'timestamp', y: 'cpu_usage' },
-  //             style: { connect: true, shape: 'smooth' } }],
-  //   scales: { x: { type: 'time' }, y: { type: 'linear', nice: true, domain: [0, 100] } },
-  //   temporal: { mode: 'axis', field: 'timestamp', range: 1 },
-  //   streaming: { maxItems: 1000 },
-  //   ...
-  // }
-
   useEffect(() => {
+    // Pre-populate with 30 historical points
+    const now = Date.now();
+    const history = [];
+    let v = 50;
+    for (let i = 30; i >= 0; i--) {
+      v = generateNextValue(v, 10, 90, 0.15);
+      history.push({ timestamp: new Date(now - i * 1000).toISOString(), cpu_usage: v });
+    }
+    valueRef.current = v;
+    handleRef.current?.append(history);
+
+    // Continue streaming
     const interval = setInterval(() => {
       if (handleRef.current) {
         valueRef.current = generateNextValue(valueRef.current, 10, 90, 0.15);
