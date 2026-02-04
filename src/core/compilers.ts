@@ -56,7 +56,10 @@ function mapTemporal(
  * - streaming: { maxItems: 1000 }
  * - axes, legend, theme, animate configured per defaults
  */
-export function compileTimeSeriesConfig(config: TimeSeriesConfig): VistralSpec {
+export function compileTimeSeriesConfig(
+  config: TimeSeriesConfig,
+  theme: 'dark' | 'light' = 'dark'
+): VistralSpec {
   const { chartType, xAxis, yAxis, color } = config;
 
   // -- Primary mark ----------------------------------------------------------
@@ -69,7 +72,12 @@ export function compileTimeSeriesConfig(config: TimeSeriesConfig): VistralSpec {
     },
     style: {
       connect: true,
-      shape: config.lineStyle === 'curve' ? 'smooth' : 'line',
+      ...(config.chartType === 'line'
+        ? { shape: config.lineStyle === 'curve' ? 'smooth' : 'line' }
+        : {}),
+      ...(config.chartType === 'area' && config.lineStyle === 'curve'
+        ? { shape: 'smooth' }
+        : {}),
     },
   };
 
@@ -103,7 +111,7 @@ export function compileTimeSeriesConfig(config: TimeSeriesConfig): VistralSpec {
   // -- Transforms ------------------------------------------------------------
   const transforms: TransformSpec[] = [];
   if (chartType === 'area' && color) {
-    transforms.push({ type: 'stackY' });
+    transforms.push({ type: 'stackY', orderBy: 'value' });
   }
 
   // -- Scales ----------------------------------------------------------------
@@ -148,7 +156,7 @@ export function compileTimeSeriesConfig(config: TimeSeriesConfig): VistralSpec {
       y: { title: config.yTitle || false, grid: gridY },
     },
     legend,
-    theme: 'dark',
+    theme: theme,
     animate: false,
   };
 
@@ -170,7 +178,10 @@ export function compileTimeSeriesConfig(config: TimeSeriesConfig): VistralSpec {
  * - scales: x with padding 0.5, y linear with nice
  * - Same streaming/axes/legend/theme/animate defaults as time series
  */
-export function compileBarColumnConfig(config: BarColumnConfig): VistralSpec {
+export function compileBarColumnConfig(
+  config: BarColumnConfig,
+  theme: 'dark' | 'light' = 'dark'
+): VistralSpec {
   const { xAxis, yAxis, color } = config;
 
   // -- Primary mark ----------------------------------------------------------
@@ -238,7 +249,7 @@ export function compileBarColumnConfig(config: BarColumnConfig): VistralSpec {
       y: { title: config.yTitle || false, grid: gridY },
     },
     legend,
-    theme: 'dark',
+    theme: theme,
     animate: false,
   };
 

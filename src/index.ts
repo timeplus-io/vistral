@@ -8,14 +8,10 @@
 // Main Chart Components
 export {
   StreamChart,
-  TimeSeriesChart,
-  BarColumnChart,
   SingleValueChart,
   DataTable,
   GeoChart,
   VistralChart,
-  getTimeSeriesDefaults,
-  getBarColumnDefaults,
   getSingleValueDefaults,
   getTableDefaults,
   getGeoChartDefaults,
@@ -24,8 +20,6 @@ export {
 // Chart Component Props
 export type {
   StreamChartProps,
-  TimeSeriesChartProps,
-  BarColumnChartProps,
   SingleValueChartProps,
   DataTableProps,
   GeoChartProps,

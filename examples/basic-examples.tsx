@@ -106,6 +106,7 @@ export function BasicLineChart() {
 
 export function MultiSeriesAreaChart() {
   const theme = useTheme();
+  // ... (rest of implementation remains, but now theme is used)
   const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
     const now = Date.now();
     const points: unknown[][] = [];
@@ -1010,10 +1011,10 @@ export function FrameBoundBarChart() {
       const now = new Date().toISOString();
       setDataPoints(prev => [
         ...prev,
-        [now, 'Widgets', generateNextValue(Number(prev[prev.length-4]?.[2] || 120), 80, 160, 0.1)],
-        [now, 'Gadgets', generateNextValue(Number(prev[prev.length-3]?.[2] || 85), 50, 120, 0.1)],
-        [now, 'Gizmos', generateNextValue(Number(prev[prev.length-2]?.[2] || 95), 60, 130, 0.1)],
-        [now, 'Doodads', generateNextValue(Number(prev[prev.length-1]?.[2] || 65), 40, 100, 0.1)],
+        [now, 'Widgets', generateNextValue(Number(prev[prev.length - 4]?.[2] || 120), 80, 160, 0.1)],
+        [now, 'Gadgets', generateNextValue(Number(prev[prev.length - 3]?.[2] || 85), 50, 120, 0.1)],
+        [now, 'Gizmos', generateNextValue(Number(prev[prev.length - 2]?.[2] || 95), 60, 130, 0.1)],
+        [now, 'Doodads', generateNextValue(Number(prev[prev.length - 1]?.[2] || 65), 40, 100, 0.1)],
       ].slice(-100)); // Keep some history
     }, 2000);
 

@@ -176,19 +176,35 @@ function translateCoordinate(
  * Translate an AxisChannelSpec to G2 axis channel format.
  */
 function translateAxisChannel(
-  axis: AxisChannelSpec
+  axis: AxisChannelSpec,
+  colors: Record<string, string>
 ): Record<string, any> {
   const result: Record<string, any> = {};
 
   if (axis.title !== undefined) {
     result.title = axis.title;
+    result.titleFill = colors.text;
+    result.titleFillOpacity = 1;
   }
   if (axis.grid !== undefined) {
     result.grid = axis.grid;
+    result.gridStroke = colors.gridline;
+    result.gridStrokeOpacity = 1;
   }
   if (axis.line !== undefined) {
     result.line = axis.line;
+    result.lineStroke = colors.line;
+    result.lineStrokeOpacity = 1;
   }
+
+  // Force tick visibility and color
+  result.tick = true;
+  result.tickStroke = colors.line;
+  result.tickStrokeOpacity = 1;
+
+  // Force label color
+  result.labelFill = colors.text;
+  result.labelFillOpacity = 1;
 
   if (axis.labels) {
     if (axis.labels.format !== undefined) {
@@ -206,9 +222,11 @@ function translateAxisChannel(
  * Translate AxesSpec to G2 axis format.
  */
 function translateAxes(
-  axes: AxesSpec
+  axes: AxesSpec,
+  theme: 'dark' | 'light' = 'dark'
 ): Record<string, any> {
   const result: Record<string, any> = {};
+  const colors = getChartThemeColors(theme);
 
   for (const channel of ['x', 'y'] as const) {
     const value = axes[channel];
@@ -216,7 +234,7 @@ function translateAxes(
     if (value === false) {
       result[channel] = false;
     } else {
-      result[channel] = translateAxisChannel(value);
+      result[channel] = translateAxisChannel(value, colors);
     }
   }
 
@@ -346,7 +364,7 @@ export function translateToG2Spec(
 
   // Axes
   if (spec.axes) {
-    g2.axis = translateAxes(spec.axes);
+    g2.axis = translateAxes(spec.axes, spec.theme);
   }
 
   // Legend
@@ -354,7 +372,30 @@ export function translateToG2Spec(
     if (spec.legend === false) {
       g2.legend = false;
     } else {
-      g2.legend = { color: { position: spec.legend.position } };
+      const colors = getChartThemeColors(spec.theme ?? 'dark');
+      g2.legend = {
+        color: {
+          position: spec.legend.position,
+          // Explicitly inject colors to override G2 defaults/dimming
+          itemLabelFill: colors.text,
+          itemLabelFillOpacity: 1,
+          itemNameFill: colors.text,
+          itemNameFillOpacity: 1,
+          titleFill: colors.text,
+          titleFillOpacity: 1,
+          // G2 5.0+ specific style overrides
+          itemLabel: {
+            fill: colors.text,
+            fillOpacity: 1,
+            fontSize: 12,
+          },
+          itemName: {
+            fill: colors.text,
+            fillOpacity: 1,
+            fontSize: 12,
+          },
+        },
+      };
     }
   }
 
@@ -398,33 +439,33 @@ export function applySpecTheme(
 
   return {
     view: { viewFill: colors.background },
-    label: { fill: colors.text, fontSize: 11 },
+    label: { fill: colors.text, fontSize: 11, fillOpacity: 1 },
     axis: {
       x: {
-        line: { stroke: colors.line },
-        tick: { stroke: colors.line },
-        label: { fill: colors.text, fontSize: 11 },
-        title: { fill: colors.text, fontSize: 12, fontWeight: 500 },
+        line: { stroke: colors.line, strokeOpacity: 1 },
+        tick: { stroke: colors.line, strokeOpacity: 1 },
+        label: { fill: colors.text, fontSize: 11, fillOpacity: 1 },
+        title: { fill: colors.text, fontSize: 12, fontWeight: 500, fillOpacity: 1 },
         grid: { stroke: colors.gridline },
       },
       y: {
-        line: { stroke: colors.line },
-        tick: { stroke: colors.line },
-        label: { fill: colors.text, fontSize: 11 },
-        title: { fill: colors.text, fontSize: 12, fontWeight: 500 },
+        line: { stroke: colors.line, strokeOpacity: 1 },
+        tick: { stroke: colors.line, strokeOpacity: 1 },
+        label: { fill: colors.text, fontSize: 11, fillOpacity: 1 },
+        title: { fill: colors.text, fontSize: 12, fontWeight: 500, fillOpacity: 1 },
         grid: { stroke: colors.gridline },
       },
     },
     legend: {
-      label: { fill: colors.text, fontSize: 12 },
-      title: { fill: colors.text, fontSize: 12 },
-      itemLabel: { fill: colors.text, fontSize: 12 },
-      itemName: { fill: colors.text, fontSize: 12 },
-      itemValue: { fill: colors.textSecondary, fontSize: 12 },
+      label: { fill: colors.text, fontSize: 12, fillOpacity: 1 },
+      title: { fill: colors.text, fontSize: 12, fillOpacity: 1 },
+      itemLabel: { fill: colors.text, fontSize: 12, fillOpacity: 1 },
+      itemName: { fill: colors.text, fontSize: 12, fillOpacity: 1 },
+      itemValue: { fill: colors.textSecondary, fontSize: 12, fillOpacity: 1 },
     },
     legendCategory: {
-      itemLabel: { fill: colors.text },
-      itemName: { fill: colors.text },
+      itemLabel: { fill: colors.text, fillOpacity: 1 },
+      itemName: { fill: colors.text, fillOpacity: 1 },
     },
   };
 }
@@ -612,8 +653,8 @@ export function buildG2Options(
     // Auto-detect a suitable time format mask
     const mask =
       (spec.scales?.x as Record<string, unknown> | undefined)?.mask as
-        | string
-        | undefined ?? getTimeMask(minTs, maxTs);
+      | string
+      | undefined ?? getTimeMask(minTs, maxTs);
 
     if (g2Spec.children) {
       for (const child of g2Spec.children) {
