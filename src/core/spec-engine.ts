@@ -84,14 +84,16 @@ export function applyTemporalTransforms(
 
       // Inject a time-window filter when range is a finite number.
       if (typeof range === 'number' && range !== Infinity) {
-        const maxTs = getMaxTimestamp(data, field);
+        // Axis mode expects a single time field
+        const timeField = Array.isArray(field) ? field[0] : field;
+        const maxTs = getMaxTimestamp(data, timeField);
         const windowMs = range * 60_000;
         const minTs = maxTs - windowMs;
 
         newTransforms.push({
           type: 'filter',
           callback: (d: Record<string, unknown>) => {
-            const ts = parseDateTime(d[field]);
+            const ts = parseDateTime(d[timeField]);
             return ts >= minTs && ts <= maxTs;
           },
         });
@@ -100,31 +102,53 @@ export function applyTemporalTransforms(
       // Always inject sortBy for axis mode.
       newTransforms.push({
         type: 'sortBy',
-        fields: [field],
+        fields: Array.isArray(field) ? field : [field],
       });
       break;
     }
 
     case 'frame': {
-      const maxTs = getMaxTimestamp(data, field);
+      const timeField = Array.isArray(field) ? field[0] : field;
+      const maxTs = getMaxTimestamp(data, timeField);
 
       newTransforms.push({
         type: 'filter',
         callback: (d: Record<string, unknown>) =>
-          parseDateTime(d[field]) === maxTs,
+          parseDateTime(d[timeField]) === maxTs,
       });
       break;
     }
 
     case 'key': {
-      const { keyField } = temporal;
-      if (!keyField) break;
+      // In 'key' mode, the `field` property represents the categorical Key (e.g. 'server').
+      const keyFields = Array.isArray(temporal.field) ? temporal.field : [temporal.field];
+      let timeField = 'timestamp'; // default guess
+
+      // We need to find the timestamp field to determine "latest".
+      // Heuristic: check for common names or first date-like field.
+      if (data.length > 0) {
+        const row = data[0];
+        if (Object.prototype.hasOwnProperty.call(row, 'timestamp')) timeField = 'timestamp';
+        else if (Object.prototype.hasOwnProperty.call(row, 'time')) timeField = 'time';
+        else if (Object.prototype.hasOwnProperty.call(row, 'date')) timeField = 'date';
+        else {
+          // Scan for a value that looks like a timestamp
+          for (const k in row) {
+            // key fields are NOT time fields
+            if (keyFields.includes(k)) continue;
+            if (parseDateTime(row[k]) > 0) {
+              timeField = k;
+              break;
+            }
+          }
+        }
+      }
 
       // Build a lookup: keyValue -> latest timestamp.
       const latestByKey = new Map<string, number>();
       for (const row of data) {
-        const key = String(row[keyField] ?? '');
-        const ts = parseDateTime(row[field]);
+        const key = keyFields.map(f => String(row[f] ?? '')).join('::');
+        const ts = parseDateTime(row[timeField]);
         const prev = latestByKey.get(key);
         if (prev === undefined || ts > prev) {
           latestByKey.set(key, ts);
@@ -134,8 +158,8 @@ export function applyTemporalTransforms(
       newTransforms.push({
         type: 'filter',
         callback: (d: Record<string, unknown>) => {
-          const key = String(d[keyField] ?? '');
-          const ts = parseDateTime(d[field]);
+          const key = keyFields.map(f => String(d[f] ?? '')).join('::');
+          const ts = parseDateTime(d[timeField]);
           return latestByKey.get(key) === ts;
         },
       });
@@ -304,6 +328,26 @@ function translateMark(
   const topScales = spec.scales ?? {};
   const markScales = mark.scales ?? {};
   const mergedScales = { ...topScales, ...markScales };
+
+  // --- Interval Mark Safety ---
+  // If the mark is 'interval' (bar/column), G2 strictly requires a 'band' scale
+  // for the categorical axis to calculate bandwidth. 'ordinal' (point) scales cause crashes.
+  if (mark.type === 'interval') {
+    // Detect which axis is likely categorical (band).
+    // Usually X for column chart, Y for bar chart.
+    // Heuristic: check if the scale type is explicitly 'ordinal'.
+    for (const channel in mergedScales) {
+      // eslint-disable-next-line no-prototype-builtins
+      if (mergedScales.hasOwnProperty(channel)) {
+        const sc = mergedScales[channel];
+        if (sc?.type === 'ordinal') {
+          // Coerce to 'band'
+          mergedScales[channel] = { ...sc, type: 'band' };
+        }
+      }
+    }
+  }
+
   if (Object.keys(mergedScales).length > 0) {
     child.scale = mergedScales;
   }
@@ -357,14 +401,44 @@ export function translateToG2Spec(
     type: 'view',
   };
 
+  // Pre-analysis for Horizontal Bar Chart (Interval with X=Continuous, Y=Discrete)
+  let shouldSwapAxes = false;
+  if (!spec.coordinate) {
+    const topScales = spec.scales ?? {};
+    for (const mark of spec.marks) {
+      if (mark.type === 'interval') {
+        const markScales = mark.scales ?? {};
+        const mergedScales = { ...topScales, ...markScales };
+
+        const xScaleType = mergedScales.x?.type || 'linear';
+        const yScaleType = mergedScales.y?.type || 'linear';
+
+        const isXContinuous = ['linear', 'time', 'log', 'pow', 'sqrt'].includes(xScaleType);
+        // check 'ordinal' too because we coerce it later, but here we detect intent
+        const isYDiscrete = ['band', 'ordinal', 'point'].includes(yScaleType);
+
+        if (isXContinuous && isYDiscrete) {
+          shouldSwapAxes = true;
+          break;
+        }
+      }
+    }
+  }
+
   // Coordinate
   if (spec.coordinate) {
     g2.coordinate = translateCoordinate(spec.coordinate);
+  } else if (shouldSwapAxes) {
+    g2.coordinate = { transform: [{ type: 'transpose' }] };
   }
 
   // Axes
   if (spec.axes) {
-    g2.axis = translateAxes(spec.axes, spec.theme);
+    // If swapping axes, we must swap the axis configuration too
+    const effectiveAxes = shouldSwapAxes
+      ? { ...spec.axes, x: spec.axes.y, y: spec.axes.x }
+      : spec.axes;
+    g2.axis = translateAxes(effectiveAxes, spec.theme);
   }
 
   // Legend
@@ -409,9 +483,48 @@ export function translateToG2Spec(
   }
 
   // Children: marks + annotations
-  const children: Record<string, any>[] = spec.marks.map((mark) =>
-    translateMark(mark, spec)
-  );
+  const children: Record<string, any>[] = spec.marks.map((mark) => {
+    // If we are swapping axes, we need to swap the mark's encoding and scales 
+    // BEFORE passing to translateMark (or inside it).
+    // Let's create a "swapped" mark definition to pass down.
+    if (shouldSwapAxes && mark.type === 'interval') {
+      const swappedMark = { ...mark };
+
+      // Swap Encodes
+      if (mark.encode) {
+        swappedMark.encode = { ...mark.encode };
+        const oldX = swappedMark.encode.x;
+        const oldY = swappedMark.encode.y;
+        if (oldX) swappedMark.encode.y = oldX; else delete swappedMark.encode.y;
+        if (oldY) swappedMark.encode.x = oldY; else delete swappedMark.encode.x;
+      }
+
+      // Swap Scales
+      if (mark.scales) {
+        swappedMark.scales = { ...mark.scales };
+        const oldX = swappedMark.scales.x;
+        const oldY = swappedMark.scales.y;
+        if (oldX) swappedMark.scales.y = oldX; else delete swappedMark.scales.y;
+        if (oldY) swappedMark.scales.x = oldY; else delete swappedMark.scales.x;
+      }
+
+      // Note: top-level scales also need swapping but `translateMark` retrieves them from `spec.scales`.
+      // We need `translateMark` to use SWAPPED top-level scales.
+      // So we pass a "virtual spec" to translateMark.
+      const swappedSpec = { ...spec };
+      if (spec.scales) {
+        swappedSpec.scales = { ...spec.scales };
+        const oldX = swappedSpec.scales.x;
+        const oldY = swappedSpec.scales.y;
+        if (oldX) swappedSpec.scales.y = oldX; else delete swappedSpec.scales.y;
+        if (oldY) swappedSpec.scales.x = oldY; else delete swappedSpec.scales.x;
+      }
+
+      return translateMark(swappedMark, swappedSpec);
+    }
+
+    return translateMark(mark, spec);
+  });
 
   if (spec.annotations) {
     for (const annotation of spec.annotations) {
@@ -498,37 +611,60 @@ export function filterDataByTemporal(
 
       // Time-window filter
       if (typeof range === 'number' && range !== Infinity) {
-        const maxTs = getMaxTimestamp(data, field);
+        const timeField = Array.isArray(field) ? field[0] : field;
+        const maxTs = getMaxTimestamp(data, timeField);
         const windowMs = range * 60_000;
         const minTs = maxTs - windowMs;
 
         result = result.filter((d) => {
-          const ts = parseDateTime(d[field]);
+          const ts = parseDateTime(d[timeField]);
           return ts >= minTs && ts <= maxTs;
         });
       }
 
       // Sort by temporal field
+      const sortField = Array.isArray(field) ? field[0] : field;
       result = [...result].sort(
-        (a, b) => parseDateTime(a[field]) - parseDateTime(b[field])
+        (a, b) => parseDateTime(a[sortField]) - parseDateTime(b[sortField])
       );
       break;
     }
 
     case 'frame': {
-      const maxTs = getMaxTimestamp(data, field);
-      result = result.filter((d) => parseDateTime(d[field]) === maxTs);
+      const timeField = Array.isArray(field) ? field[0] : field;
+      const maxTs = getMaxTimestamp(data, timeField);
+      result = result.filter((d) => parseDateTime(d[timeField]) === maxTs);
       break;
     }
 
     case 'key': {
-      const { keyField } = temporal;
-      if (!keyField) break;
+      // In 'key' mode, the `field` property represents the categorical Key (e.g. 'server').
+      const keyFields = Array.isArray(temporal.field) ? temporal.field : [temporal.field];
+      let timeField = 'timestamp'; // default guess
+
+      // We need to find the timestamp field to determine "latest".
+      // Heuristic: check for common names or first date-like field.
+      if (data.length > 0) {
+        const row = data[0];
+        if (Object.prototype.hasOwnProperty.call(row, 'timestamp')) timeField = 'timestamp';
+        else if (Object.prototype.hasOwnProperty.call(row, 'time')) timeField = 'time';
+        else if (Object.prototype.hasOwnProperty.call(row, 'date')) timeField = 'date';
+        else {
+          // Scan for a value that looks like a timestamp
+          for (const k in row) {
+            if (keyFields.includes(k)) continue;
+            if (parseDateTime(row[k]) > 0) {
+              timeField = k;
+              break;
+            }
+          }
+        }
+      }
 
       const latestByKey = new Map<string, number>();
       for (const row of data) {
-        const key = String(row[keyField] ?? '');
-        const ts = parseDateTime(row[field]);
+        const key = keyFields.map(f => String(row[f] ?? '')).join('::');
+        const ts = parseDateTime(row[timeField]);
         const prev = latestByKey.get(key);
         if (prev === undefined || ts > prev) {
           latestByKey.set(key, ts);
@@ -536,8 +672,8 @@ export function filterDataByTemporal(
       }
 
       result = result.filter((d) => {
-        const key = String(d[keyField] ?? '');
-        const ts = parseDateTime(d[field]);
+        const key = keyFields.map(f => String(d[f] ?? '')).join('::');
+        const ts = parseDateTime(d[timeField]);
         return latestByKey.get(key) === ts;
       });
       break;
@@ -578,7 +714,12 @@ function collectTimeFields(spec: VistralSpec): Set<string> {
   // BUT if it is encoded to a 'band' scale (e.g. in a Bar Chart), 
   // we must NOT convert it to a Date object, otherwise G2 will override the band scale with a time scale.
   if (spec.temporal?.field) {
-    const field = spec.temporal.field;
+    // In 'key' mode, the fields is the KEY, not the time.
+    if (spec.temporal.mode === 'key') {
+      return timeFields;
+    }
+
+    const fields = Array.isArray(spec.temporal.field) ? spec.temporal.field : [spec.temporal.field];
     let isBand = false;
 
     for (const mark of spec.marks) {
@@ -586,7 +727,7 @@ function collectTimeFields(spec: VistralSpec): Set<string> {
       const merged = { ...topScales, ...markScales };
 
       for (const [channel, encodedField] of Object.entries(mark.encode ?? {})) {
-        if (encodedField === field) {
+        if (fields.includes(encodedField as string)) {
           const type = merged[channel]?.type;
           if (type === 'band') {
             isBand = true;
@@ -596,7 +737,7 @@ function collectTimeFields(spec: VistralSpec): Set<string> {
     }
 
     if (!isBand) {
-      timeFields.add(field);
+      fields.forEach(f => timeFields.add(f));
     }
   }
 
@@ -651,12 +792,12 @@ export function buildG2Options(
   // translateAnnotation) keep it — G2 lets child-level data override.
   g2Spec.data = filteredData;
 
-  // --- Axis-mode temporal: set sliding time domain on x scale ---------------
-  // This makes the x-axis scroll forward as new data arrives, matching
-  // the behaviour of the imperative TimeSeriesChart path.
+  // --- Axis-mode temporal: set sliding time domain on appropriate scale ---
+  // This makes the axis scroll forward as new data arrives.
   if (spec.temporal?.mode === 'axis' && filteredData.length > 0) {
     const field = spec.temporal.field;
-    const maxTs = getMaxTimestamp(filteredData, field);
+    const timeField = Array.isArray(field) ? field[0] : field;
+    const maxTs = getMaxTimestamp(filteredData, timeField);
     const range = spec.temporal.range;
 
     let minTs: number;
@@ -666,35 +807,54 @@ export function buildG2Options(
       // No finite range — span the full data extent
       minTs = maxTs;
       for (const row of filteredData) {
-        const ts = parseDateTime(row[field]);
+        const ts = parseDateTime(row[timeField]);
         if (ts < minTs) minTs = ts;
       }
     }
 
     // Auto-detect a suitable time format mask
-    const mask =
-      (spec.scales?.x as Record<string, unknown> | undefined)?.mask as
-      | string
-      | undefined ?? getTimeMask(minTs, maxTs);
+    // Check both axes for mask config, though usually it's on the temporal axis
+    const xMask = (spec.scales?.x as Record<string, unknown> | undefined)?.mask;
+    const yMask = (spec.scales?.y as Record<string, unknown> | undefined)?.mask;
+    const mask = (xMask || yMask) as string | undefined ?? getTimeMask(minTs, maxTs);
 
     if (g2Spec.children) {
       for (const child of g2Spec.children) {
         if (!child.scale) child.scale = {};
 
-        // Don't override an explicit 'band' scale with 'time'
-        // (This happens in Bar Charts where x is the categorical axis)
-        const existingType = child.scale.x?.type || (spec.scales?.x as any)?.type;
-        if (existingType === 'band') {
+        // Interval marks (bars) usually require a 'band' scale for width calculation.
+        // Forcing 'time' scale can cause internal G2 crashes (getBandWidth error).
+        // Since data is already filtered by time, we can skip enforcing time scale here.
+        if (child.type === 'interval') {
           continue;
         }
 
-        child.scale.x = {
-          ...(child.scale.x ?? {}),
-          type: 'time',
-          domainMin: new Date(minTs),
-          domainMax: new Date(maxTs),
-          mask,
-        };
+        // Find which channel is using the temporal field
+        let targetChannel: 'x' | 'y' | null = null;
+
+        // Check local encode first
+        if (child.encode) {
+          if (child.encode.x === timeField) targetChannel = 'x';
+          else if (child.encode.y === timeField) targetChannel = 'y';
+        }
+
+        // If not found in local mark, could rely on defaults but Vistral requires explicit encode usually.
+        // If we found a target channel, update its scale.
+        if (targetChannel) {
+          // Don't override an explicit 'band' scale with 'time'
+          const existingType = child.scale[targetChannel]?.type || (spec.scales?.[targetChannel] as any)?.type;
+          if (existingType === 'band') {
+            continue;
+          }
+
+          child.scale[targetChannel] = {
+            ...(child.scale[targetChannel] ?? {}),
+            type: 'time',
+            domainMin: new Date(minTs),
+            domainMax: new Date(maxTs),
+            mask,
+          };
+        }
       }
     }
   }

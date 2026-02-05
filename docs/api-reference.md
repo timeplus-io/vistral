@@ -82,7 +82,7 @@ Controls temporal bounding — how time governs data lifecycle on the canvas.
 | Property | Type | Description |
 |----------|------|-------------|
 | `mode` | `'axis' \| 'frame' \| 'key'` | **Required.** Temporal binding mode |
-| `field` | `string` | **Required.** Data field containing the temporal value |
+| `field` | `string \| string[]` | **Required.** Data field(s) used for temporal binding |
 | `range` | `number \| 'Infinity'` | Axis-mode only. Time window in minutes |
 | `keyField` | `string` | Key-mode only. Field identifying unique entities |
 
@@ -189,7 +189,7 @@ All chart types support a unified `temporal` configuration for handling streamin
 | Property | Type | Description |
 |----------|------|-------------|
 | `mode` | `'axis' \| 'frame' \| 'key'` | Temporal binding mode |
-| `field` | `string` | Field name for temporal binding |
+| `field` | `string \| string[]` | Field name(s) for temporal binding |
 | `range` | `number \| 'Infinity'` | Time range in minutes (axis mode only) |
 
 ### Temporal Modes
@@ -210,6 +210,9 @@ temporal: { mode: 'frame', field: 'timestamp' }
 
 // Key-bound: deduplicate by ID
 temporal: { mode: 'key', field: 'id' }
+
+// Key-bound: deduplicate by composite key (Region + Server)
+temporal: { mode: 'key', field: ['region', 'server'] }
 ```
 
 ---
@@ -424,11 +427,11 @@ import { applyTemporalFilter, filterByLatestTimestamp, filterByKey } from '@time
 // Filter to latest timestamp rows
 const latestRows = filterByLatestTimestamp(data, timeFieldIndex);
 
-// Keep latest row per key
-const deduplicated = filterByKey(data, keyFieldIndex);
+// Keep latest row per unique key(s)
+const deduplicated = filterByKey(data, keyFieldIndex); // keyFieldIndex can be number | number[]
 
-// Apply temporal config
-const filtered = applyTemporalFilter(data, columns, { mode: 'frame', field: 'timestamp' });
+// Apply temporal config (supports mode: 'key' with multiple fields)
+const filtered = applyTemporalFilter(data, columns, { mode: 'key', field: ['id', 'category'] });
 ```
 
 ### Data Processing

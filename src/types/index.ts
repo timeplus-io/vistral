@@ -50,7 +50,7 @@ export interface TemporalConfig {
   /** Temporal binding mode */
   mode: TemporalMode;
   /** Field used for temporal binding */
-  field: string;
+  field: string | string[];
   /** Time range in minutes (for axis mode only) */
   range?: number | 'Infinity';
 }

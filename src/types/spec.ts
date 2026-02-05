@@ -35,7 +35,7 @@ export interface TemporalSpec {
   /** Temporal binding mode. */
   mode: 'axis' | 'frame' | 'key';
   /** Field used for temporal binding. */
-  field: string;
+  field: string | string[];
   /** Time range in minutes (axis-mode only). */
   range?: number | 'Infinity';
   /** Key field for de-duplication (key-mode only). */
@@ -93,7 +93,7 @@ export interface TransformSpec {
 /** Coordinate system configuration. */
 export interface CoordinateSpec {
   type?: string;
-  transforms?: Array<{ type: string; [option: string]: unknown }>;
+  transforms?: Array<{ type: string;[option: string]: unknown }>;
   [option: string]: unknown;
 }
 

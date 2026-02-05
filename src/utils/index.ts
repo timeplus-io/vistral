@@ -411,17 +411,23 @@ export function filterByLatestTimestamp(
  * Filter data by unique key (key-bound mode)
  * Keeps only the latest row for each unique key value
  */
+/**
+ * Filter data by unique key (key-bound mode)
+ * Keeps only the latest row for each unique key value
+ */
 export function filterByKey(
   data: unknown[][],
-  keyIndex: number
+  keyIndex: number | number[]
 ): unknown[][] {
-  if (data.length === 0 || keyIndex < 0) return data;
+  const indices = Array.isArray(keyIndex) ? keyIndex : [keyIndex];
+  if (data.length === 0 || indices.some(idx => idx < 0)) return data;
 
   // Use a map to keep the latest value for each key
   const groups = new Map<string, unknown[]>();
 
   for (const row of data) {
-    const key = String(row[keyIndex] ?? '');
+    // specific composite key generation
+    const key = indices.map(idx => String(row[idx] ?? '')).join('::');
     groups.set(key, row);
   }
 
@@ -436,14 +442,22 @@ export function applyTemporalFilter(
   columns: ColumnDefinition[],
   temporal: TemporalConfig
 ): unknown[][] {
-  const fieldIndex = findColumnIndex(columns, temporal.field);
-  if (fieldIndex < 0) return data;
+  // Handle single or multiple fields
+  const fields = Array.isArray(temporal.field) ? temporal.field : [temporal.field];
+  const fieldIndices = fields.map(f => findColumnIndex(columns, f));
+
+  // If any field is not found, return original data
+  if (fieldIndices.some(idx => idx < 0)) return data;
+
+  const primaryIndex = fieldIndices[0]; // Used for frame/axis checking usually, but frame mode handles single index
 
   switch (temporal.mode) {
     case 'frame':
-      return filterByLatestTimestamp(data, fieldIndex);
+      // Frame mode currently assumes single time field
+      return filterByLatestTimestamp(data, primaryIndex);
     case 'key':
-      return filterByKey(data, fieldIndex);
+      // Key mode supports multiple fields
+      return filterByKey(data, Array.isArray(temporal.field) ? fieldIndices : primaryIndex);
     case 'axis':
       // Axis mode filtering is handled by the chart component itself
       // (e.g., through domain clamping in TimeSeriesChart)

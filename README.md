@@ -303,7 +303,7 @@ Shows only rows with the latest timestamp - useful for real-time snapshots:
 
 ### Key-Bound (Deduplicate by Key)
 
-Keeps the latest value for each unique key - useful for live dashboards:
+Keeps the latest value for each unique key. Supports **composite keys** by passing an array of fields:
 
 ```tsx
 <StreamChart
@@ -313,7 +313,7 @@ Keeps the latest value for each unique key - useful for live dashboards:
     longitude: 'lng',
     temporal: {
       mode: 'key',
-      field: 'vehicle_id',
+      field: ['region', 'vehicle_id'], // Composite key
     },
   }}
   data={data}

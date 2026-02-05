@@ -25,7 +25,7 @@ import type {
  */
 function mapTemporal(
   temporal: TimeSeriesConfig['temporal'] | BarColumnConfig['temporal'],
-  defaultField: string
+  defaultField: string | string[]
 ): TemporalSpec | undefined {
   if (!temporal) return undefined;
   return {
