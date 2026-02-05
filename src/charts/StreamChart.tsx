@@ -13,11 +13,11 @@ import type {
   TableConfig,
   GeoChartConfig,
 } from '../types';
-import { TimeSeriesChart } from './TimeSeriesChart';
-import { BarColumnChart } from './BarColumnChart';
 import { SingleValueChart } from './SingleValueChart';
 import { DataTable } from './DataTable';
 import { GeoChart } from './GeoChart';
+import { VistralChart } from './VistralChart';
+import { compileTimeSeriesConfig, compileBarColumnConfig } from '../core/compilers';
 
 export interface StreamChartProps {
   /** Chart configuration */
@@ -248,24 +248,26 @@ export const StreamChart: React.FC<StreamChartProps> = ({
 
   // Render appropriate chart based on config type
   const chartComponent = useMemo(() => {
+    // Phase 2: Use Grammar Abstraction for Time Series
     if (isTimeSeriesConfig(config)) {
+      const spec = compileTimeSeriesConfig(config, theme);
       return (
-        <TimeSeriesChart
-          config={config}
-          data={data}
-          theme={theme}
+        <VistralChart
+          spec={spec}
+          source={data}
           className={className}
           style={style}
         />
       );
     }
 
+    // Phase 2: Use Grammar Abstraction for Bar/Column
     if (isBarColumnConfig(config)) {
+      const spec = compileBarColumnConfig(config, theme);
       return (
-        <BarColumnChart
-          config={config}
-          data={data}
-          theme={theme}
+        <VistralChart
+          spec={spec}
+          source={data}
           className={className}
           style={style}
         />
@@ -319,8 +321,6 @@ export const StreamChart: React.FC<StreamChartProps> = ({
 export default StreamChart;
 
 // Re-export individual chart components
-export { TimeSeriesChart } from './TimeSeriesChart';
-export { BarColumnChart } from './BarColumnChart';
 export { SingleValueChart } from './SingleValueChart';
 export { DataTable } from './DataTable';
 export { GeoChart } from './GeoChart';

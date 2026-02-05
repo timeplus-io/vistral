@@ -8,13 +8,10 @@
 // Main Chart Components
 export {
   StreamChart,
-  TimeSeriesChart,
-  BarColumnChart,
   SingleValueChart,
   DataTable,
   GeoChart,
-  getTimeSeriesDefaults,
-  getBarColumnDefaults,
+  VistralChart,
   getSingleValueDefaults,
   getTableDefaults,
   getGeoChartDefaults,
@@ -23,11 +20,11 @@ export {
 // Chart Component Props
 export type {
   StreamChartProps,
-  TimeSeriesChartProps,
-  BarColumnChartProps,
   SingleValueChartProps,
   DataTableProps,
   GeoChartProps,
+  VistralChartProps,
+  ChartHandle,
 } from './charts';
 
 // Types
@@ -49,6 +46,24 @@ export type {
   ProcessedDataSource,
   TemporalMode,
   TemporalConfig,
+} from './types';
+
+// VistralSpec types
+export type {
+  VistralSpec,
+  MarkSpec,
+  EncodeSpec,
+  EncodeFn,
+  ScaleSpec,
+  TransformSpec,
+  CoordinateSpec,
+  StreamingSpec,
+  TemporalSpec,
+  AxesSpec,
+  LegendSpec,
+  TooltipSpec,
+  AnnotationSpec,
+  InteractionSpec,
 } from './types';
 
 // Themes and Colors
@@ -129,6 +144,8 @@ export {
   createDefaultConfig,
   applyChartTheme,
   getChartThemeColors,
+  compileTimeSeriesConfig,
+  compileBarColumnConfig,
 } from './core';
 
 // Default export

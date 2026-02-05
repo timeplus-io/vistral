@@ -106,54 +106,27 @@ export function BasicLineChart() {
 
 export function MultiSeriesAreaChart() {
   const theme = useTheme();
-  const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
-    const now = Date.now();
-    const points: unknown[][] = [];
-    let usValue = 100, euValue = 80, apacValue = 60;
-
-    for (let i = 20; i >= 0; i--) {
-      const time = new Date(now - i * 2000).toISOString();
-      usValue = generateNextValue(usValue, 50, 200, 0.1);
-      euValue = generateNextValue(euValue, 40, 150, 0.1);
-      apacValue = generateNextValue(apacValue, 30, 120, 0.1);
-      points.push([time, usValue, 'US']);
-      points.push([time, euValue, 'EU']);
-      points.push([time, apacValue, 'APAC']);
-    }
-    return points;
-  });
-
-  const valuesRef = React.useRef({ us: 120, eu: 95, apac: 75 });
+  // Using 'regional_sales' generator
+  const { data, append } = useStreamingData<Record<string, unknown>[]>(
+    [],
+    180 // Keep ~180 points (60 per series * 3 series)
+  );
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const time = new Date().toISOString();
-      valuesRef.current.us = generateNextValue(valuesRef.current.us, 50, 200, 0.1);
-      valuesRef.current.eu = generateNextValue(valuesRef.current.eu, 40, 150, 0.1);
-      valuesRef.current.apac = generateNextValue(valuesRef.current.apac, 30, 120, 0.1);
+    const generator = dataGenerators.regional_sales;
 
-      setDataPoints(prev => {
-        const updated = [
-          ...prev,
-          [time, valuesRef.current.us, 'US'],
-          [time, valuesRef.current.eu, 'EU'],
-          [time, valuesRef.current.apac, 'APAC'],
-        ];
-        // Keep last 60 points per series (180 total)
-        return updated.slice(-180);
-      });
-    }, 2000);
+    // Simulate streaming
+    const interval = setInterval(() => {
+      const newData = generator.generate();
+      append(newData);
+    }, generator.interval);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [append]);
 
-  const data: StreamDataSource = {
-    columns: [
-      { name: 'time', type: 'datetime64' },
-      { name: 'value', type: 'float64' },
-      { name: 'region', type: 'string' },
-    ],
-    data: dataPoints,
+  const source: StreamDataSource = {
+    columns: dataGenerators.regional_sales.columns,
+    data: data,
     isStreaming: true,
   };
 
@@ -171,7 +144,7 @@ export function MultiSeriesAreaChart() {
 
   return (
     <div style={{ width: '100%', height: '400px' }}>
-      <StreamChart config={config} data={data} theme={theme} />
+      <StreamChart config={config} data={source} theme={theme} />
     </div>
   );
 }
@@ -182,62 +155,53 @@ export function MultiSeriesAreaChart() {
 
 export function StackedBarChart() {
   const theme = useTheme();
-  const [revenues, setRevenues] = useState({
-    Q1: { A: 45000, B: 32000, C: 28000 },
-    Q2: { A: 52000, B: 38000, C: 35000 },
-    Q3: { A: 48000, B: 42000, C: 31000 },
-    Q4: { A: 61000, B: 45000, C: 42000 },
-  });
+  // Using 'revenue' generator from data-utils
+  const { data, append } = useStreamingData<Record<string, unknown>[]>(
+    [],
+    20 // Keep enough history if needed, though this updates in-place conceptually
+  );
 
   useEffect(() => {
+    // Initial fetch
+    const generator = dataGenerators.revenue;
+
+    // Simulate streaming by calling generator
     const interval = setInterval(() => {
-      setRevenues(prev => ({
-        Q1: {
-          A: generateNextValue(prev.Q1.A, 30000, 70000, 0.05),
-          B: generateNextValue(prev.Q1.B, 20000, 50000, 0.05),
-          C: generateNextValue(prev.Q1.C, 15000, 40000, 0.05),
-        },
-        Q2: {
-          A: generateNextValue(prev.Q2.A, 35000, 75000, 0.05),
-          B: generateNextValue(prev.Q2.B, 25000, 55000, 0.05),
-          C: generateNextValue(prev.Q2.C, 20000, 50000, 0.05),
-        },
-        Q3: {
-          A: generateNextValue(prev.Q3.A, 30000, 70000, 0.05),
-          B: generateNextValue(prev.Q3.B, 28000, 58000, 0.05),
-          C: generateNextValue(prev.Q3.C, 18000, 45000, 0.05),
-        },
-        Q4: {
-          A: generateNextValue(prev.Q4.A, 40000, 85000, 0.05),
-          B: generateNextValue(prev.Q4.B, 30000, 60000, 0.05),
-          C: generateNextValue(prev.Q4.C, 25000, 55000, 0.05),
-        },
-      }));
-    }, 1500);
+      const newData = generator.generate();
+      // For this specific chart, we are replacing the whole dataset effectively each tick
+      // But useStreamingData appends. 
+      // Wait, StreamChart expects a stream. If we want to update the bars in place, we usually use `isStreaming: true` and push updates.
+      // However, the original code used `setRevenues` which updated the *source* state, causing a re-render with new data array.
+      // Vistral's StreamChart with isStreaming: true and VistralChart handle appends.
+      // For a bar chart where categories are fixed (Q1-Q4), we might want to REPLACE data or just append new snapshots?
+      // The original logic updated keys in place. 
+
+      // Actually, StreamChart reacts to `data` prop changes.
+      // If we use useStreamingData, it appends.
+      // If we want to replace/update existing keys (like Q1 A changing value), we should probably just use local state + generator
+      // OR better: use existing Vistral behavior.
+
+      // Let's stick to the pattern:
+      // We can just call generator.generate() and pass it to StreamChart if we don't need history.
+      // BUT, useStreamingData is good for appending.
+      // The generator returns the FULL set of bars (12 items) every time.
+      // If we append 12 items every 1.5s, the chart will grow indefinitely or shift if we slice.
+      // The original code passed the 12 items as the `data` prop every render.
+
+      // So let's use useState + generator.generate()
+      append(newData);
+    }, generator.interval);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [append]);
 
-  const data: StreamDataSource = {
-    columns: [
-      { name: 'quarter', type: 'string' },
-      { name: 'revenue', type: 'float64' },
-      { name: 'product', type: 'string' },
-    ],
-    data: [
-      ['Q1', revenues.Q1.A, 'Product A'],
-      ['Q1', revenues.Q1.B, 'Product B'],
-      ['Q1', revenues.Q1.C, 'Product C'],
-      ['Q2', revenues.Q2.A, 'Product A'],
-      ['Q2', revenues.Q2.B, 'Product B'],
-      ['Q2', revenues.Q2.C, 'Product C'],
-      ['Q3', revenues.Q3.A, 'Product A'],
-      ['Q3', revenues.Q3.B, 'Product B'],
-      ['Q3', revenues.Q3.C, 'Product C'],
-      ['Q4', revenues.Q4.A, 'Product A'],
-      ['Q4', revenues.Q4.B, 'Product B'],
-      ['Q4', revenues.Q4.C, 'Product C'],
-    ],
+  const source: StreamDataSource = {
+    columns: dataGenerators.revenue.columns,
+    // We only want the latest snapshot for this visualization, but StreamChart might expect history?
+    // The original code was: data: [ ...12 items... ]. 
+    // It updated those 12 items in place.
+    // If we simply pass the latest generated batch, it mimics that.
+    data: data.slice(-12), // Show only the latest snapshot (12 bars: 4 quarters * 3 products)
     isStreaming: true,
   };
 
@@ -257,7 +221,7 @@ export function StackedBarChart() {
 
   return (
     <div style={{ width: '100%', height: '400px' }}>
-      <StreamChart config={config} data={data} theme={theme} />
+      <StreamChart config={config} data={source} theme={theme} />
     </div>
   );
 }
@@ -268,54 +232,28 @@ export function StackedBarChart() {
 
 export function GroupedBarChart() {
   const theme = useTheme();
-  const [values, setValues] = useState({
-    Electronics: { '2023': 85, '2024': 92 },
-    Clothing: { '2023': 62, '2024': 71 },
-    Food: { '2023': 45, '2024': 48 },
-    Books: { '2023': 28, '2024': 35 },
-  });
+  // Using 'sales' generator
+  const { data, append } = useStreamingData<Record<string, unknown>[]>(
+    [],
+    12 // Keep enough history for snapshot
+  );
 
   useEffect(() => {
+    const generator = dataGenerators.sales;
+
+    // Simulate streaming
     const interval = setInterval(() => {
-      setValues(prev => ({
-        Electronics: {
-          '2023': generateNextValue(prev.Electronics['2023'], 60, 100, 0.08),
-          '2024': generateNextValue(prev.Electronics['2024'], 70, 110, 0.08),
-        },
-        Clothing: {
-          '2023': generateNextValue(prev.Clothing['2023'], 40, 80, 0.08),
-          '2024': generateNextValue(prev.Clothing['2024'], 50, 90, 0.08),
-        },
-        Food: {
-          '2023': generateNextValue(prev.Food['2023'], 30, 60, 0.08),
-          '2024': generateNextValue(prev.Food['2024'], 35, 65, 0.08),
-        },
-        Books: {
-          '2023': generateNextValue(prev.Books['2023'], 15, 45, 0.08),
-          '2024': generateNextValue(prev.Books['2024'], 20, 50, 0.08),
-        },
-      }));
-    }, 1200);
+      const newData = generator.generate();
+      append(newData);
+    }, generator.interval);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [append]);
 
-  const data: StreamDataSource = {
-    columns: [
-      { name: 'category', type: 'string' },
-      { name: 'value', type: 'float64' },
-      { name: 'year', type: 'string' },
-    ],
-    data: [
-      ['Electronics', values.Electronics['2023'], '2023'],
-      ['Electronics', values.Electronics['2024'], '2024'],
-      ['Clothing', values.Clothing['2023'], '2023'],
-      ['Clothing', values.Clothing['2024'], '2024'],
-      ['Food', values.Food['2023'], '2023'],
-      ['Food', values.Food['2024'], '2024'],
-      ['Books', values.Books['2023'], '2023'],
-      ['Books', values.Books['2024'], '2024'],
-    ],
+  const source: StreamDataSource = {
+    columns: dataGenerators.sales.columns,
+    // Show only the latest snapshot (8 bars: 4 categories * 2 years)
+    data: data.slice(-8),
     isStreaming: true,
   };
 
@@ -333,7 +271,7 @@ export function GroupedBarChart() {
 
   return (
     <div style={{ width: '100%', height: '400px' }}>
-      <StreamChart config={config} data={data} theme={theme} />
+      <StreamChart config={config} data={source} theme={theme} />
     </div>
   );
 }
@@ -1010,10 +948,10 @@ export function FrameBoundBarChart() {
       const now = new Date().toISOString();
       setDataPoints(prev => [
         ...prev,
-        [now, 'Widgets', generateNextValue(Number(prev[prev.length-4]?.[2] || 120), 80, 160, 0.1)],
-        [now, 'Gadgets', generateNextValue(Number(prev[prev.length-3]?.[2] || 85), 50, 120, 0.1)],
-        [now, 'Gizmos', generateNextValue(Number(prev[prev.length-2]?.[2] || 95), 60, 130, 0.1)],
-        [now, 'Doodads', generateNextValue(Number(prev[prev.length-1]?.[2] || 65), 40, 100, 0.1)],
+        [now, 'Widgets', generateNextValue(Number(prev[prev.length - 4]?.[2] || 120), 80, 160, 0.1)],
+        [now, 'Gadgets', generateNextValue(Number(prev[prev.length - 3]?.[2] || 85), 50, 120, 0.1)],
+        [now, 'Gizmos', generateNextValue(Number(prev[prev.length - 2]?.[2] || 95), 60, 130, 0.1)],
+        [now, 'Doodads', generateNextValue(Number(prev[prev.length - 1]?.[2] || 65), 40, 100, 0.1)],
       ].slice(-100)); // Keep some history
     }, 2000);
 

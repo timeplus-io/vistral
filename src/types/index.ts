@@ -50,7 +50,7 @@ export interface TemporalConfig {
   /** Temporal binding mode */
   mode: TemporalMode;
   /** Field used for temporal binding */
-  field: string;
+  field: string | string[];
   /** Time range in minutes (for axis mode only) */
   range?: number | 'Infinity';
 }
@@ -300,3 +300,27 @@ export interface ProcessedDataSource {
   };
   xTransform: (value: unknown) => unknown;
 }
+
+// VistralSpec grammar types
+export type {
+  VistralSpec,
+  MarkSpec,
+  EncodeSpec,
+  EncodeFn,
+  ScaleSpec,
+  TransformSpec,
+  CoordinateSpec,
+  StreamingSpec,
+  TemporalSpec,
+  StyleSpec,
+  LabelSpec,
+  MarkTooltipSpec,
+  AxesSpec,
+  AxisChannelSpec,
+  AxisLabelSpec,
+  LegendSpec,
+  TooltipSpec,
+  TooltipItemSpec,
+  AnnotationSpec,
+  InteractionSpec,
+} from './spec';

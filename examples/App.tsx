@@ -15,7 +15,15 @@ import {
   FrameBoundBarChart,
   AxisBoundLineChart,
 } from './basic-examples';
+import {
+  GrammarLineChart,
+  GrammarMultiMark,
+  GrammarBarChart,
+  GrammarStackedArea,
+  GrammarCompiledChart,
+} from './grammar-examples';
 import { Playground } from './Playground';
+import { GrammarPlayground } from './GrammarPlayground';
 import { exampleSources } from './example-sources';
 
 // Theme context
@@ -24,7 +32,7 @@ export const ThemeContext = createContext<{
   setTheme: (theme: 'dark' | 'light') => void;
 }>({
   theme: 'dark',
-  setTheme: () => {},
+  setTheme: () => { },
 });
 
 export const useTheme = () => useContext(ThemeContext);
@@ -33,26 +41,34 @@ interface ExampleItem {
   name: string;
   component: React.FC;
   isPlayground?: boolean;
+  category?: 'examples' | 'grammar';
 }
 
 const examples: ExampleItem[] = [
   // Playground - Interactive Grammar Builder
   { name: 'Playground', component: Playground, isPlayground: true },
+  { name: 'Grammar Playground', component: GrammarPlayground, isPlayground: true },
   // Chart Examples
-  { name: 'Line Chart', component: BasicLineChart },
-  { name: 'Area Chart', component: MultiSeriesAreaChart },
-  { name: 'Column Chart (Stacked)', component: StackedBarChart },
-  { name: 'Bar Chart (Grouped)', component: GroupedBarChart },
-  { name: 'Single Value', component: SingleValueWithSparkline },
-  { name: 'Data Table', component: StreamingDataTable },
-  { name: 'Metrics Dashboard', component: MetricsDashboard },
-  { name: 'Chart/Table Toggle', component: ChartWithTableToggle },
-  { name: 'Geo Chart', component: StreamingGeoChart },
-  { name: 'Table (Frame-Bound)', component: FrameBoundTable },
-  { name: 'Table (Key-Bound)', component: KeyBoundTable },
-  { name: 'Geo Chart (Key-Bound)', component: KeyBoundGeoChart },
-  { name: 'Bar Chart (Frame-Bound)', component: FrameBoundBarChart },
-  { name: 'Line Chart (Axis-Bound)', component: AxisBoundLineChart },
+  { name: 'Line Chart', component: BasicLineChart, category: 'examples' },
+  { name: 'Area Chart', component: MultiSeriesAreaChart, category: 'examples' },
+  { name: 'Column Chart (Stacked)', component: StackedBarChart, category: 'examples' },
+  { name: 'Bar Chart (Grouped)', component: GroupedBarChart, category: 'examples' },
+  { name: 'Single Value', component: SingleValueWithSparkline, category: 'examples' },
+  { name: 'Data Table', component: StreamingDataTable, category: 'examples' },
+  { name: 'Metrics Dashboard', component: MetricsDashboard, category: 'examples' },
+  { name: 'Chart/Table Toggle', component: ChartWithTableToggle, category: 'examples' },
+  { name: 'Geo Chart', component: StreamingGeoChart, category: 'examples' },
+  { name: 'Table (Frame-Bound)', component: FrameBoundTable, category: 'examples' },
+  { name: 'Table (Key-Bound)', component: KeyBoundTable, category: 'examples' },
+  { name: 'Geo Chart (Key-Bound)', component: KeyBoundGeoChart, category: 'examples' },
+  { name: 'Bar Chart (Frame-Bound)', component: FrameBoundBarChart, category: 'examples' },
+  { name: 'Line Chart (Axis-Bound)', component: AxisBoundLineChart, category: 'examples' },
+  // Grammar API Examples
+  { name: 'Grammar: Line Chart', component: GrammarLineChart, category: 'grammar' },
+  { name: 'Grammar: Multi-Mark', component: GrammarMultiMark, category: 'grammar' },
+  { name: 'Grammar: Bar Chart', component: GrammarBarChart, category: 'grammar' },
+  { name: 'Grammar: Stacked Area', component: GrammarStackedArea, category: 'grammar' },
+  { name: 'Grammar: Compiled Config', component: GrammarCompiledChart, category: 'grammar' },
 ];
 
 export default function App() {
@@ -66,9 +82,10 @@ export default function App() {
   const isDark = theme === 'dark';
   const sourceCode = exampleSources[currentExample.name] || '// Source code not available';
 
-  // Separate playground from other examples
-  const playgroundExample = examples.find(e => e.isPlayground);
-  const chartExamples = examples.filter(e => !e.isPlayground);
+  // Separate playgrounds from other examples
+  const playgroundExamples = examples.filter(e => e.isPlayground);
+  const chartExamples = examples.filter(e => !e.isPlayground && e.category === 'examples');
+  const grammarExamples = examples.filter(e => e.category === 'grammar');
 
   const renderNavButton = (example: ExampleItem, index: number) => (
     <li key={index} style={{ marginBottom: '4px' }}>
@@ -175,12 +192,16 @@ export default function App() {
           </div>
 
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {/* Playground */}
-            {playgroundExample && renderNavButton(playgroundExample, examples.indexOf(playgroundExample))}
+            {/* Playgrounds */}
+            {playgroundExamples.map(example => renderNavButton(example, examples.indexOf(example)))}
 
             {/* Chart Examples */}
             <div style={categoryTitleStyle}>Examples</div>
             {chartExamples.map(example => renderNavButton(example, examples.indexOf(example)))}
+
+            {/* Grammar API Examples */}
+            <div style={categoryTitleStyle}>Grammar API</div>
+            {grammarExamples.map(example => renderNavButton(example, examples.indexOf(example)))}
           </ul>
         </nav>
 

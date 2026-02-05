@@ -131,11 +131,11 @@ export function applyLegend(
     },
     click: onItemClick
       ? (e: { __data__?: { index?: number } }) => {
-          const index = e?.__data__?.index;
-          if (index !== undefined) {
-            onItemClick(index);
-          }
+        const index = e?.__data__?.index;
+        if (index !== undefined) {
+          onItemClick(index);
         }
+      }
       : undefined,
   });
 }
@@ -358,19 +358,19 @@ export function createDefaultConfig(
 export function getChartThemeColors(theme: 'dark' | 'light') {
   return theme === 'dark'
     ? {
-        text: '#E5E7EB',
-        textSecondary: '#9CA3AF',
-        line: '#374151',
-        gridline: '#374151',
-        background: 'transparent',
-      }
+      text: '#E5E5E5', // Matches darkTheme.textColor
+      textSecondary: '#9CA3AF',
+      line: '#6B7280', // Matches darkTheme.axisColor (was #374151 which is very dark)
+      gridline: '#374151', // Matches darkTheme.gridColor
+      background: 'transparent',
+    }
     : {
-        text: '#1F2937',
-        textSecondary: '#6B7280',
-        line: '#E5E7EB',
-        gridline: '#E5E7EB',
-        background: 'transparent',
-      };
+      text: '#000000',
+      textSecondary: '#374151',
+      line: '#4B5563',
+      gridline: '#9CA3AF',
+      background: 'transparent',
+    };
 }
 
 /**

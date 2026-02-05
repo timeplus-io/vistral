@@ -303,7 +303,7 @@ Shows only rows with the latest timestamp - useful for real-time snapshots:
 
 ### Key-Bound (Deduplicate by Key)
 
-Keeps the latest value for each unique key - useful for live dashboards:
+Keeps the latest value for each unique key. Supports **composite keys** by passing an array of fields:
 
 ```tsx
 <StreamChart
@@ -313,7 +313,7 @@ Keeps the latest value for each unique key - useful for live dashboards:
     longitude: 'lng',
     temporal: {
       mode: 'key',
-      field: 'vehicle_id',
+      field: ['region', 'vehicle_id'], // Composite key
     },
   }}
   data={data}
@@ -322,26 +322,20 @@ Keeps the latest value for each unique key - useful for live dashboards:
 
 ## Using Individual Chart Components
 
-For more control, import individual chart components:
+For complex use cases not covered by `StreamChart`, you can use the lower-level `VistralChart` with a raw grammar specification, or the specialized `SingleValueChart` and `DataTable` components.
 
 ```tsx
 import { 
-  TimeSeriesChart, 
-  BarColumnChart, 
+  VistralChart,
   SingleValueChart, 
   DataTable 
 } from '@timeplus/vistral';
 
-// Time Series (Line/Area)
-<TimeSeriesChart config={config} data={data} theme="dark" />
+// Advanced: Use Grammar directly
+<VistralChart spec={mySpec} source={data} />
 
-// Bar/Column
-<BarColumnChart config={config} data={data} theme="dark" />
-
-// Single Value
+// Specialized Components
 <SingleValueChart config={config} data={data} theme="dark" />
-
-// Data Table
 <DataTable config={config} data={data} theme="dark" />
 ```
 
@@ -542,8 +536,7 @@ The build process generates:
 │   ├── index.ts          # Main exports
 │   ├── charts/           # Chart components
 │   │   ├── StreamChart.tsx
-│   │   ├── TimeSeriesChart.tsx
-│   │   ├── BarColumnChart.tsx
+│   │   ├── VistralChart.tsx  # Grammar engine
 │   │   ├── SingleValueChart.tsx
 │   │   └── DataTable.tsx
 │   ├── core/             # Core utilities
