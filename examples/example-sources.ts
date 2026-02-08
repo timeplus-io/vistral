@@ -1317,6 +1317,128 @@ function GrammarScatterChart() {
   );
 }`,
 
+  'Grammar: Candlestick': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+
+// Candlestick (OHLC) Chart — rect marks with EncodeFn on a time axis
+// G2 has no native candlestick mark, so we compose one from:
+//   1. Hidden point mark — anchors the time scale for axis-bound sliding window
+//   2. Wick: thin rect mapping y to [low, high]
+//   3. Body: wider rect mapping y to [open, close]
+// We use "rect" instead of "interval" because interval requires a band scale,
+// while rect works with continuous time scales. Each rect's x is an EncodeFn
+// that computes a small time range around the candle's timestamp.
+
+function GrammarCandlestickChart() {
+  const handleRef = useRef<ChartHandle | null>(null);
+  const priceRef = useRef(100);
+  const loadedRef = useRef(false);           // Guard against Strict Mode double-run
+
+  const CANDLE_MS = 3000;                  // Interval between candles
+  const BODY_HALF = CANDLE_MS * 0.35;      // Body width (70% of candle spacing)
+  const WICK_HALF = CANDLE_MS * 0.03;      // Wick width (thin line)
+
+  // Map direction → color directly (identity scale prevents group dodging)
+  const dirColor = (d) => d.direction === 'bullish' ? '#22C55E' : '#EF4444';
+
+  const spec: VistralSpec = {
+    marks: [
+      // Invisible anchor — gives the time scale its sliding-window domain
+      {
+        type: 'point',
+        encode: { x: 'time', y: 'close' },
+        style: { r: 0, fillOpacity: 0, strokeOpacity: 0, strokeWidth: 0 },
+        tooltip: false,
+      },
+      // Wick — thin rect from low to high
+      {
+        type: 'rect',
+        encode: {
+          x: (d) => {                        // EncodeFn: time range for width
+            const t = new Date(d.time).getTime();
+            return [new Date(t - WICK_HALF), new Date(t + WICK_HALF)];
+          },
+          y: (d) => [d.low, d.high],        // EncodeFn: price range
+          color: dirColor,                   // Identity color — no grouping
+        },
+        scales: { color: { type: 'identity' } },
+        tooltip: false,
+      },
+      // Body — wider rect from open to close
+      {
+        type: 'rect',
+        encode: {
+          x: (d) => {
+            const t = new Date(d.time).getTime();
+            return [new Date(t - BODY_HALF), new Date(t + BODY_HALF)];
+          },
+          y: (d) => [d.open, d.close],
+          color: dirColor,
+        },
+        scales: { color: { type: 'identity' } },
+      },
+    ],
+    scales: {
+      x: { type: 'time' },                  // Continuous time axis
+      y: { type: 'linear', nice: true },
+    },
+    temporal: { mode: 'axis', field: 'time', range: 2 },  // 2-min sliding window
+    streaming: { maxItems: 500, throttle: 100 },
+    axes: {
+      x: { title: false, grid: false },
+      y: { title: 'Price (\$)', grid: true },
+    },
+    legend: false,
+    animate: false,
+  };
+
+  useEffect(() => {
+    function generateCandle(basePrice: number, time: string) {
+      const volatility = basePrice * 0.02;
+      const open = basePrice;
+      const moves = Array.from({ length: 4 }, () => (Math.random() - 0.48) * volatility);
+      const close = open + moves.reduce((a, b) => a + b, 0);
+      const high = Math.max(open, close) + Math.random() * volatility * 0.5;
+      const low = Math.min(open, close) - Math.random() * volatility * 0.5;
+      const direction = close >= open ? 'bullish' : 'bearish';
+      return { time, open: +open.toFixed(2), high: +high.toFixed(2),
+               low: +low.toFixed(2), close: +close.toFixed(2), direction };
+    }
+
+    // Pre-populate once (guard against React 18 Strict Mode double-run)
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      const now = Date.now();
+      const history = [];
+      let price = 100;
+      for (let i = 30; i >= 0; i--) {
+        const candle = generateCandle(price, new Date(now - i * CANDLE_MS).toISOString());
+        history.push(candle);
+        price = candle.close;
+      }
+      priceRef.current = price;
+      handleRef.current?.append(history);
+    }
+
+    // Stream new candles via append()
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        const candle = generateCandle(priceRef.current, new Date().toISOString());
+        priceRef.current = candle.close;
+        handleRef.current.append([candle]);
+      }
+    }, CANDLE_MS);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <VistralChart
+      spec={spec}
+      height={400}
+      onReady={(handle) => { handleRef.current = handle; }}
+    />
+  );
+}`,
+
   'Grammar: Heatmap': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
 
 // Heatmap — cell mark with color encoding
