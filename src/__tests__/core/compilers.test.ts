@@ -1,6 +1,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { compileTimeSeriesConfig, compileBarColumnConfig } from '../../core/compilers';
+import { DEFAULT_MAX_ITEMS } from '../../types/spec';
 import type { TimeSeriesConfig, BarColumnConfig } from '../../types';
 
 describe('compileTimeSeriesConfig', () => {
@@ -37,7 +38,7 @@ describe('compileTimeSeriesConfig', () => {
       color: 'series',
     });
     // Updated expectation: stackY should include orderBy
-    expect(spec.transforms).toEqual([{ type: 'stackY', orderBy: 'value' }]);
+    expect(spec.transforms).toEqual([{ type: 'stackY' }]);
   });
 
   it('should set correct default shape for area chart', () => {
@@ -161,9 +162,14 @@ describe('compileTimeSeriesConfig', () => {
     expect(spec.scales?.x?.mask).toBe('HH:mm');
   });
 
-  it('should set streaming maxItems to 1000', () => {
+  it('should set streaming maxItems to DEFAULT_MAX_ITEMS when not configured', () => {
     const spec = compileTimeSeriesConfig(baseConfig);
-    expect(spec.streaming?.maxItems).toBe(1000);
+    expect(spec.streaming?.maxItems).toBe(DEFAULT_MAX_ITEMS);
+  });
+
+  it('should use config.maxItems when provided', () => {
+    const spec = compileTimeSeriesConfig({ ...baseConfig, maxItems: 500 });
+    expect(spec.streaming?.maxItems).toBe(500);
   });
 
   it('should set theme to dark', () => {
@@ -278,8 +284,13 @@ describe('compileBarColumnConfig', () => {
     expect(spec.marks[0].encode?.color).toBe('type');
   });
 
-  it('should set streaming maxItems to 1000', () => {
+  it('should set streaming maxItems to DEFAULT_MAX_ITEMS when not configured', () => {
     const spec = compileBarColumnConfig(baseConfig);
-    expect(spec.streaming?.maxItems).toBe(1000);
+    expect(spec.streaming?.maxItems).toBe(DEFAULT_MAX_ITEMS);
+  });
+
+  it('should use config.maxItems when provided', () => {
+    const spec = compileBarColumnConfig({ ...baseConfig, maxItems: 2000 });
+    expect(spec.streaming?.maxItems).toBe(2000);
   });
 });

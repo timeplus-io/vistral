@@ -463,6 +463,545 @@ export function GrammarCompiledChart() {
 }
 
 // =============================================================================
+// Example 6: GrammarRoseChart - Nightingale Rose (interval + polar)
+// =============================================================================
+
+export function GrammarRoseChart() {
+  const theme = useTheme();
+  const handleRef = useRef<ChartHandle | null>(null);
+  const currentValues = useRef<Record<string, number>>({
+    'API': 80,
+    'Auth': 45,
+    'Database': 95,
+    'Cache': 60,
+    'Worker': 70,
+    'Gateway': 55,
+  });
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'interval',
+        encode: {
+          x: 'service',
+          y: 'requests',
+          color: 'service',
+        },
+        style: {
+          lineWidth: 1,
+        },
+      },
+    ],
+    scales: {
+      x: { padding: 0.1 },
+      y: { type: 'linear', nice: true },
+    },
+    coordinate: {
+      type: 'polar',
+    },
+    temporal: { mode: 'frame', field: 'snapshot' },
+    streaming: { maxItems: 500 },
+    axes: {
+      x: { title: false },
+      y: { title: false, grid: true },
+    },
+    legend: { position: 'bottom' },
+    theme: theme as 'dark' | 'light',
+    animate: false,
+  };
+
+  useEffect(() => {
+    const services = Object.keys(currentValues.current);
+    const snapshot = new Date().toISOString();
+    const initialRows = services.map((service) => ({
+      snapshot, service, requests: Math.round(currentValues.current[service]),
+    }));
+    if (handleRef.current) {
+      handleRef.current.replace(initialRows);
+    }
+
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        const snap = new Date().toISOString();
+        const rows = services.map((service) => {
+          currentValues.current[service] = generateNextValue(currentValues.current[service], 10, 150, 0.15);
+          return { snapshot: snap, service, requests: Math.round(currentValues.current[service]) };
+        });
+        handleRef.current.replace(rows);
+      }
+    }, 1200);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{ height: 400 }}>
+      <VistralChart
+        spec={spec}
+        height={400}
+        onReady={(handle) => { handleRef.current = handle; }}
+      />
+    </div>
+  );
+}
+
+// =============================================================================
+// Example 7: GrammarDonutChart - Donut/Pie (interval + theta + stackY)
+// =============================================================================
+
+export function GrammarDonutChart() {
+  const theme = useTheme();
+  const handleRef = useRef<ChartHandle | null>(null);
+  const currentValues = useRef<Record<string, number>>({
+    'HTTP 200': 600,
+    'HTTP 301': 80,
+    'HTTP 404': 45,
+    'HTTP 500': 20,
+    'HTTP 503': 12,
+  });
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'interval',
+        encode: {
+          y: 'count',
+          color: 'status',
+        },
+        transforms: [{ type: 'stackY' }],
+        style: {
+          lineWidth: 1,
+        },
+        labels: [
+          {
+            text: 'status',
+            style: { fontSize: 11 },
+          },
+        ],
+      },
+    ],
+    coordinate: {
+      type: 'theta',
+      innerRadius: 0.5,
+    },
+    temporal: { mode: 'frame', field: 'snapshot' },
+    streaming: { maxItems: 500 },
+    legend: { position: 'bottom' },
+    theme: theme as 'dark' | 'light',
+    animate: false,
+  };
+
+  useEffect(() => {
+    const statuses = Object.keys(currentValues.current);
+    const snapshot = new Date().toISOString();
+    const initialRows = statuses.map((status) => ({
+      snapshot, status, count: Math.round(currentValues.current[status]),
+    }));
+    if (handleRef.current) {
+      handleRef.current.replace(initialRows);
+    }
+
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        const snap = new Date().toISOString();
+        const rows = statuses.map((status) => {
+          currentValues.current[status] = generateNextValue(currentValues.current[status], 5, 800, 0.1);
+          return { snapshot: snap, status, count: Math.round(currentValues.current[status]) };
+        });
+        handleRef.current.replace(rows);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{ height: 400 }}>
+      <VistralChart
+        spec={spec}
+        height={400}
+        onReady={(handle) => { handleRef.current = handle; }}
+      />
+    </div>
+  );
+}
+
+// =============================================================================
+// Example 8: GrammarRadarChart - Radar (line + area + polar)
+// =============================================================================
+
+export function GrammarRadarChart() {
+  const theme = useTheme();
+  const handleRef = useRef<ChartHandle | null>(null);
+  const currentValues = useRef({
+    'server-a': { CPU: 70, Memory: 55, Disk: 40, Network: 80, Latency: 30 },
+    'server-b': { CPU: 50, Memory: 75, Disk: 60, Network: 45, Latency: 65 },
+  });
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'line',
+        encode: {
+          x: 'metric',
+          y: 'value',
+          color: 'server',
+        },
+        style: {
+          connect: true,
+        },
+      },
+      {
+        type: 'area',
+        encode: {
+          x: 'metric',
+          y: 'value',
+          color: 'server',
+        },
+        style: {
+          fillOpacity: 0.15,
+        },
+      },
+      {
+        type: 'point',
+        encode: {
+          x: 'metric',
+          y: 'value',
+          color: 'server',
+        },
+        tooltip: false,
+      },
+    ],
+    scales: {
+      x: { padding: 0.5 },
+      y: { type: 'linear', domain: [0, 100], nice: true },
+    },
+    coordinate: {
+      type: 'polar',
+    },
+    temporal: { mode: 'frame', field: 'snapshot' },
+    streaming: { maxItems: 500 },
+    axes: {
+      x: { title: false, grid: true },
+      y: { title: false, grid: true },
+    },
+    legend: { position: 'bottom', interactive: true },
+    theme: theme as 'dark' | 'light',
+    animate: false,
+  };
+
+  useEffect(() => {
+    const servers = Object.keys(currentValues.current) as Array<keyof typeof currentValues.current>;
+    const metrics = ['CPU', 'Memory', 'Disk', 'Network', 'Latency'];
+    const snapshot = new Date().toISOString();
+    const initialRows: Record<string, unknown>[] = [];
+    servers.forEach((server) => {
+      metrics.forEach((metric) => {
+        initialRows.push({
+          snapshot,
+          server,
+          metric,
+          value: currentValues.current[server][metric as keyof typeof currentValues.current[typeof server]],
+        });
+      });
+    });
+    if (handleRef.current) {
+      handleRef.current.replace(initialRows);
+    }
+
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        const snap = new Date().toISOString();
+        const rows: Record<string, unknown>[] = [];
+        servers.forEach((server) => {
+          metrics.forEach((metric) => {
+            const key = metric as keyof typeof currentValues.current[typeof server];
+            currentValues.current[server][key] = generateNextValue(
+              currentValues.current[server][key], 10, 95, 0.12
+            );
+            rows.push({ snapshot: snap, server, metric, value: Math.round(currentValues.current[server][key]) });
+          });
+        });
+        handleRef.current.replace(rows);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{ height: 400 }}>
+      <VistralChart
+        spec={spec}
+        height={400}
+        onReady={(handle) => { handleRef.current = handle; }}
+      />
+    </div>
+  );
+}
+
+// =============================================================================
+// Example 9: GrammarRadialBar - Radial bar chart (interval + radial)
+// =============================================================================
+
+export function GrammarRadialBar() {
+  const theme = useTheme();
+  const handleRef = useRef<ChartHandle | null>(null);
+  const currentValues = useRef<Record<string, number>>({
+    'us-east': 72,
+    'us-west': 58,
+    'eu-west': 85,
+    'ap-south': 43,
+    'ap-east': 66,
+  });
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'interval',
+        encode: {
+          x: 'region',
+          y: 'throughput',
+          color: 'region',
+        },
+        style: {
+          lineWidth: 1,
+        },
+      },
+    ],
+    scales: {
+      x: { padding: 0.3 },
+      y: { type: 'linear', domain: [0, 100] },
+    },
+    coordinate: {
+      type: 'radial',
+      innerRadius: 0.3,
+    },
+    temporal: { mode: 'frame', field: 'snapshot' },
+    streaming: { maxItems: 500 },
+    axes: {
+      x: { title: false },
+      y: { title: false, grid: true },
+    },
+    legend: false,
+    theme: theme as 'dark' | 'light',
+    animate: false,
+  };
+
+  useEffect(() => {
+    const regions = Object.keys(currentValues.current);
+    const snapshot = new Date().toISOString();
+    const initialRows = regions.map((region) => ({
+      snapshot, region, throughput: Math.round(currentValues.current[region]),
+    }));
+    if (handleRef.current) {
+      handleRef.current.replace(initialRows);
+    }
+
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        const snap = new Date().toISOString();
+        const rows = regions.map((region) => {
+          currentValues.current[region] = generateNextValue(currentValues.current[region], 15, 98, 0.1);
+          return { snapshot: snap, region, throughput: Math.round(currentValues.current[region]) };
+        });
+        handleRef.current.replace(rows);
+      }
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{ height: 400 }}>
+      <VistralChart
+        spec={spec}
+        height={400}
+        onReady={(handle) => { handleRef.current = handle; }}
+      />
+    </div>
+  );
+}
+
+// =============================================================================
+// Example 10: GrammarScatterChart - Streaming scatter/bubble (point mark)
+// =============================================================================
+
+export function GrammarScatterChart() {
+  const theme = useTheme();
+  const handleRef = useRef<ChartHandle | null>(null);
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'point',
+        encode: {
+          x: 'latency',
+          y: 'throughput',
+          color: 'region',
+          size: 'connections',
+        },
+        style: {
+          fillOpacity: 0.7,
+        },
+      },
+    ],
+    scales: {
+      x: { type: 'linear', nice: true },
+      y: { type: 'linear', nice: true },
+      size: { range: [4, 20] },
+    },
+    temporal: { mode: 'frame', field: 'snapshot' },
+    streaming: { maxItems: 500 },
+    axes: {
+      x: { title: 'Latency (ms)', grid: true },
+      y: { title: 'Throughput (req/s)', grid: true },
+    },
+    legend: { position: 'bottom', interactive: true },
+    theme: theme as 'dark' | 'light',
+    animate: false,
+  };
+
+  const regionsRef = useRef([
+    { name: 'us-east', latency: 45, throughput: 850, connections: 120 },
+    { name: 'us-west', latency: 65, throughput: 720, connections: 90 },
+    { name: 'eu-west', latency: 30, throughput: 950, connections: 150 },
+    { name: 'ap-south', latency: 120, throughput: 450, connections: 60 },
+    { name: 'ap-east', latency: 95, throughput: 580, connections: 80 },
+  ]);
+
+  useEffect(() => {
+    const snapshot = new Date().toISOString();
+    const initialRows = regionsRef.current.map((r) => ({
+      snapshot, region: r.name, latency: r.latency, throughput: r.throughput, connections: r.connections,
+    }));
+    if (handleRef.current) {
+      handleRef.current.replace(initialRows);
+    }
+
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        const snap = new Date().toISOString();
+        const rows = regionsRef.current.map((r) => {
+          r.latency = generateNextValue(r.latency, 10, 200, 0.12);
+          r.throughput = generateNextValue(r.throughput, 200, 1200, 0.1);
+          r.connections = generateNextValue(r.connections, 20, 200, 0.08);
+          return {
+            snapshot: snap,
+            region: r.name,
+            latency: Math.round(r.latency),
+            throughput: Math.round(r.throughput),
+            connections: Math.round(r.connections),
+          };
+        });
+        handleRef.current.replace(rows);
+      }
+    }, 800);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{ height: 400 }}>
+      <VistralChart
+        spec={spec}
+        height={400}
+        onReady={(handle) => { handleRef.current = handle; }}
+      />
+    </div>
+  );
+}
+
+// =============================================================================
+// Example 11: GrammarHeatmap - Streaming heatmap grid (cell mark)
+// =============================================================================
+
+export function GrammarHeatmap() {
+  const theme = useTheme();
+  const handleRef = useRef<ChartHandle | null>(null);
+  const hours = ['00', '04', '08', '12', '16', '20'];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const gridValues = useRef<Record<string, number>>({});
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'cell',
+        encode: {
+          x: 'hour',
+          y: 'day',
+          color: 'load',
+        },
+        style: {
+          lineWidth: 1,
+        },
+      },
+    ],
+    scales: {
+      color: { type: 'sequential', range: ['#0d47a1', '#2196f3', '#64b5f6', '#fff176', '#ff9800', '#f44336'] },
+    },
+    temporal: { mode: 'frame', field: 'snapshot' },
+    streaming: { maxItems: 500 },
+    axes: {
+      x: { title: 'Hour of Day', grid: false },
+      y: { title: false, grid: false },
+    },
+    legend: { position: 'bottom' },
+    theme: theme as 'dark' | 'light',
+    animate: false,
+  };
+
+  useEffect(() => {
+    // Initialize grid values
+    days.forEach((day) => {
+      hours.forEach((hour) => {
+        const key = `${day}_${hour}`;
+        const hourNum = parseInt(hour);
+        // Base load pattern: higher during business hours
+        const base = (hourNum >= 8 && hourNum <= 16) ? 70 : 30;
+        // Weekends are lower
+        const weekendFactor = (day === 'Sat' || day === 'Sun') ? 0.5 : 1;
+        gridValues.current[key] = base * weekendFactor + Math.random() * 20;
+      });
+    });
+
+    const snapshot = new Date().toISOString();
+    const initialRows: Record<string, unknown>[] = [];
+    days.forEach((day) => {
+      hours.forEach((hour) => {
+        initialRows.push({
+          snapshot, day, hour, load: Math.round(gridValues.current[`${day}_${hour}`]),
+        });
+      });
+    });
+    if (handleRef.current) {
+      handleRef.current.replace(initialRows);
+    }
+
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        const snap = new Date().toISOString();
+        const rows: Record<string, unknown>[] = [];
+        days.forEach((day) => {
+          hours.forEach((hour) => {
+            const key = `${day}_${hour}`;
+            gridValues.current[key] = generateNextValue(gridValues.current[key], 5, 100, 0.08);
+            rows.push({ snapshot: snap, day, hour, load: Math.round(gridValues.current[key]) });
+          });
+        });
+        handleRef.current.replace(rows);
+      }
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{ height: 400 }}>
+      <VistralChart
+        spec={spec}
+        height={400}
+        onReady={(handle) => { handleRef.current = handle; }}
+      />
+    </div>
+  );
+}
+
+// =============================================================================
 // Default Export - All Grammar Examples
 // =============================================================================
 
@@ -472,4 +1011,10 @@ export default {
   GrammarBarChart,
   GrammarStackedArea,
   GrammarCompiledChart,
+  GrammarRoseChart,
+  GrammarDonutChart,
+  GrammarRadarChart,
+  GrammarRadialBar,
+  GrammarScatterChart,
+  GrammarHeatmap,
 };

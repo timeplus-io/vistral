@@ -744,6 +744,43 @@ function collectTimeFields(spec: VistralSpec): Set<string> {
   return timeFields;
 }
 
+/**
+ * If any area or line mark uses a `color` encoding (multi-series), return the
+ * field name so the pipeline can apply a stable secondary sort.  This prevents
+ * the visual stacking order from flipping when series values cross each other.
+ */
+function getSeriesFieldForStableSort(spec: VistralSpec): string | null {
+  for (const mark of spec.marks) {
+    if ((mark.type === 'area' || mark.type === 'line') && mark.encode?.color) {
+      const colorField = mark.encode.color;
+      if (typeof colorField === 'string') return colorField;
+    }
+  }
+  return null;
+}
+
+/**
+ * Find the time/x field from the spec — either from temporal config or from
+ * the first mark's x encoding that uses a time scale.
+ */
+function getTimeFieldFromSpec(spec: VistralSpec): string | null {
+  // 1. From temporal config
+  if (spec.temporal?.field) {
+    const f = spec.temporal.field;
+    return Array.isArray(f) ? f[0] : f;
+  }
+  // 2. From marks' x encoding with time scale
+  const topScales: Record<string, any> = spec.scales ?? {};
+  for (const mark of spec.marks) {
+    const markScales: Record<string, any> = mark.scales ?? {};
+    const merged = { ...topScales, ...markScales };
+    if (merged.x?.type === 'time' && typeof mark.encode?.x === 'string') {
+      return mark.encode.x;
+    }
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Pipeline
 // ---------------------------------------------------------------------------
@@ -765,6 +802,35 @@ export function buildG2Options(
 ): Record<string, any> {
   // Filter/sort data in JS — do NOT inject temporal transforms into G2
   let filteredData = filterDataByTemporal(spec, data);
+
+  // --- Stable sort by color/series field for area/line marks -----------------
+  // For stacked or overlapping area/line charts with a color encoding, the
+  // data rows within each time group must be in a consistent order.  Without
+  // this, the visual stacking order flips when series values cross each other.
+  const seriesField = getSeriesFieldForStableSort(spec);
+  if (seriesField && filteredData.length > 0) {
+    // Find the time/x field for the primary sort key
+    const timeField = getTimeFieldFromSpec(spec);
+    if (timeField) {
+      // Combined sort: primary by time, secondary by series (stable)
+      filteredData = [...filteredData].sort((a, b) => {
+        const ta = parseDateTime(a[timeField]);
+        const tb = parseDateTime(b[timeField]);
+        if (ta !== tb) return ta - tb;
+        // Same time — sort by series name for consistent stack order
+        const sa = String(a[seriesField] ?? '');
+        const sb = String(b[seriesField] ?? '');
+        return sa < sb ? -1 : sa > sb ? 1 : 0;
+      });
+    } else {
+      // No time field — just sort by series for consistent order
+      filteredData = [...filteredData].sort((a, b) => {
+        const sa = String(a[seriesField] ?? '');
+        const sb = String(b[seriesField] ?? '');
+        return sa < sb ? -1 : sa > sb ? 1 : 0;
+      });
+    }
+  }
 
   // --- Convert time-scale fields to Date objects ----------------------------
   // G2's time scale cannot parse ISO 8601 strings directly; it needs Date

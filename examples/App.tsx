@@ -21,6 +21,12 @@ import {
   GrammarBarChart,
   GrammarStackedArea,
   GrammarCompiledChart,
+  GrammarRoseChart,
+  GrammarDonutChart,
+  GrammarRadarChart,
+  GrammarRadialBar,
+  GrammarScatterChart,
+  GrammarHeatmap,
 } from './grammar-examples';
 import { Playground } from './Playground';
 import { GrammarPlayground } from './GrammarPlayground';
@@ -69,6 +75,12 @@ const examples: ExampleItem[] = [
   { name: 'Grammar: Bar Chart', component: GrammarBarChart, category: 'grammar' },
   { name: 'Grammar: Stacked Area', component: GrammarStackedArea, category: 'grammar' },
   { name: 'Grammar: Compiled Config', component: GrammarCompiledChart, category: 'grammar' },
+  { name: 'Grammar: Rose Chart', component: GrammarRoseChart, category: 'grammar' },
+  { name: 'Grammar: Donut Chart', component: GrammarDonutChart, category: 'grammar' },
+  { name: 'Grammar: Radar Chart', component: GrammarRadarChart, category: 'grammar' },
+  { name: 'Grammar: Radial Bar', component: GrammarRadialBar, category: 'grammar' },
+  { name: 'Grammar: Scatter/Bubble', component: GrammarScatterChart, category: 'grammar' },
+  { name: 'Grammar: Heatmap', component: GrammarHeatmap, category: 'grammar' },
 ];
 
 export default function App() {

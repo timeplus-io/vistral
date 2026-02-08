@@ -19,6 +19,7 @@ import {
   type GeoChartConfig,
 } from '@timeplus/vistral';
 import { ThemeContext } from './App';
+import { dataGenerators } from './data-utils';
 
 // Hook to get current theme
 function useTheme() {
@@ -106,14 +107,14 @@ export function BasicLineChart() {
 
 export function MultiSeriesAreaChart() {
   const theme = useTheme();
-  // Using 'regional_sales' generator
+  // Using 'sensors' generator (temperature by location)
   const { data, append } = useStreamingData<Record<string, unknown>[]>(
     [],
-    180 // Keep ~180 points (60 per series * 3 series)
+    240 // Keep ~240 points (60 per location * 4 locations)
   );
 
   useEffect(() => {
-    const generator = dataGenerators.regional_sales;
+    const generator = dataGenerators.sensors;
 
     // Simulate streaming
     const interval = setInterval(() => {
@@ -125,20 +126,20 @@ export function MultiSeriesAreaChart() {
   }, [append]);
 
   const source: StreamDataSource = {
-    columns: dataGenerators.regional_sales.columns,
+    columns: dataGenerators.sensors.columns,
     data: data,
     isStreaming: true,
   };
 
   const config: TimeSeriesConfig = {
     chartType: 'area',
-    xAxis: 'time',
-    yAxis: 'value',
-    color: 'region',
+    xAxis: 'timestamp',
+    yAxis: 'temperature',
+    color: 'location',
     legend: true,
     gridlines: true,
     xTitle: 'Time',
-    yTitle: 'Active Users',
+    yTitle: 'Temperature (\u00B0C)',
     colors: findPaletteByLabel('Morning')?.values,
   };
 

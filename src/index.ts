@@ -48,6 +48,9 @@ export type {
   TemporalConfig,
 } from './types';
 
+// VistralSpec constants
+export { DEFAULT_MAX_ITEMS } from './types';
+
 // VistralSpec types
 export type {
   VistralSpec,

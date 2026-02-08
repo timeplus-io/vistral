@@ -21,6 +21,7 @@ import React, {
   forwardRef,
 } from 'react';
 import { Chart } from '@antv/g2';
+import { DEFAULT_MAX_ITEMS } from '../types/spec';
 import type { VistralSpec } from '../types/spec';
 import type { StreamDataSource, ColumnDefinition } from '../types';
 import { buildG2Options } from '../core/spec-engine';
@@ -206,7 +207,7 @@ export const VistralChart = forwardRef<ChartHandle, VistralChartProps>(
 
     // ----- Imperative handle -----
 
-    const maxItems = spec.streaming?.maxItems ?? 1000;
+    const maxItems = spec.streaming?.maxItems ?? DEFAULT_MAX_ITEMS;
 
     const handleRef = useRef<ChartHandle>({
       append: () => {},
