@@ -16,9 +16,12 @@ export type EncodeFn = (datum: Record<string, unknown>) => unknown;
 // Streaming
 // ---------------------------------------------------------------------------
 
+/** Default maximum number of data items kept in memory for streaming charts. */
+export const DEFAULT_MAX_ITEMS = 1000;
+
 /** Streaming data management configuration. */
 export interface StreamingSpec {
-  /** Maximum number of data items to keep in memory. Default: 1000 */
+  /** Maximum number of data items to keep in memory. Default: DEFAULT_MAX_ITEMS (1000) */
   maxItems?: number;
   /** How incoming data is merged with existing data. Default: 'append' */
   mode?: 'append' | 'replace';

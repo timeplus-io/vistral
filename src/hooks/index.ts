@@ -5,6 +5,7 @@
 import { Chart } from '@antv/g2';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ProcessedDataSource, StreamDataSource } from '../types';
+import { DEFAULT_MAX_ITEMS } from '../types/spec';
 import { processDataSource } from '../utils';
 
 /**
@@ -87,7 +88,7 @@ export function useDataSource(
  */
 export function useStreamingData<T>(
   initialData: T[],
-  maxItems = 1000
+  maxItems = DEFAULT_MAX_ITEMS
 ): {
   data: T[];
   append: (items: T | T[]) => void;

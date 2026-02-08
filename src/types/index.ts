@@ -63,6 +63,8 @@ export interface ChartConfigBase {
   colors?: string[];
   /** Temporal binding configuration */
   temporal?: TemporalConfig;
+  /** Maximum number of data items to keep for streaming. Defaults to DEFAULT_MAX_ITEMS (1000). */
+  maxItems?: number;
 }
 
 // Time Series Chart Configuration
@@ -302,6 +304,7 @@ export interface ProcessedDataSource {
 }
 
 // VistralSpec grammar types
+export { DEFAULT_MAX_ITEMS } from './spec';
 export type {
   VistralSpec,
   MarkSpec,

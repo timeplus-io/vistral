@@ -5,6 +5,7 @@
 
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import type { TableConfig, StreamDataSource, ColumnDefinition } from '../types';
+import { DEFAULT_MAX_ITEMS } from '../types/spec';
 import { useChart } from '../hooks';
 import { isNumericColumn, rowToArray, formatNumber, applyTemporalFilter } from '../utils';
 
@@ -280,7 +281,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   className,
   style,
   onConfigChange,
-  maxRows = 100,
+  maxRows = DEFAULT_MAX_ITEMS,
 }) => {
   // Merge with defaults
   const defaults = getTableDefaults(dataSource.columns);

@@ -241,6 +241,7 @@ export const StreamChart: React.FC<StreamChartProps> = ({
           className={className}
           style={style}
           onConfigChange={onConfigChange as (config: TableConfig) => void}
+          maxRows={config.maxItems}
         />
       </ChartErrorBoundary>
     );
@@ -295,6 +296,7 @@ export const StreamChart: React.FC<StreamChartProps> = ({
           className={className}
           style={style}
           onConfigChange={onConfigChange as (config: TableConfig) => void}
+          maxRows={config.maxItems}
         />
       );
     }
@@ -307,6 +309,7 @@ export const StreamChart: React.FC<StreamChartProps> = ({
           theme={theme}
           className={className}
           style={style}
+          maxItems={config.maxItems}
         />
       );
     }

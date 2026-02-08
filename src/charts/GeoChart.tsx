@@ -5,6 +5,7 @@
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import type { GeoChartConfig, StreamDataSource, ColumnDefinition } from '../types';
+import { DEFAULT_MAX_ITEMS } from '../types/spec';
 import { findColumnIndex, rowToArray, applyTemporalFilter } from '../utils';
 import { multiColorPalettes } from '../themes';
 
@@ -19,6 +20,8 @@ export interface GeoChartProps {
   className?: string;
   /** Container style */
   style?: React.CSSProperties;
+  /** Maximum data points for streaming. Defaults to config.maxItems or DEFAULT_MAX_ITEMS. */
+  maxItems?: number;
 }
 
 // Tile providers
@@ -155,6 +158,7 @@ export const GeoChart: React.FC<GeoChartProps> = ({
   theme = 'dark',
   className,
   style,
+  maxItems,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -194,6 +198,10 @@ export const GeoChart: React.FC<GeoChartProps> = ({
     if (temporal) {
       processedData = applyTemporalFilter(processedData, columns, temporal);
     }
+
+    // Limit data to maxItems
+    const effectiveMaxItems = maxItems ?? config.maxItems ?? DEFAULT_MAX_ITEMS;
+    processedData = processedData.slice(-effectiveMaxItems);
 
     const result: Array<{
       lat: number;

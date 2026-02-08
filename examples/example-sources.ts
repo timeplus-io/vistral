@@ -952,4 +952,446 @@ function GrammarCompiledChart() {
     />
   );
 }`,
+
+  'Grammar: Rose Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+
+// Nightingale Rose Chart — interval mark + polar coordinate
+// The same "interval" mark that makes a bar chart becomes a rose chart
+// simply by changing the coordinate system to "polar".
+
+function GrammarRoseChart() {
+  const handleRef = useRef<ChartHandle | null>(null);
+  const currentValues = useRef<Record<string, number>>({
+    'API': 80, 'Auth': 45, 'Database': 95,
+    'Cache': 60, 'Worker': 70, 'Gateway': 55,
+  });
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'interval',                    // Same mark as a bar chart
+        encode: { x: 'service', y: 'requests', color: 'service' },
+        style: { lineWidth: 1 },
+      },
+    ],
+    scales: {
+      x: { padding: 0.1 },
+      y: { type: 'linear', nice: true },
+    },
+    coordinate: { type: 'polar' },           // This makes it a rose chart!
+    temporal: { mode: 'frame', field: 'snapshot' },
+    streaming: { maxItems: 500 },
+    axes: {
+      x: { title: false },
+      y: { title: false, grid: true },
+    },
+    legend: { position: 'bottom' },
+    animate: false,
+  };
+
+  useEffect(() => {
+    const services = Object.keys(currentValues.current);
+
+    // Initial data
+    const snapshot = new Date().toISOString();
+    handleRef.current?.replace(
+      services.map(service => ({
+        snapshot, service, requests: Math.round(currentValues.current[service]),
+      }))
+    );
+
+    // Stream updates
+    const interval = setInterval(() => {
+      const snap = new Date().toISOString();
+      const rows = services.map(service => {
+        currentValues.current[service] =
+          generateNextValue(currentValues.current[service], 10, 150, 0.15);
+        return { snapshot: snap, service, requests: Math.round(currentValues.current[service]) };
+      });
+      handleRef.current?.replace(rows);
+    }, 1200);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <VistralChart
+      spec={spec}
+      height={400}
+      onReady={(handle) => { handleRef.current = handle; }}
+    />
+  );
+}`,
+
+  'Grammar: Donut Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+
+// Donut Chart — interval mark + theta coordinate + stackY
+// Uses "theta" coordinate (maps data to arc angles) with an inner radius
+// to create a donut. stackY stacks the values into proportional slices.
+
+function GrammarDonutChart() {
+  const handleRef = useRef<ChartHandle | null>(null);
+  const currentValues = useRef<Record<string, number>>({
+    'HTTP 200': 600, 'HTTP 301': 80, 'HTTP 404': 45,
+    'HTTP 500': 20, 'HTTP 503': 12,
+  });
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'interval',
+        encode: { y: 'count', color: 'status' },
+        transforms: [{ type: 'stackY' }],     // Stack into proportional slices
+        style: { lineWidth: 1 },
+        labels: [{ text: 'status', style: { fontSize: 11 } }],
+      },
+    ],
+    coordinate: {
+      type: 'theta',                           // Arc/pie coordinate system
+      innerRadius: 0.5,                        // Makes it a donut (0 = pie)
+    },
+    temporal: { mode: 'frame', field: 'snapshot' },
+    streaming: { maxItems: 500 },
+    legend: { position: 'bottom' },
+    animate: false,
+  };
+
+  useEffect(() => {
+    const statuses = Object.keys(currentValues.current);
+
+    handleRef.current?.replace(
+      statuses.map(status => ({
+        snapshot: new Date().toISOString(), status,
+        count: Math.round(currentValues.current[status]),
+      }))
+    );
+
+    const interval = setInterval(() => {
+      const snap = new Date().toISOString();
+      const rows = statuses.map(status => {
+        currentValues.current[status] =
+          generateNextValue(currentValues.current[status], 5, 800, 0.1);
+        return { snapshot: snap, status, count: Math.round(currentValues.current[status]) };
+      });
+      handleRef.current?.replace(rows);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <VistralChart
+      spec={spec}
+      height={400}
+      onReady={(handle) => { handleRef.current = handle; }}
+    />
+  );
+}`,
+
+  'Grammar: Radar Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+
+// Radar Chart — line + area + point marks in polar coordinate
+// Combines three marks (line for outline, area for fill, point for vertices)
+// all in polar coordinates to create a multi-series radar comparison.
+
+function GrammarRadarChart() {
+  const handleRef = useRef<ChartHandle | null>(null);
+  const currentValues = useRef({
+    'server-a': { CPU: 70, Memory: 55, Disk: 40, Network: 80, Latency: 30 },
+    'server-b': { CPU: 50, Memory: 75, Disk: 60, Network: 45, Latency: 65 },
+  });
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'line',                          // Outline
+        encode: { x: 'metric', y: 'value', color: 'server' },
+        style: { connect: true },
+      },
+      {
+        type: 'area',                          // Filled region
+        encode: { x: 'metric', y: 'value', color: 'server' },
+        style: { fillOpacity: 0.15 },
+      },
+      {
+        type: 'point',                         // Vertices
+        encode: { x: 'metric', y: 'value', color: 'server' },
+        tooltip: false,
+      },
+    ],
+    scales: {
+      x: { padding: 0.5 },
+      y: { type: 'linear', domain: [0, 100], nice: true },
+    },
+    coordinate: { type: 'polar' },            // Polar makes it a radar
+    temporal: { mode: 'frame', field: 'snapshot' },
+    streaming: { maxItems: 500 },
+    axes: {
+      x: { title: false, grid: true },
+      y: { title: false, grid: true },
+    },
+    legend: { position: 'bottom', interactive: true },
+    animate: false,
+  };
+
+  useEffect(() => {
+    const servers = Object.keys(currentValues.current);
+    const metrics = ['CPU', 'Memory', 'Disk', 'Network', 'Latency'];
+
+    // Build rows: one per server per metric
+    const buildRows = (snap: string) => {
+      const rows = [];
+      for (const server of servers) {
+        for (const metric of metrics) {
+          currentValues.current[server][metric] =
+            generateNextValue(currentValues.current[server][metric], 10, 95, 0.12);
+          rows.push({
+            snapshot: snap, server, metric,
+            value: Math.round(currentValues.current[server][metric]),
+          });
+        }
+      }
+      return rows;
+    };
+
+    handleRef.current?.replace(buildRows(new Date().toISOString()));
+
+    const interval = setInterval(() => {
+      handleRef.current?.replace(buildRows(new Date().toISOString()));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <VistralChart
+      spec={spec}
+      height={400}
+      onReady={(handle) => { handleRef.current = handle; }}
+    />
+  );
+}`,
+
+  'Grammar: Radial Bar': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+
+// Radial Bar Chart — interval mark + radial coordinate
+// Uses "radial" coordinate which maps categories to concentric arcs.
+// Compare with the regular bar chart (interval + transpose) and
+// rose chart (interval + polar) — same mark, different coordinates.
+
+function GrammarRadialBar() {
+  const handleRef = useRef<ChartHandle | null>(null);
+  const currentValues = useRef<Record<string, number>>({
+    'us-east': 72, 'us-west': 58, 'eu-west': 85,
+    'ap-south': 43, 'ap-east': 66,
+  });
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'interval',
+        encode: { x: 'region', y: 'throughput', color: 'region' },
+        style: { lineWidth: 1 },
+      },
+    ],
+    scales: {
+      x: { padding: 0.3 },
+      y: { type: 'linear', domain: [0, 100] },
+    },
+    coordinate: {
+      type: 'radial',                         // Radial = concentric arc bars
+      innerRadius: 0.3,
+    },
+    temporal: { mode: 'frame', field: 'snapshot' },
+    streaming: { maxItems: 500 },
+    axes: {
+      x: { title: false },
+      y: { title: false, grid: true },
+    },
+    legend: false,
+    animate: false,
+  };
+
+  useEffect(() => {
+    const regions = Object.keys(currentValues.current);
+
+    handleRef.current?.replace(
+      regions.map(region => ({
+        snapshot: new Date().toISOString(), region,
+        throughput: Math.round(currentValues.current[region]),
+      }))
+    );
+
+    const interval = setInterval(() => {
+      const snap = new Date().toISOString();
+      const rows = regions.map(region => {
+        currentValues.current[region] =
+          generateNextValue(currentValues.current[region], 15, 98, 0.1);
+        return { snapshot: snap, region, throughput: Math.round(currentValues.current[region]) };
+      });
+      handleRef.current?.replace(rows);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <VistralChart
+      spec={spec}
+      height={400}
+      onReady={(handle) => { handleRef.current = handle; }}
+    />
+  );
+}`,
+
+  'Grammar: Scatter/Bubble': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+
+// Scatter / Bubble Chart — point mark with size encoding
+// Each point encodes 4 dimensions: x=latency, y=throughput,
+// color=region, size=connections. Live streaming updates move
+// the bubbles around as metrics change in real time.
+
+function GrammarScatterChart() {
+  const handleRef = useRef<ChartHandle | null>(null);
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'point',                         // Point mark = scatter/bubble
+        encode: {
+          x: 'latency',
+          y: 'throughput',
+          color: 'region',
+          size: 'connections',                 // Size encoding = bubble chart
+        },
+        style: { fillOpacity: 0.7 },
+      },
+    ],
+    scales: {
+      x: { type: 'linear', nice: true },
+      y: { type: 'linear', nice: true },
+      size: { range: [4, 20] },
+    },
+    temporal: { mode: 'frame', field: 'snapshot' },
+    streaming: { maxItems: 500 },
+    axes: {
+      x: { title: 'Latency (ms)', grid: true },
+      y: { title: 'Throughput (req/s)', grid: true },
+    },
+    legend: { position: 'bottom', interactive: true },
+    animate: false,
+  };
+
+  const regions = useRef([
+    { name: 'us-east', latency: 45, throughput: 850, connections: 120 },
+    { name: 'us-west', latency: 65, throughput: 720, connections: 90 },
+    { name: 'eu-west', latency: 30, throughput: 950, connections: 150 },
+    { name: 'ap-south', latency: 120, throughput: 450, connections: 60 },
+    { name: 'ap-east', latency: 95, throughput: 580, connections: 80 },
+  ]);
+
+  useEffect(() => {
+    const buildRows = (snap: string) =>
+      regions.current.map(r => {
+        r.latency = generateNextValue(r.latency, 10, 200, 0.12);
+        r.throughput = generateNextValue(r.throughput, 200, 1200, 0.1);
+        r.connections = generateNextValue(r.connections, 20, 200, 0.08);
+        return {
+          snapshot: snap, region: r.name,
+          latency: Math.round(r.latency),
+          throughput: Math.round(r.throughput),
+          connections: Math.round(r.connections),
+        };
+      });
+
+    handleRef.current?.replace(buildRows(new Date().toISOString()));
+
+    const interval = setInterval(() => {
+      handleRef.current?.replace(buildRows(new Date().toISOString()));
+    }, 800);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <VistralChart
+      spec={spec}
+      height={400}
+      onReady={(handle) => { handleRef.current = handle; }}
+    />
+  );
+}`,
+
+  'Grammar: Heatmap': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+
+// Heatmap — cell mark with color encoding
+// The "cell" mark renders a grid where each cell's color intensity
+// represents a value. Great for showing patterns across two
+// categorical dimensions (day of week x hour of day).
+
+function GrammarHeatmap() {
+  const handleRef = useRef<ChartHandle | null>(null);
+  const hours = ['00', '04', '08', '12', '16', '20'];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const gridValues = useRef<Record<string, number>>({});
+
+  const spec: VistralSpec = {
+    marks: [
+      {
+        type: 'cell',                          // Cell mark = heatmap grid
+        encode: { x: 'hour', y: 'day', color: 'load' },
+        style: { lineWidth: 1 },
+      },
+    ],
+    scales: {
+      color: {
+        type: 'sequential',
+        range: ['#0d47a1', '#2196f3', '#64b5f6', '#fff176', '#ff9800', '#f44336'],
+      },
+    },
+    temporal: { mode: 'frame', field: 'snapshot' },
+    streaming: { maxItems: 500 },
+    axes: {
+      x: { title: 'Hour of Day', grid: false },
+      y: { title: false, grid: false },
+    },
+    legend: { position: 'bottom' },
+    animate: false,
+  };
+
+  useEffect(() => {
+    // Initialize with realistic load pattern
+    days.forEach(day => {
+      hours.forEach(hour => {
+        const hourNum = parseInt(hour);
+        const base = (hourNum >= 8 && hourNum <= 16) ? 70 : 30;
+        const weekendFactor = (day === 'Sat' || day === 'Sun') ? 0.5 : 1;
+        gridValues.current[\`\${day}_\${hour}\`] = base * weekendFactor + Math.random() * 20;
+      });
+    });
+
+    const buildRows = (snap: string) => {
+      const rows = [];
+      for (const day of days) {
+        for (const hour of hours) {
+          const key = \`\${day}_\${hour}\`;
+          gridValues.current[key] =
+            generateNextValue(gridValues.current[key], 5, 100, 0.08);
+          rows.push({ snapshot: snap, day, hour, load: Math.round(gridValues.current[key]) });
+        }
+      }
+      return rows;
+    };
+
+    handleRef.current?.replace(buildRows(new Date().toISOString()));
+
+    const interval = setInterval(() => {
+      handleRef.current?.replace(buildRows(new Date().toISOString()));
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <VistralChart
+      spec={spec}
+      height={400}
+      onReady={(handle) => { handleRef.current = handle; }}
+    />
+  );
+}`,
 };

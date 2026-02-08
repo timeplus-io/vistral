@@ -7,6 +7,9 @@
  */
 
 import type { TimeSeriesConfig, BarColumnConfig } from '../types';
+import {
+  DEFAULT_MAX_ITEMS,
+} from '../types/spec';
 import type {
   VistralSpec,
   MarkSpec,
@@ -53,7 +56,7 @@ function mapTemporal(
  * - scales.x: time scale with optional mask from xFormat
  * - scales.y: linear, nice, optional domain from yRange
  * - temporal -> maps to TemporalSpec
- * - streaming: { maxItems: 1000 }
+ * - streaming: { maxItems: config.maxItems ?? DEFAULT_MAX_ITEMS }
  * - axes, legend, theme, animate configured per defaults
  */
 export function compileTimeSeriesConfig(
@@ -111,7 +114,7 @@ export function compileTimeSeriesConfig(
   // -- Transforms ------------------------------------------------------------
   const transforms: TransformSpec[] = [];
   if (chartType === 'area' && color) {
-    transforms.push({ type: 'stackY', orderBy: 'value' });
+    transforms.push({ type: 'stackY' });
   }
 
   // -- Scales ----------------------------------------------------------------
@@ -150,7 +153,7 @@ export function compileTimeSeriesConfig(
     },
     ...(transforms.length > 0 ? { transforms } : {}),
     ...(temporal ? { temporal } : {}),
-    streaming: { maxItems: 1000 },
+    streaming: { maxItems: config.maxItems ?? DEFAULT_MAX_ITEMS },
     axes: {
       x: { title: config.xTitle || false, grid: false },
       y: { title: config.yTitle || false, grid: gridY },
@@ -252,7 +255,7 @@ export function compileBarColumnConfig(
     ...(transforms.length > 0 ? { transforms } : {}),
     ...(coordinate ? { coordinate } : {}),
     ...(temporal ? { temporal } : {}),
-    streaming: { maxItems: 1000 },
+    streaming: { maxItems: config.maxItems ?? DEFAULT_MAX_ITEMS },
     axes: {
       x: { title: config.xTitle || false, grid: false },
       y: { title: config.yTitle || false, grid: gridY },
