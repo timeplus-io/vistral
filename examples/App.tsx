@@ -27,6 +27,7 @@ import {
   GrammarRadialBar,
   GrammarScatterChart,
   GrammarHeatmap,
+  GrammarCandlestickChart,
 } from './grammar-examples';
 import { Playground } from './Playground';
 import { GrammarPlayground } from './GrammarPlayground';
@@ -81,6 +82,7 @@ const examples: ExampleItem[] = [
   { name: 'Grammar: Radial Bar', component: GrammarRadialBar, category: 'grammar' },
   { name: 'Grammar: Scatter/Bubble', component: GrammarScatterChart, category: 'grammar' },
   { name: 'Grammar: Heatmap', component: GrammarHeatmap, category: 'grammar' },
+  { name: 'Grammar: Candlestick', component: GrammarCandlestickChart, category: 'grammar' },
 ];
 
 export default function App() {
@@ -287,7 +289,7 @@ export default function App() {
                         >
                           {/* Chart preview area */}
                           <div style={{
-                            height: '220px',
+                            height: '360px',
                             padding: '12px',
                             pointerEvents: 'none',
                             overflow: 'hidden',

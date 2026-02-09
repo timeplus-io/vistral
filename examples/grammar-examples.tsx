@@ -1002,6 +1002,139 @@ export function GrammarHeatmap() {
 }
 
 // =============================================================================
+// Example 12: GrammarCandlestickChart - OHLC Candlestick (two interval marks)
+// =============================================================================
+
+export function GrammarCandlestickChart() {
+  const theme = useTheme();
+  const handleRef = useRef<ChartHandle | null>(null);
+  const priceRef = useRef(100);
+  const loadedRef = useRef(false);
+
+  // Candle timing — controls interval and rect widths
+  const CANDLE_MS = 3000;
+  const BODY_HALF = CANDLE_MS * 0.35;
+  const WICK_HALF = CANDLE_MS * 0.03;
+
+  // EncodeFn: map direction to color directly (identity scale avoids grouping/dodging)
+  const dirColor = ((d: Record<string, unknown>) =>
+    d.direction === 'bullish' ? '#22C55E' : '#EF4444'
+  ) as unknown as string;
+
+  const spec: VistralSpec = {
+    marks: [
+      // Invisible anchor point — establishes the time scale domain
+      // so temporal axis-bound sliding window works correctly.
+      {
+        type: 'point',
+        encode: { x: 'time', y: 'close' },
+        style: { r: 0, fillOpacity: 0, strokeOpacity: 0, strokeWidth: 0 },
+        tooltip: false,
+      },
+      // Wick (thin rect from low to high)
+      {
+        type: 'rect',
+        encode: {
+          x: ((d: Record<string, unknown>) => {
+            const t = new Date(d.time as string).getTime();
+            return [new Date(t - WICK_HALF), new Date(t + WICK_HALF)];
+          }) as unknown as string,
+          y: ((d: Record<string, unknown>) => [d.low, d.high]) as unknown as string,
+          color: dirColor,
+        },
+        scales: { color: { type: 'identity' } },
+        tooltip: false,
+      },
+      // Body (wider rect from open to close)
+      {
+        type: 'rect',
+        encode: {
+          x: ((d: Record<string, unknown>) => {
+            const t = new Date(d.time as string).getTime();
+            return [new Date(t - BODY_HALF), new Date(t + BODY_HALF)];
+          }) as unknown as string,
+          y: ((d: Record<string, unknown>) => [d.open, d.close]) as unknown as string,
+          color: dirColor,
+        },
+        scales: { color: { type: 'identity' } },
+      },
+    ],
+    scales: {
+      x: { type: 'time' },
+      y: { type: 'linear', nice: true },
+    },
+    temporal: { mode: 'axis', field: 'time', range: 2 },
+    streaming: { maxItems: 500, throttle: 100 },
+    axes: {
+      x: { title: false, grid: false },
+      y: { title: 'Price ($)', grid: true },
+    },
+    legend: false,
+    theme: theme as 'dark' | 'light',
+    animate: false,
+  };
+
+  useEffect(() => {
+    // Generate one OHLC candle from a random walk
+    function generateCandle(basePrice: number, time: string) {
+      const volatility = basePrice * 0.02;
+      const open = basePrice;
+      const moves = Array.from({ length: 4 }, () => (Math.random() - 0.48) * volatility);
+      const close = open + moves.reduce((a, b) => a + b, 0);
+      const high = Math.max(open, close) + Math.random() * volatility * 0.5;
+      const low = Math.min(open, close) - Math.random() * volatility * 0.5;
+      const direction = close >= open ? 'bullish' : 'bearish';
+      return {
+        time,
+        open: +open.toFixed(2),
+        high: +high.toFixed(2),
+        low: +low.toFixed(2),
+        close: +close.toFixed(2),
+        direction,
+      };
+    }
+
+    // Pre-populate with 30 historical candles (guard against React 18 Strict Mode double-run)
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      const now = Date.now();
+      const history: Record<string, unknown>[] = [];
+      let price = 100;
+      for (let i = 30; i >= 0; i--) {
+        const candle = generateCandle(price, new Date(now - i * CANDLE_MS).toISOString());
+        history.push(candle);
+        price = candle.close as number;
+      }
+      priceRef.current = price;
+
+      if (handleRef.current) {
+        handleRef.current.append(history);
+      }
+    }
+
+    // Stream new candles
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        const candle = generateCandle(priceRef.current, new Date().toISOString());
+        priceRef.current = candle.close as number;
+        handleRef.current.append([candle]);
+      }
+    }, CANDLE_MS);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{ height: 400 }}>
+      <VistralChart
+        spec={spec}
+        height={400}
+        onReady={(handle) => { handleRef.current = handle; }}
+      />
+    </div>
+  );
+}
+
+// =============================================================================
 // Default Export - All Grammar Examples
 // =============================================================================
 
@@ -1017,4 +1150,5 @@ export default {
   GrammarRadialBar,
   GrammarScatterChart,
   GrammarHeatmap,
+  GrammarCandlestickChart,
 };
