@@ -84,15 +84,16 @@ const examples: ExampleItem[] = [
 ];
 
 export default function App() {
-  const [selectedExample, setSelectedExample] = useState(0);
+  const [selectedExample, setSelectedExample] = useState<number | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
-  const currentExample = examples[selectedExample];
-  const CurrentExample = currentExample.component;
-  const isPlayground = currentExample.isPlayground;
 
   const isDark = theme === 'dark';
-  const sourceCode = exampleSources[currentExample.name] || '// Source code not available';
+
+  const currentExample = selectedExample !== null ? examples[selectedExample] : null;
+  const CurrentExample = currentExample?.component ?? null;
+  const isPlayground = currentExample?.isPlayground ?? false;
+  const sourceCode = currentExample ? (exampleSources[currentExample.name] || '// Source code not available') : '';
 
   // Separate playgrounds from other examples
   const playgroundExamples = examples.filter(e => e.isPlayground);
@@ -173,11 +174,13 @@ export default function App() {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h1
+              onClick={() => setSelectedExample(null)}
               style={{
                 fontSize: '18px',
                 fontWeight: 'bold',
                 color: isDark ? '#F9FAFB' : '#1F2937',
                 margin: 0,
+                cursor: 'pointer',
               }}
             >
               Vistral
@@ -220,13 +223,95 @@ export default function App() {
         {/* Main content */}
         <main style={{
           flex: 1,
-          padding: isPlayground ? '16px' : '32px',
+          padding: selectedExample === null ? '32px' : (isPlayground ? '16px' : '32px'),
           display: 'flex',
           flexDirection: 'column',
           minWidth: 0,
           overflow: 'hidden',
         }}>
-          {isPlayground ? (
+          {selectedExample === null ? (
+            /* Home page grid */
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              <h2 style={{
+                fontSize: '28px',
+                fontWeight: 700,
+                color: isDark ? '#F9FAFB' : '#1F2937',
+                margin: '0 0 32px 0',
+              }}>
+                Examples
+              </h2>
+
+              {[
+                { title: 'Chart Examples', items: chartExamples },
+                { title: 'Grammar API', items: grammarExamples },
+              ].map(section => (
+                <div key={section.title} style={{ marginBottom: '32px' }}>
+                  <h3 style={{
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: isDark ? '#6B7280' : '#9CA3AF',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    margin: '0 0 12px 0',
+                  }}>
+                    {section.title}
+                  </h3>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
+                    gap: '16px',
+                  }}>
+                    {section.items.map(example => {
+                      const idx = examples.indexOf(example);
+                      const ExampleComponent = example.component;
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() => { setSelectedExample(idx); setActiveTab('preview'); }}
+                          style={{
+                            backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+                            border: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`,
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#3B82F6';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.15)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = isDark ? '#374151' : '#E5E7EB';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                        >
+                          {/* Chart preview area */}
+                          <div style={{
+                            height: '220px',
+                            padding: '12px',
+                            pointerEvents: 'none',
+                            overflow: 'hidden',
+                          }}>
+                            <ExampleComponent />
+                          </div>
+                          {/* Card label */}
+                          <div style={{
+                            padding: '12px 16px',
+                            borderTop: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`,
+                            color: isDark ? '#F9FAFB' : '#1F2937',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                          }}>
+                            {example.name}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isPlayground ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
               <CurrentExample />
             </div>
@@ -247,7 +332,7 @@ export default function App() {
                     color: isDark ? '#F9FAFB' : '#1F2937',
                   }}
                 >
-                  {currentExample.name}
+                  {currentExample!.name}
                 </h2>
 
                 {/* Tab buttons */}
