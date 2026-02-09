@@ -92,6 +92,35 @@ export default function App() {
 
   const isDark = theme === 'dark';
 
+  // Timeplus design guide color tokens
+  const colors = isDark
+    ? {
+        pageBg: '#120F1A',
+        containerBg: '#231F2B',
+        heading: '#F7F6F6',
+        text: '#DAD9DB',
+        label: '#B5B4B8',
+        muted: '#3A3741',
+        border: '#3A3741',
+        hoverBg: '#3A3741',
+        accent: '#D53F8C',
+        accentHover: '#B83280',
+        codeBg: '#120F1A',
+      }
+    : {
+        pageBg: '#F7F6F6',
+        containerBg: '#FFFFFF',
+        heading: '#231F2B',
+        text: '#120F1A',
+        label: '#3A3741',
+        muted: '#B5B4B8',
+        border: '#DAD9DB',
+        hoverBg: '#ECECED',
+        accent: '#D53F8C',
+        accentHover: '#B83280',
+        codeBg: '#F7F6F6',
+      };
+
   const currentExample = selectedExample !== null ? examples[selectedExample] : null;
   const CurrentExample = currentExample?.component ?? null;
   const isPlayground = currentExample?.isPlayground ?? false;
@@ -109,24 +138,25 @@ export default function App() {
         style={{
           width: '100%',
           textAlign: 'left',
-          padding: example.isPlayground ? '12px 16px' : '10px 16px',
+          padding: example.isPlayground ? '12px 16px' : '8px 16px',
           backgroundColor:
             selectedExample === index
-              ? '#3B82F6'
+              ? colors.accent
               : 'transparent',
           color: selectedExample === index
             ? '#FFFFFF'
-            : isDark ? '#D1D5DB' : '#4B5563',
-          border: example.isPlayground ? `2px solid ${isDark ? '#6366F1' : '#4F46E5'}` : 'none',
-          borderRadius: '6px',
+            : colors.text,
+          border: example.isPlayground ? `1px solid ${colors.accent}` : 'none',
+          borderRadius: '4px',
           cursor: 'pointer',
-          fontSize: example.isPlayground ? '15px' : '13px',
+          fontSize: '14px',
           fontWeight: example.isPlayground ? 600 : 400,
+          lineHeight: '1.5',
           transition: 'background-color 0.2s',
         }}
         onMouseEnter={(e) => {
           if (selectedExample !== index) {
-            e.currentTarget.style.backgroundColor = isDark ? '#374151' : '#E5E7EB';
+            e.currentTarget.style.backgroundColor = colors.hoverBg;
           }
         }}
         onMouseLeave={(e) => {
@@ -135,15 +165,15 @@ export default function App() {
           }
         }}
       >
-        {example.isPlayground && '🎮 '}{example.name}
+        {example.name}
       </button>
     </li>
   );
 
   const categoryTitleStyle: React.CSSProperties = {
-    fontSize: '11px',
+    fontSize: '12px',
     fontWeight: 600,
-    color: isDark ? '#6B7280' : '#9CA3AF',
+    color: colors.muted,
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
     marginTop: '16px',
@@ -158,7 +188,8 @@ export default function App() {
           display: 'flex',
           height: '100vh',
           overflow: 'hidden',
-          backgroundColor: isDark ? '#111827' : '#F9FAFB',
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          backgroundColor: colors.pageBg,
           transition: 'background-color 0.3s',
         }}
       >
@@ -166,9 +197,9 @@ export default function App() {
         <nav
           style={{
             width: '260px',
-            backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+            backgroundColor: colors.containerBg,
             padding: '16px',
-            borderRight: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`,
+            borderRight: `1px solid ${colors.border}`,
             transition: 'all 0.3s',
             overflowY: 'auto',
             flexShrink: 0,
@@ -179,10 +210,11 @@ export default function App() {
               onClick={() => setSelectedExample(null)}
               style={{
                 fontSize: '18px',
-                fontWeight: 'bold',
-                color: isDark ? '#F9FAFB' : '#1F2937',
+                fontWeight: 600,
+                color: colors.heading,
                 margin: 0,
                 cursor: 'pointer',
+                lineHeight: '1.4',
               }}
             >
               Vistral
@@ -191,11 +223,13 @@ export default function App() {
             <button
               onClick={() => setTheme(isDark ? 'light' : 'dark')}
               style={{
-                padding: '6px',
-                backgroundColor: isDark ? '#374151' : '#E5E7EB',
-                color: isDark ? '#FCD34D' : '#6B7280',
-                border: 'none',
-                borderRadius: '6px',
+                height: '32px',
+                width: '32px',
+                padding: '0',
+                backgroundColor: isDark ? colors.muted : colors.hoverBg,
+                color: colors.label,
+                border: `1px solid ${colors.border}`,
+                borderRadius: '4px',
                 cursor: 'pointer',
                 fontSize: '14px',
                 display: 'flex',
@@ -225,7 +259,7 @@ export default function App() {
         {/* Main content */}
         <main style={{
           flex: 1,
-          padding: selectedExample === null ? '32px' : (isPlayground ? '16px' : '32px'),
+          padding: selectedExample === null ? '24px' : (isPlayground ? '16px' : '24px'),
           display: 'flex',
           flexDirection: 'column',
           minWidth: 0,
@@ -235,10 +269,11 @@ export default function App() {
             /* Home page grid */
             <div style={{ flex: 1, overflow: 'auto' }}>
               <h2 style={{
-                fontSize: '28px',
-                fontWeight: 700,
-                color: isDark ? '#F9FAFB' : '#1F2937',
-                margin: '0 0 32px 0',
+                fontSize: '18px',
+                fontWeight: 600,
+                color: colors.heading,
+                margin: '0 0 24px 0',
+                lineHeight: '1.4',
               }}>
                 Examples
               </h2>
@@ -247,11 +282,11 @@ export default function App() {
                 { title: 'Chart Examples', items: chartExamples },
                 { title: 'Grammar API', items: grammarExamples },
               ].map(section => (
-                <div key={section.title} style={{ marginBottom: '32px' }}>
+                <div key={section.title} style={{ marginBottom: '24px' }}>
                   <h3 style={{
-                    fontSize: '13px',
+                    fontSize: '12px',
                     fontWeight: 600,
-                    color: isDark ? '#6B7280' : '#9CA3AF',
+                    color: colors.muted,
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
                     margin: '0 0 12px 0',
@@ -271,20 +306,18 @@ export default function App() {
                           key={idx}
                           onClick={() => { setSelectedExample(idx); setActiveTab('preview'); }}
                           style={{
-                            backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-                            border: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`,
-                            borderRadius: '8px',
+                            backgroundColor: colors.containerBg,
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: '4px',
                             cursor: 'pointer',
                             overflow: 'hidden',
                             transition: 'all 0.2s',
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = '#3B82F6';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.15)';
+                            e.currentTarget.style.borderColor = colors.accent;
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = isDark ? '#374151' : '#E5E7EB';
-                            e.currentTarget.style.boxShadow = 'none';
+                            e.currentTarget.style.borderColor = colors.border;
                           }}
                         >
                           {/* Chart preview area */}
@@ -299,10 +332,10 @@ export default function App() {
                           {/* Card label */}
                           <div style={{
                             padding: '12px 16px',
-                            borderTop: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`,
-                            color: isDark ? '#F9FAFB' : '#1F2937',
+                            borderTop: `1px solid ${colors.border}`,
+                            color: colors.heading,
                             fontSize: '14px',
-                            fontWeight: 500,
+                            fontWeight: 600,
                           }}>
                             {example.name}
                           </div>
@@ -328,10 +361,11 @@ export default function App() {
               }}>
                 <h2
                   style={{
-                    fontSize: '24px',
-                    fontWeight: '600',
+                    fontSize: '18px',
+                    fontWeight: 600,
                     margin: 0,
-                    color: isDark ? '#F9FAFB' : '#1F2937',
+                    color: colors.heading,
+                    lineHeight: '1.4',
                   }}
                 >
                   {currentExample!.name}
@@ -342,24 +376,25 @@ export default function App() {
                   display: 'flex',
                   gap: '4px',
                   padding: '4px',
-                  backgroundColor: isDark ? '#374151' : '#E5E7EB',
-                  borderRadius: '8px',
+                  backgroundColor: isDark ? colors.muted : colors.hoverBg,
+                  borderRadius: '4px',
                 }}>
                   <button
                     onClick={() => setActiveTab('preview')}
                     style={{
-                      padding: '8px 16px',
+                      padding: '6px 16px',
+                      height: '32px',
                       backgroundColor: activeTab === 'preview'
-                        ? (isDark ? '#1F2937' : '#FFFFFF')
+                        ? colors.containerBg
                         : 'transparent',
                       color: activeTab === 'preview'
-                        ? (isDark ? '#F9FAFB' : '#1F2937')
-                        : (isDark ? '#9CA3AF' : '#6B7280'),
+                        ? colors.heading
+                        : colors.label,
                       border: 'none',
-                      borderRadius: '6px',
+                      borderRadius: '4px',
                       cursor: 'pointer',
                       fontSize: '14px',
-                      fontWeight: 500,
+                      fontWeight: 600,
                       transition: 'all 0.2s',
                     }}
                   >
@@ -368,18 +403,19 @@ export default function App() {
                   <button
                     onClick={() => setActiveTab('code')}
                     style={{
-                      padding: '8px 16px',
+                      padding: '6px 16px',
+                      height: '32px',
                       backgroundColor: activeTab === 'code'
-                        ? (isDark ? '#1F2937' : '#FFFFFF')
+                        ? colors.containerBg
                         : 'transparent',
                       color: activeTab === 'code'
-                        ? (isDark ? '#F9FAFB' : '#1F2937')
-                        : (isDark ? '#9CA3AF' : '#6B7280'),
+                        ? colors.heading
+                        : colors.label,
                       border: 'none',
-                      borderRadius: '6px',
+                      borderRadius: '4px',
                       cursor: 'pointer',
                       fontSize: '14px',
-                      fontWeight: 500,
+                      fontWeight: 600,
                       transition: 'all 0.2s',
                     }}
                   >
@@ -392,10 +428,10 @@ export default function App() {
               <div
                 style={{
                   flex: 1,
-                  backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-                  borderRadius: '8px',
+                  backgroundColor: colors.containerBg,
+                  borderRadius: '4px',
                   padding: activeTab === 'code' ? '0' : '24px',
-                  border: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`,
+                  border: `1px solid ${colors.border}`,
                   transition: 'all 0.3s',
                   overflow: 'auto',
                   minHeight: 0,
@@ -408,12 +444,12 @@ export default function App() {
                     style={{
                       margin: 0,
                       padding: '24px',
-                      fontSize: '13px',
-                      lineHeight: '1.6',
+                      fontSize: '14px',
+                      lineHeight: '1.5',
                       fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
-                      color: isDark ? '#E5E7EB' : '#374151',
-                      backgroundColor: isDark ? '#111827' : '#F9FAFB',
-                      borderRadius: '8px',
+                      color: colors.text,
+                      backgroundColor: colors.codeBg,
+                      borderRadius: '4px',
                       overflow: 'auto',
                       height: '100%',
                       whiteSpace: 'pre-wrap',
