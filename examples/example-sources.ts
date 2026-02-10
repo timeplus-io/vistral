@@ -967,6 +967,7 @@ function GrammarLineChart() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
   const valueRef = useRef(50);
+  const loadedRef = useRef(false);
 
   const spec: VistralSpec = {
     marks: [
@@ -1002,7 +1003,8 @@ function GrammarLineChart() {
     }
     valueRef.current = v;
 
-    if (handleRef.current) {
+    if (!loadedRef.current && handleRef.current) {
+      loadedRef.current = true;
       handleRef.current.append(history);
     }
 
@@ -1037,6 +1039,7 @@ function GrammarMultiMark() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
   const valuesRef = useRef({ cpu: 55, memory: 65 });
+  const loadedRef = useRef(false);
 
   const spec: VistralSpec = {
     marks: [
@@ -1080,7 +1083,8 @@ function GrammarMultiMark() {
     }
     valuesRef.current = { cpu, memory: mem };
 
-    if (handleRef.current) {
+    if (!loadedRef.current && handleRef.current) {
+      loadedRef.current = true;
       handleRef.current.append(history);
     }
 
@@ -1195,6 +1199,7 @@ function GrammarStackedArea() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
   const valuesRef = useRef({ requests: 200, errors: 30, timeouts: 15 });
+  const loadedRef = useRef(false);           // Guard against Strict Mode double-run
 
   const spec: VistralSpec = {
     marks: [
@@ -1202,7 +1207,6 @@ function GrammarStackedArea() {
         type: 'area',
         encode: { x: 'time', y: 'value', color: 'series' },
         style: { connect: true },
-        labels: [{ text: 'value', selector: 'last', overlapHide: true }],
       },
     ],
     scales: {
@@ -1217,7 +1221,6 @@ function GrammarStackedArea() {
       y: { title: 'Count', grid: true },
     },
     legend: { position: 'bottom', interactive: true },
-    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -1237,7 +1240,9 @@ function GrammarStackedArea() {
     }
     valuesRef.current = { requests: req, errors: err, timeouts: tout };
 
-    if (handleRef.current) {
+    // Guard against React 18 Strict Mode double-run
+    if (!loadedRef.current && handleRef.current) {
+      loadedRef.current = true;
       handleRef.current.append(history);
     }
 
@@ -1254,7 +1259,7 @@ function GrammarStackedArea() {
           { time, value: valuesRef.current.timeouts, series: 'timeouts' },
         ]);
       }
-    }, 500);
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -1280,6 +1285,7 @@ function GrammarCompiledChart() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
   const valueRef = useRef(50);
+  const loadedRef = useRef(false);
 
   // Start with a high-level TimeSeriesConfig
   const config: TimeSeriesConfig = {
@@ -1313,7 +1319,8 @@ function GrammarCompiledChart() {
     }
     valueRef.current = v;
 
-    if (handleRef.current) {
+    if (!loadedRef.current && handleRef.current) {
+      loadedRef.current = true;
       handleRef.current.append(history);
     }
 

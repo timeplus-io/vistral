@@ -42,6 +42,7 @@ export function GrammarLineChart() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
   const valueRef = useRef(50);
+  const loadedRef = useRef(false);
 
   const spec: VistralSpec = {
     marks: [
@@ -83,7 +84,8 @@ export function GrammarLineChart() {
     }
     valueRef.current = v;
 
-    if (handleRef.current) {
+    if (!loadedRef.current && handleRef.current) {
+      loadedRef.current = true;
       handleRef.current.append(history);
     }
 
@@ -120,6 +122,7 @@ export function GrammarMultiMark() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
   const valuesRef = useRef({ cpu: 55, memory: 65 });
+  const loadedRef = useRef(false);
 
   const spec: VistralSpec = {
     marks: [
@@ -174,7 +177,8 @@ export function GrammarMultiMark() {
     }
     valuesRef.current = { cpu, memory: mem };
 
-    if (handleRef.current) {
+    if (!loadedRef.current && handleRef.current) {
+      loadedRef.current = true;
       handleRef.current.append(history);
     }
 
@@ -297,6 +301,7 @@ export function GrammarStackedArea() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
   const valuesRef = useRef({ requests: 200, errors: 30, timeouts: 15 });
+  const loadedRef = useRef(false);
 
   const spec: VistralSpec = {
     marks: [
@@ -310,13 +315,6 @@ export function GrammarStackedArea() {
         style: {
           connect: true,
         },
-        labels: [
-          {
-            text: 'value',
-            selector: 'last',
-            overlapHide: true,
-          },
-        ],
       },
     ],
     scales: {
@@ -351,7 +349,8 @@ export function GrammarStackedArea() {
     }
     valuesRef.current = { requests: req, errors: err, timeouts: tout };
 
-    if (handleRef.current) {
+    if (!loadedRef.current && handleRef.current) {
+      loadedRef.current = true;
       handleRef.current.append(history);
     }
 
@@ -368,7 +367,7 @@ export function GrammarStackedArea() {
           { time, value: valuesRef.current.timeouts, series: 'timeouts' },
         ]);
       }
-    }, 500);
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -393,6 +392,7 @@ export function GrammarCompiledChart() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
   const valueRef = useRef(50);
+  const loadedRef = useRef(false);
 
   // Start with a high-level TimeSeriesConfig (same API as StreamChart)
   const config: TimeSeriesConfig = {
@@ -430,7 +430,8 @@ export function GrammarCompiledChart() {
     }
     valueRef.current = v;
 
-    if (handleRef.current) {
+    if (!loadedRef.current && handleRef.current) {
+      loadedRef.current = true;
       handleRef.current.append(history);
     }
 
