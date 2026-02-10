@@ -520,54 +520,6 @@ npm run dev:examples
 
 This will open http://localhost:3000 with a sidebar navigation showing all available chart examples.
 
-### Build Output
-
-The build process generates:
-
-- `dist/index.js` - CommonJS bundle
-- `dist/index.esm.js` - ES Module bundle
-- `dist/index.d.ts` - TypeScript declarations
-- `dist/styles.css` - Extracted CSS styles
-
-### Project Structure
-
-```
-├── src/                  # Library source code
-│   ├── index.ts          # Main exports
-│   ├── charts/           # Chart components
-│   │   ├── StreamChart.tsx
-│   │   ├── VistralChart.tsx  # Grammar engine
-│   │   ├── SingleValueChart.tsx
-│   │   └── DataTable.tsx
-│   ├── core/             # Core utilities
-│   │   └── chart-utils.ts
-│   ├── hooks/            # React hooks
-│   │   └── index.ts
-│   ├── themes/           # Color palettes and themes
-│   │   └── index.ts
-│   ├── types/            # TypeScript definitions
-│   │   └── index.ts
-│   └── utils/            # Utility functions
-│       └── index.ts
-├── examples/             # Interactive examples (Vite dev server)
-│   ├── App.tsx           # Examples app shell
-│   ├── basic-examples.tsx # All example components
-│   ├── main.tsx          # Entry point
-│   └── index.html        # HTML template
-└── vite.config.ts        # Vite configuration for examples
-```
-
-## Browser Support
-
-- Chrome >= 90
-- Firefox >= 88
-- Safari >= 14
-- Edge >= 90
-
-## License
-
-Apache-2.0
-
 ## Credits
 
 Built with:
