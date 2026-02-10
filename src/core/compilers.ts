@@ -133,7 +133,9 @@ export function compileTimeSeriesConfig(
   }
 
   // -- Temporal --------------------------------------------------------------
-  const temporal = mapTemporal(config.temporal, xAxis);
+  // Default to axis-bound sliding window for time series charts
+  const temporal = mapTemporal(config.temporal, xAxis)
+    ?? { mode: 'axis' as const, field: xAxis, range: 2 };
 
   // -- Axes ------------------------------------------------------------------
   const gridY = config.gridlines ?? true;
