@@ -2,6 +2,10 @@
 
 A powerful streaming data visualization library based on the Grammar of Graphics. Designed for real-time data visualization with support for time series, bar/column charts, single value metrics, and data tables.
 
+# Examples and Playground
+
+https://timeplus-io.github.io/vistral/ 
+
 ## Table of Contents
 
 - [Features](#features)
