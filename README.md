@@ -1,6 +1,6 @@
 # @timeplus/vistral
 
-A powerful streaming data visualization library built on [AntV G2](https://g2.antv.antgroup.com/). Designed for real-time data visualization with support for time series, bar/column charts, single value metrics, and data tables.
+A powerful streaming data visualization library based on the Grammar of Graphics. Designed for real-time data visualization with support for time series, bar/column charts, single value metrics, and data tables.
 
 ## Table of Contents
 
