@@ -128,6 +128,8 @@ import { StreamChart } from '@timeplus/vistral';
 />
 ```
 
+![Line](./docs/images/linechart.gif "Line")
+
 ### Area Chart
 
 Similar to line charts but with filled areas, great for showing volume or stacked data.
