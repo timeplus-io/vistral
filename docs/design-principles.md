@@ -39,6 +39,8 @@ Vistral introduces three distinct modes for managing streaming data on the visua
 | **Frame-Bound** | Time as playback controller | Only latest timestamp visible | Real-time snapshots |
 | **Key-Bound** | Time implicit via updates | Latest value per key | Live dashboards, tracking |
 
+https://timeplus-io.github.io/vistra-temporal-binding/
+
 ---
 
 ## Mode 1: Axis-Bound Temporal Binding
