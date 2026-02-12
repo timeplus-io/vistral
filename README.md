@@ -171,7 +171,7 @@ Horizontal bar charts for categorical comparisons.
 
 ### Column Chart (Vertical)
 
-![Cloumn](./docs/images/columchart.gif "Column")
+![Cloumn](./docs/images/columnchart.gif "Column")
 
 Vertical column charts for categorical data.
 
