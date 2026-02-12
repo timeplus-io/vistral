@@ -101,6 +101,8 @@ function App() {
 
 ### Line Chart
 
+![Line](./docs/images/linechart.gif "Line")
+
 Perfect for time series data showing trends over time.
 
 ```tsx
@@ -128,9 +130,9 @@ import { StreamChart } from '@timeplus/vistral';
 />
 ```
 
-![Line](./docs/images/linechart.gif "Line")
-
 ### Area Chart
+
+![Area](./docs/images/areachart.gif "Area")
 
 Similar to line charts but with filled areas, great for showing volume or stacked data.
 
@@ -148,6 +150,8 @@ Similar to line charts but with filled areas, great for showing volume or stacke
 ```
 
 ### Bar Chart (Horizontal)
+
+![Bar](./docs/images/barchart.gif "Bar")
 
 Horizontal bar charts for categorical comparisons.
 
@@ -167,6 +171,8 @@ Horizontal bar charts for categorical comparisons.
 
 ### Column Chart (Vertical)
 
+![Cloumn](./docs/images/columchart.gif "Column")
+
 Vertical column charts for categorical data.
 
 ```tsx
@@ -184,6 +190,8 @@ Vertical column charts for categorical data.
 ```
 
 ### Single Value
+
+![SingleValue](./docs/images/singlevalue.gif "SingleValue")
 
 Display a single metric with optional sparkline and delta indicator.
 
@@ -204,6 +212,8 @@ Display a single metric with optional sparkline and delta indicator.
 ```
 
 ### Data Table
+
+![DataTable](./docs/images/datatable.gif "DataTable")
 
 Display streaming data in a tabular format with column configuration.
 
@@ -235,6 +245,8 @@ Display streaming data in a tabular format with column configuration.
 ```
 
 ### Geo Chart
+
+![GeoChart](./docs/images/geochart.gif "GeoChart")
 
 Display geographic data points on an interactive map with pan and zoom.
 
