@@ -868,40 +868,20 @@ export function buildG2Options(
     const timeField = Array.isArray(field) ? field[0] : field;
     const range = spec.temporal.range;
 
+    // Always anchor the right edge to "now" so the chart shows a live
+    // sliding window.  When data is sparse or absent the axis still spans
+    // the full configured range and new points appear on the right.
+    const dataMaxTs = filteredData.length > 0
+      ? getMaxTimestamp(filteredData, timeField)
+      : Date.now();
+    const maxTs = Math.max(dataMaxTs, Date.now());
+
     let minTs: number;
-    let maxTs: number;
-    
-    if (filteredData.length > 0) {
-      maxTs = getMaxTimestamp(filteredData, timeField);
-    } else {
-      // When no data, use current time as reference point
-      maxTs = Date.now();
-    }
-    
     if (typeof range === 'number' && range !== Infinity) {
-      const theoreticalMinTs = maxTs - range * 60_000;
-      
-      if (filteredData.length > 0) {
-        // Find actual minimum timestamp in filtered data
-        let actualMinTs = maxTs;
-        for (const row of filteredData) {
-          const ts = parseDateTime(row[timeField]);
-          if (ts < actualMinTs) actualMinTs = ts;
-        }
-        
-        // If actual data spans less than the range, contract the window
-        // Otherwise, use the full theoretical window for proper sliding behavior
-        if ((maxTs - actualMinTs) < (range * 60_000)) {
-          minTs = actualMinTs; // Contract to actual data
-        } else {
-          minTs = theoreticalMinTs; // Maintain full sliding window
-        }
-      } else {
-        // When no data, use the full theoretical window
-        minTs = theoreticalMinTs;
-      }
+      // Fixed-width sliding window — always show the full range
+      minTs = maxTs - range * 60_000;
     } else {
-      // No finite range — span the full data extent
+      // No finite range — span from the earliest data point (or 2 min default)
       if (filteredData.length > 0) {
         minTs = maxTs;
         for (const row of filteredData) {
@@ -909,8 +889,7 @@ export function buildG2Options(
           if (ts < minTs) minTs = ts;
         }
       } else {
-        // When no data with infinite range, set a default small window
-        minTs = maxTs - 60_000; // 1 minute default
+        minTs = maxTs - 2 * 60_000; // 2-minute default
       }
     }
 
