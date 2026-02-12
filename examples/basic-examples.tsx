@@ -1004,21 +1004,10 @@ export function FrameBoundBarChart() {
 
 export function AxisBoundLineChart() {
   const theme = useTheme();
-  const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
-    const now = Date.now();
-    const points: unknown[][] = [];
-    let value = 50;
-    for (let i = 120; i >= 0; i--) {
-      value = generateNextValue(value, 20, 80, 0.15);
-      points.push([new Date(now - i * 1000).toISOString(), value]);
-    }
-    return points;
-  });
+  const [dataPoints, setDataPoints] = useState<unknown[][]>([]);
 
   useEffect(() => {
-    let currentValue = dataPoints.length > 0
-      ? (dataPoints[dataPoints.length - 1][1] as number)
-      : 50;
+    let currentValue = 50; // Start with default value
 
     const interval = setInterval(() => {
       currentValue = generateNextValue(currentValue, 20, 80, 0.15);
@@ -1059,7 +1048,7 @@ export function AxisBoundLineChart() {
   return (
     <div>
       <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
-        Axis-bound mode: 1-minute sliding window
+        Axis-bound mode: 1-minute sliding window (starts with no data)
       </p>
       <div style={{ width: '100%', height: '400px' }}>
         <StreamChart config={config} data={data} theme={theme} />
