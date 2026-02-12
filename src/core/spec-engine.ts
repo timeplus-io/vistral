@@ -600,7 +600,8 @@ export function filterDataByTemporal(
   data: Record<string, unknown>[]
 ): Record<string, unknown>[] {
   const { temporal } = spec;
-  if (!temporal || data.length === 0) return data;
+  if (!temporal) return data;
+  // Note: We no longer return early for empty data, as we want to support fixed ranges
 
   const { mode, field } = temporal;
   let result = data;
@@ -610,7 +611,7 @@ export function filterDataByTemporal(
       const { range } = temporal;
 
       // Time-window filter
-      if (typeof range === 'number' && range !== Infinity) {
+      if (typeof range === 'number' && range !== Infinity && data.length > 0) {
         const timeField = Array.isArray(field) ? field[0] : field;
         const maxTs = getMaxTimestamp(data, timeField);
         const windowMs = range * 60_000;
@@ -622,11 +623,13 @@ export function filterDataByTemporal(
         });
       }
 
-      // Sort by temporal field
-      const sortField = Array.isArray(field) ? field[0] : field;
-      result = [...result].sort(
-        (a, b) => parseDateTime(a[sortField]) - parseDateTime(b[sortField])
-      );
+      // Sort by temporal field (only if we have data)
+      if (result.length > 0) {
+        const sortField = Array.isArray(field) ? field[0] : field;
+        result = [...result].sort(
+          (a, b) => parseDateTime(a[sortField]) - parseDateTime(b[sortField])
+        );
+      }
       break;
     }
 
@@ -860,21 +863,54 @@ export function buildG2Options(
 
   // --- Axis-mode temporal: set sliding time domain on appropriate scale ---
   // This makes the axis scroll forward as new data arrives.
-  if (spec.temporal?.mode === 'axis' && filteredData.length > 0) {
+  if (spec.temporal?.mode === 'axis') {
     const field = spec.temporal.field;
     const timeField = Array.isArray(field) ? field[0] : field;
-    const maxTs = getMaxTimestamp(filteredData, timeField);
     const range = spec.temporal.range;
 
     let minTs: number;
+    let maxTs: number;
+    
+    if (filteredData.length > 0) {
+      maxTs = getMaxTimestamp(filteredData, timeField);
+    } else {
+      // When no data, use current time as reference point
+      maxTs = Date.now();
+    }
+    
     if (typeof range === 'number' && range !== Infinity) {
-      minTs = maxTs - range * 60_000;
+      const theoreticalMinTs = maxTs - range * 60_000;
+      
+      if (filteredData.length > 0) {
+        // Find actual minimum timestamp in filtered data
+        let actualMinTs = maxTs;
+        for (const row of filteredData) {
+          const ts = parseDateTime(row[timeField]);
+          if (ts < actualMinTs) actualMinTs = ts;
+        }
+        
+        // If actual data spans less than the range, contract the window
+        // Otherwise, use the full theoretical window for proper sliding behavior
+        if ((maxTs - actualMinTs) < (range * 60_000)) {
+          minTs = actualMinTs; // Contract to actual data
+        } else {
+          minTs = theoreticalMinTs; // Maintain full sliding window
+        }
+      } else {
+        // When no data, use the full theoretical window
+        minTs = theoreticalMinTs;
+      }
     } else {
       // No finite range — span the full data extent
-      minTs = maxTs;
-      for (const row of filteredData) {
-        const ts = parseDateTime(row[timeField]);
-        if (ts < minTs) minTs = ts;
+      if (filteredData.length > 0) {
+        minTs = maxTs;
+        for (const row of filteredData) {
+          const ts = parseDateTime(row[timeField]);
+          if (ts < minTs) minTs = ts;
+        }
+      } else {
+        // When no data with infinite range, set a default small window
+        minTs = maxTs - 60_000; // 1 minute default
       }
     }
 
