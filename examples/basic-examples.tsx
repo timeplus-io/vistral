@@ -42,17 +42,7 @@ function generateNextValue(current: number, min: number, max: number, volatility
 
 export function BasicLineChart() {
   const theme = useTheme();
-  const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
-    // Initialize with some historical data
-    const now = Date.now();
-    const points: unknown[][] = [];
-    let value = 50;
-    for (let i = 30; i >= 0; i--) {
-      value = generateNextValue(value, 20, 80, 0.15);
-      points.push([new Date(now - i * 1000).toISOString(), value]);
-    }
-    return points;
-  });
+  const [dataPoints, setDataPoints] = useState<unknown[][]>([]);
 
   useEffect(() => {
     let currentValue = dataPoints.length > 0
@@ -65,8 +55,8 @@ export function BasicLineChart() {
 
       setDataPoints(prev => {
         const updated = [...prev, newPoint];
-        // Keep last 60 points
-        return updated.slice(-60);
+        // Keep last 300 points (5 minutes) to ensure we always have enough data for 2-minute view
+        return updated.slice(-300);
       });
     }, 1000);
 

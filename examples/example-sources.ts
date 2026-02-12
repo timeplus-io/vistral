@@ -4,21 +4,12 @@
  */
 
 export const exampleSources: Record<string, string> = {
-     'Line Chart': `import { StreamChart, type StreamDataSource, type TimeSeriesConfig } from '@timeplus/vistral';
+  'Line Chart': `import { StreamChart, type StreamDataSource, type TimeSeriesConfig } from '@timeplus/vistral';
 import { useTheme } from './App';
 
 function BasicLineChart() {
   const theme = useTheme();
-  const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
-    const now = Date.now();
-    const points: unknown[][] = [];
-    let value = 50;
-    for (let i = 30; i >= 0; i--) {
-      value = generateNextValue(value, 20, 80, 0.15);
-      points.push([new Date(now - i * 1000).toISOString(), value]);
-    }
-    return points;
-  });
+  const [dataPoints, setDataPoints] = useState<unknown[][]>([]);
 
   useEffect(() => {
     let currentValue = dataPoints.length > 0
@@ -31,7 +22,7 @@ function BasicLineChart() {
 
       setDataPoints(prev => {
         const updated = [...prev, newPoint];
-        return updated.slice(-60);
+        return updated.slice(-300);
       });
     }, 1000);
 
@@ -66,7 +57,7 @@ function BasicLineChart() {
   );
 }`,
 
-     'Area Chart': `import { StreamChart, useStreamingData, findPaletteByLabel, type StreamDataSource, type TimeSeriesConfig } from '@timeplus/vistral';
+  'Area Chart': `import { StreamChart, useStreamingData, findPaletteByLabel, type StreamDataSource, type TimeSeriesConfig } from '@timeplus/vistral';
 import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
 
@@ -113,7 +104,7 @@ function MultiSeriesAreaChart() {
   );
 }`,
 
-     'Column Chart (Stacked)': `import { StreamChart, useStreamingData, findPaletteByLabel, type StreamDataSource, type BarColumnConfig } from '@timeplus/vistral';
+  'Column Chart (Stacked)': `import { StreamChart, useStreamingData, findPaletteByLabel, type StreamDataSource, type BarColumnConfig } from '@timeplus/vistral';
 import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
 
@@ -162,7 +153,7 @@ function StackedBarChart() {
   );
 }`,
 
-     'Bar Chart (Grouped)': `import { StreamChart, useStreamingData, type StreamDataSource, type BarColumnConfig } from '@timeplus/vistral';
+  'Bar Chart (Grouped)': `import { StreamChart, useStreamingData, type StreamDataSource, type BarColumnConfig } from '@timeplus/vistral';
 import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
 
@@ -247,7 +238,7 @@ function SingleValue() {
   );
 }`,
 
-     'Data Table': `import { StreamChart, useStreamingData, type StreamDataSource, type TableConfig } from '@timeplus/vistral';
+  'Data Table': `import { StreamChart, useStreamingData, type StreamDataSource, type TableConfig } from '@timeplus/vistral';
 import { useTheme } from './App';
 
 function StreamingDataTable() {
@@ -320,7 +311,7 @@ function StreamingDataTable() {
   );
 }`,
 
-     'Metrics Dashboard': `import { SingleValueChart, type StreamDataSource } from '@timeplus/vistral';
+  'Metrics Dashboard': `import { SingleValueChart, type StreamDataSource } from '@timeplus/vistral';
 import { useTheme } from './App';
 
 function MetricsDashboard() {
@@ -426,7 +417,7 @@ function MetricsDashboard() {
   );
 }`,
 
-     'Chart/Table Toggle': `import { StreamChart, type StreamDataSource, type TimeSeriesConfig } from '@timeplus/vistral';
+  'Chart/Table Toggle': `import { StreamChart, type StreamDataSource, type TimeSeriesConfig } from '@timeplus/vistral';
 import { useTheme } from './App';
 
 function ChartWithTableToggle() {
@@ -513,7 +504,7 @@ function ChartWithTableToggle() {
   );
 }`,
 
-     'Geo Chart': `import { StreamChart, type StreamDataSource, type GeoChartConfig } from '@timeplus/vistral';
+  'Geo Chart': `import { StreamChart, type StreamDataSource, type GeoChartConfig } from '@timeplus/vistral';
 import { useTheme } from './App';
 
 function StreamingGeoChart() {
@@ -590,7 +581,7 @@ function StreamingGeoChart() {
   );
 }`,
 
-     'Table (Frame-Bound)': `import { StreamChart, useStreamingData, type StreamDataSource, type TableConfig } from '@timeplus/vistral';
+  'Table (Frame-Bound)': `import { StreamChart, useStreamingData, type StreamDataSource, type TableConfig } from '@timeplus/vistral';
 import { useTheme } from './App';
 
 function FrameBoundTable() {
@@ -654,7 +645,7 @@ function FrameBoundTable() {
   );
 }`,
 
-     'Table (Key-Bound)': `import { StreamChart, useStreamingData, type StreamDataSource, type TableConfig } from '@timeplus/vistral';
+  'Table (Key-Bound)': `import { StreamChart, useStreamingData, type StreamDataSource, type TableConfig } from '@timeplus/vistral';
 import { useTheme } from './App';
 
 function KeyBoundTable() {
@@ -730,7 +721,7 @@ function KeyBoundTable() {
   );
 }`,
 
-     'Geo Chart (Key-Bound)': `import { StreamChart, type StreamDataSource, type GeoChartConfig } from '@timeplus/vistral';
+  'Geo Chart (Key-Bound)': `import { StreamChart, type StreamDataSource, type GeoChartConfig } from '@timeplus/vistral';
 import { useTheme } from './App';
 
 function KeyBoundGeoChart() {
@@ -822,7 +813,7 @@ function KeyBoundGeoChart() {
   );
 }`,
 
-     'Bar Chart (Frame-Bound)': `import { StreamChart, findPaletteByLabel, type StreamDataSource, type BarColumnConfig } from '@timeplus/vistral';
+  'Bar Chart (Frame-Bound)': `import { StreamChart, findPaletteByLabel, type StreamDataSource, type BarColumnConfig } from '@timeplus/vistral';
 import { useTheme } from './App';
 
 function FrameBoundBarChart() {
@@ -889,7 +880,7 @@ function FrameBoundBarChart() {
   );
 }`,
 
-     'Line Chart (Axis-Bound)': `import { StreamChart, type StreamDataSource, type TimeSeriesConfig } from '@timeplus/vistral';
+  'Line Chart (Axis-Bound)': `import { StreamChart, type StreamDataSource, type TimeSeriesConfig } from '@timeplus/vistral';
 import { useTheme } from './App';
 
 function AxisBoundLineChart() {
@@ -961,7 +952,7 @@ function AxisBoundLineChart() {
   // Grammar API Examples
   // =========================================================================
 
-     'Grammar: Line Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+  'Grammar: Line Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
 
 function GrammarLineChart() {
   const theme = useTheme();
@@ -1033,7 +1024,7 @@ function GrammarLineChart() {
   );
 }`,
 
-     'Grammar: Multi-Mark': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+  'Grammar: Multi-Mark': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
 
 function GrammarMultiMark() {
   const theme = useTheme();
@@ -1116,7 +1107,7 @@ function GrammarMultiMark() {
   );
 }`,
 
-     'Grammar: Bar Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+  'Grammar: Bar Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
 
 function GrammarBarChart() {
   const theme = useTheme();
@@ -1193,7 +1184,7 @@ function GrammarBarChart() {
   );
 }`,
 
-     'Grammar: Stacked Area': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+  'Grammar: Stacked Area': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
 
 function GrammarStackedArea() {
   const theme = useTheme();
@@ -1276,7 +1267,7 @@ function GrammarStackedArea() {
   );
 }`,
 
-     'Grammar: Compiled Config': `import {
+  'Grammar: Compiled Config': `import {
   VistralChart, compileTimeSeriesConfig,
   type VistralSpec, type ChartHandle, type TimeSeriesConfig,
 } from '@timeplus/vistral';
@@ -1352,7 +1343,7 @@ function GrammarCompiledChart() {
   );
 }`,
 
-     'Grammar: Rose Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+  'Grammar: Rose Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
 
 function GrammarRoseChart() {
   const theme = useTheme();
@@ -1420,7 +1411,7 @@ function GrammarRoseChart() {
   );
 }`,
 
-     'Grammar: Donut Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+  'Grammar: Donut Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
 
 function GrammarDonutChart() {
   const theme = useTheme();
