@@ -136,10 +136,11 @@ describe('buildG2Options', () => {
     expect(xScale.type).toBe('time');
     expect(xScale.domainMin).toBeInstanceOf(Date);
     expect(xScale.domainMax).toBeInstanceOf(Date);
-    // domainMax should be close to the latest data point
-    expect(xScale.domainMax.getTime()).toBe(now);
-    // domainMin should be range minutes before domainMax
-    expect(xScale.domainMin.getTime()).toBe(now - 5 * 60_000);
+    // domainMax is anchored to Date.now() (>= data max) for live sliding window
+    const domainMax = xScale.domainMax.getTime();
+    expect(domainMax).toBeGreaterThanOrEqual(now);
+    // domainMin should be exactly range minutes before domainMax
+    expect(xScale.domainMin.getTime()).toBe(domainMax - 5 * 60_000);
     // mask should be auto-detected
     expect(xScale.mask).toBeDefined();
 

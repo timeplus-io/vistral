@@ -48,8 +48,10 @@ describe('buildG2Options Reproduction', () => {
         expect(yScale.domainMin).toBeInstanceOf(Date);
         expect(yScale.domainMax).toBeInstanceOf(Date);
 
-        // Check specific domain values to be sure it's the sliding window
-        expect(yScale.domainMax.getTime()).toBe(now); // Max timestamp in data
-        expect(yScale.domainMin.getTime()).toBe(now - 5 * 60_000); // 5 min range
+        // domainMax is anchored to Date.now() (>= data max) for live sliding window
+        const domainMax = yScale.domainMax.getTime();
+        expect(domainMax).toBeGreaterThanOrEqual(now);
+        // domainMin should be exactly range minutes before domainMax
+        expect(yScale.domainMin.getTime()).toBe(domainMax - 5 * 60_000);
     });
 });
