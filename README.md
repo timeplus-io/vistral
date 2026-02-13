@@ -1,12 +1,10 @@
-<p align="center">
-  <img src="examples/assets/timeplus-vistral_logo_pink.svg" width="200" alt="Vistral Logo" />
-</p>
-
-# @timeplus/vistral
 
 [![NPM Version](https://img.shields.io/npm/v/@timeplus/vistral)](https://www.npmjs.com/package/@timeplus/vistral)
 [![License](https://img.shields.io/npm/l/@timeplus/vistral)](https://github.com/timeplus-io/vistral/blob/main/LICENSE)
 
+<p align="center">
+  <img src="examples/assets/timeplus-vistral_logo_pink.svg" width="200" alt="Vistral Logo" />
+</p>
 
 A powerful streaming data visualization library based on the Grammar of Graphics. Designed for real-time data visualization with support for time series, bar/column charts, single value metrics, and data tables.
 
