@@ -14,6 +14,10 @@ Examples and Playground can be found here https://timeplus-io.github.io/vistral/
 
 Concept Introduction https://timeplus-io.github.io/vistra-temporal-binding/
 
+API Reference [docs/api-reference.md](docs/api-reference.md)
+
+Design Principles [docs/design-principles.md](docs/design-principles.md)
+
 ## Table of Contents
 
 - [Features](#features)
@@ -33,6 +37,7 @@ Concept Introduction https://timeplus-io.github.io/vistra-temporal-binding/
 - [Streaming Data with Hooks](#streaming-data-with-hooks)
 - [Color Palettes](#color-palettes)
 - [API Reference](./docs/api-reference.md)
+- [Design Principles](./docs/design-principles.md)
 - [Development](#development)
 - [Browser Support](#browser-support)
 - [License](#license)
