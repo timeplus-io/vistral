@@ -5,6 +5,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/npm/l/@timeplus/vistral)](https://github.com/timeplus-io/vistral/blob/main/LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/timeplus-io/vistral/pulls)
+[![Slack](https://img.shields.io/badge/Slack-Join%20Community-4A154B?logo=slack)](https://timeplus.com/slack)
 
 <p align="center">
   <img src="examples/assets/timeplus-vistral_logo_pink.svg" width="200" alt="Vistral Logo" />
