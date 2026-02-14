@@ -1,6 +1,10 @@
 
 [![NPM Version](https://img.shields.io/npm/v/@timeplus/vistral)](https://www.npmjs.com/package/@timeplus/vistral)
+[![NPM Downloads](https://img.shields.io/npm/dm/@timeplus/vistral)](https://www.npmjs.com/package/@timeplus/vistral)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/@timeplus/vistral)](https://bundlephobia.com/package/@timeplus/vistral)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/npm/l/@timeplus/vistral)](https://github.com/timeplus-io/vistral/blob/main/LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/timeplus-io/vistral/pulls)
 
 <p align="center">
   <img src="examples/assets/timeplus-vistral_logo_pink.svg" width="200" alt="Vistral Logo" />
