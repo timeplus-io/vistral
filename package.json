@@ -1,6 +1,6 @@
 {
   "name": "@timeplus/vistral",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A powerful streaming data visualization library follow grammar of graphics",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
