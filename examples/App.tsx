@@ -91,7 +91,7 @@ const examples: ExampleItem[] = [
 
 export default function App() {
   const [selectedExample, setSelectedExample] = useState<number | null>(null);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>('light');
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
 
   const isDark = theme === 'dark';

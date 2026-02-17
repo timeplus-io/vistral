@@ -90,7 +90,6 @@ export function getGeoChartDefaults(
     latitude: latCol.name,
     longitude: lngCol.name,
     zoom: 2,
-    tileProvider: 'cartodb-dark',
     showZoomControl: true,
     pointOpacity: 0.8,
     pointColor: '#3B82F6',
