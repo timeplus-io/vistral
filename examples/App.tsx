@@ -335,7 +335,7 @@ export default function App() {
                 lineHeight: '1.6',
               }}>
                 <p style={{ marginBottom: '8px' }}>
-                  <a href="https://github.com/timeplus-io/vistral" target="_blank" rel="noopener noreferrer" style={{ color: colors.accent, textDecoration: 'underline' }}>Vistral</a> is a streaming data visualization library open sourced by <a href="https://timeplus.com" target="_blank" rel="noopener noreferrer" style={{ color: colors.accent, textDecoration: 'underline' }}>timeplus</a>, based on the Grammar of Graphics.
+                  <a href="https://github.com/timeplus-io/vistral" target="_blank" rel="noopener noreferrer" style={{ color: colors.accent, textDecoration: 'underline' }}>Vistral</a> is a streaming data visualization library open sourced by <a href="https://timeplus.com" target="_blank" rel="noopener noreferrer" style={{ color: colors.accent, textDecoration: 'underline' }}>Timeplus</a>, based on the Grammar of Graphics.
                 </p>
                 <p style={{ marginBottom: '8px' }}>
                   Check out our open source SQL pipeline engine: <a href="https://github.com/timeplus-io/proton/" target="_blank" rel="noopener noreferrer" style={{ color: colors.accent, textDecoration: 'underline' }}>Timeplus Proton</a>
