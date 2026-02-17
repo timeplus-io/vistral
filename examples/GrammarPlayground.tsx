@@ -104,7 +104,8 @@ import { dataGenerators, type DataGenerator, type Column } from './data-utils';
 const markTypes = [
     { value: 'line', label: 'Line' },
     { value: 'area', label: 'Area' },
-    { value: 'interval', label: 'Interval (Bar)' },
+    { value: 'interval', label: 'Interval' },
+    { value: 'rect', label: 'Rect' },
     { value: 'point', label: 'Point' },
 ];
 

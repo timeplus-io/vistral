@@ -1003,7 +1003,102 @@ export function GrammarHeatmap() {
 }
 
 // =============================================================================
-// Example 12: GrammarCandlestickChart - OHLC Candlestick (two interval marks)
+// Example 12: GrammarTimeSeriesBar - Rect marks on a continuous time axis
+// =============================================================================
+
+export function GrammarTimeSeriesBar() {
+  const theme = useTheme();
+  const handleRef = useRef<ChartHandle | null>(null);
+  const valueRef = useRef(50);
+  const loadedRef = useRef(false);
+
+  const BAR_INTERVAL_MS = 2000;          // One bar every 2 seconds
+  const BAR_HALF = BAR_INTERVAL_MS * 0.35; // Bar width = 70% of interval
+
+  const spec: VistralSpec = {
+    marks: [
+      // Invisible anchor point — gives the time scale its sliding-window domain
+      {
+        type: 'point',
+        encode: { x: 'time', y: 'value' },
+        style: { r: 0, fillOpacity: 0, strokeOpacity: 0, strokeWidth: 0 },
+        tooltip: false,
+      },
+      // Bar body — rect from 0 to value, width computed via EncodeFn
+      {
+        type: 'rect',
+        encode: {
+          x: ((d: Record<string, unknown>) => {
+            const t = new Date(d.time as string).getTime();
+            return [new Date(t - BAR_HALF), new Date(t + BAR_HALF)];
+          }) as unknown as string,
+          y: ((d: Record<string, unknown>) => [0, d.value]) as unknown as string,
+        },
+        style: { fill: '#6366F1' },
+      },
+    ],
+    scales: {
+      x: { type: 'time' },
+      y: { type: 'linear', nice: true },
+    },
+    temporal: { mode: 'axis', field: 'time', range: 2 },
+    streaming: { maxItems: 500, throttle: 100 },
+    axes: {
+      x: { title: false, grid: false },
+      y: { title: 'Requests / sec', grid: true },
+    },
+    legend: false,
+    theme: theme as 'dark' | 'light',
+    animate: false,
+  };
+
+  useEffect(() => {
+    // Pre-populate with historical bars (guard against React 18 Strict Mode)
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      const now = Date.now();
+      const history: Record<string, unknown>[] = [];
+      let v = 50;
+      for (let i = 40; i >= 0; i--) {
+        v = generateNextValue(v, 10, 100, 0.15);
+        history.push({
+          time: new Date(now - i * BAR_INTERVAL_MS).toISOString(),
+          value: +v.toFixed(1),
+        });
+      }
+      valueRef.current = v;
+
+      if (handleRef.current) {
+        handleRef.current.append(history);
+      }
+    }
+
+    // Stream new bars
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        valueRef.current = generateNextValue(valueRef.current, 10, 100, 0.15);
+        handleRef.current.append([{
+          time: new Date().toISOString(),
+          value: +valueRef.current.toFixed(1),
+        }]);
+      }
+    }, BAR_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{ height: 400 }}>
+      <VistralChart
+        spec={spec}
+        height={400}
+        onReady={(handle) => { handleRef.current = handle; }}
+      />
+    </div>
+  );
+}
+
+// =============================================================================
+// Example 13: GrammarCandlestickChart - OHLC Candlestick (two interval marks)
 // =============================================================================
 
 export function GrammarCandlestickChart() {
@@ -1151,5 +1246,6 @@ export default {
   GrammarRadialBar,
   GrammarScatterChart,
   GrammarHeatmap,
+  GrammarTimeSeriesBar,
   GrammarCandlestickChart,
 };

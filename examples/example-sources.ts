@@ -1788,6 +1788,95 @@ function GrammarHeatmap() {
   );
 }`,
 
+  'Grammar: Time Series Bar': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+
+// Time Series Bar Chart — rect marks on a continuous time axis
+// G2's "interval" mark requires a band scale, which is incompatible with
+// a continuous time axis. Use "rect" marks with EncodeFn to compute
+// bar widths around each timestamp instead.
+
+function GrammarTimeSeriesBar() {
+  const handleRef = useRef<ChartHandle | null>(null);
+  const valueRef = useRef(50);
+  const loadedRef = useRef(false);
+
+  const BAR_INTERVAL_MS = 2000;
+  const BAR_HALF = BAR_INTERVAL_MS * 0.35;
+
+  const spec: VistralSpec = {
+    marks: [
+      // Invisible anchor — establishes time scale domain
+      {
+        type: 'point',
+        encode: { x: 'time', y: 'value' },
+        style: { r: 0, fillOpacity: 0, strokeOpacity: 0, strokeWidth: 0 },
+        tooltip: false,
+      },
+      // Bar body — rect from 0 to value
+      {
+        type: 'rect',
+        encode: {
+          x: (d) => {
+            const t = new Date(d.time).getTime();
+            return [new Date(t - BAR_HALF), new Date(t + BAR_HALF)];
+          },
+          y: (d) => [0, d.value],
+        },
+        style: { fill: '#6366F1' },
+      },
+    ],
+    scales: {
+      x: { type: 'time' },
+      y: { type: 'linear', nice: true },
+    },
+    temporal: { mode: 'axis', field: 'time', range: 2 },
+    streaming: { maxItems: 500, throttle: 100 },
+    axes: {
+      x: { title: false, grid: false },
+      y: { title: 'Requests / sec', grid: true },
+    },
+    legend: false,
+    animate: false,
+  };
+
+  useEffect(() => {
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      const now = Date.now();
+      const history = [];
+      let v = 50;
+      for (let i = 40; i >= 0; i--) {
+        v = generateNextValue(v, 10, 100, 0.15);
+        history.push({
+          time: new Date(now - i * BAR_INTERVAL_MS).toISOString(),
+          value: +v.toFixed(1),
+        });
+      }
+      valueRef.current = v;
+      handleRef.current?.append(history);
+    }
+
+    const interval = setInterval(() => {
+      if (handleRef.current) {
+        valueRef.current = generateNextValue(valueRef.current, 10, 100, 0.15);
+        handleRef.current.append([{
+          time: new Date().toISOString(),
+          value: +valueRef.current.toFixed(1),
+        }]);
+      }
+    }, BAR_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <VistralChart
+      spec={spec}
+      height={400}
+      onReady={(handle) => { handleRef.current = handle; }}
+    />
+  );
+}`,
+
   'Grammar: Candlestick': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
 
 // Candlestick (OHLC) Chart — rect marks with EncodeFn on a time axis
