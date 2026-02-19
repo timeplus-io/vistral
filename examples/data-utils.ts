@@ -175,26 +175,26 @@ export const dataGenerators: Record<string, DataGenerator> = {
             { name: 'status', type: 'string' },
         ],
         generate: (historyCount?: number) => {
-            const vehicles = ['truck-01', 'truck-02', 'truck-03', 'van-01', 'van-02'];
+            const vehicles = ['car-01', 'car-02', 'car-03', 'car-04', 'car-05', 'car-06', 'car-07', 'car-08', 'car-09', 'car-10'];
             const statuses = ['moving', 'moving', 'moving', 'stopped', 'loading'];
-            const INTERVAL_MS = 1000; // must equal this generator's interval property
+            const INTERVAL_MS = 500;
 
             const generateFrame = (ts: string): Record<string, unknown>[] => {
-                // Pick a random vehicle for each frame
-                const vehicle = vehicles[Math.floor(Math.random() * vehicles.length)];
-                const latKey = `${vehicle}_lat`;
-                const lngKey = `${vehicle}_lng`;
-                currentValues[latKey] = generateNextValue(currentValues[latKey] ?? (40 + Math.random() * 2), 39, 42, 0.01);
-                currentValues[lngKey] = generateNextValue(currentValues[lngKey] ?? (-74 + Math.random() * 2), -76, -72, 0.01);
+                return vehicles.map(vehicle => {
+                    const latKey = `${vehicle}_lat`;
+                    const lngKey = `${vehicle}_lng`;
+                    currentValues[latKey] = generateNextValue(currentValues[latKey] ?? (40 + Math.random() * 2), 39, 42, 0.03);
+                    currentValues[lngKey] = generateNextValue(currentValues[lngKey] ?? (-74 + Math.random() * 2), -76, -72, 0.03);
 
-                return [{
-                    timestamp: ts,
-                    vehicle_id: vehicle,
-                    latitude: currentValues[latKey],
-                    longitude: currentValues[lngKey],
-                    speed: Math.floor(Math.random() * 60) + 20,
-                    status: statuses[Math.floor(Math.random() * statuses.length)],
-                }];
+                    return {
+                        timestamp: ts,
+                        vehicle_id: vehicle,
+                        latitude: currentValues[latKey],
+                        longitude: currentValues[lngKey],
+                        speed: Math.floor(Math.random() * 60) + 20,
+                        status: statuses[Math.floor(Math.random() * statuses.length)],
+                    };
+                });
             };
 
             if (historyCount && historyCount > 0) {
@@ -209,7 +209,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
 
             return generateFrame(new Date().toISOString());
         },
-        interval: 1000,
+        interval: 500,
     },
     logs: {
         name: 'Application Logs',

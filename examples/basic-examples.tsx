@@ -681,7 +681,7 @@ export function KeyBoundGeoChart() {
   useEffect(() => {
     if (!loadedRef.current) {
       loadedRef.current = true;
-      append(dataGenerators.vehicles.generate(10));
+      append(dataGenerators.vehicles.generate(3));
     }
     const id = setInterval(() => {
       append(dataGenerators.vehicles.generate());
