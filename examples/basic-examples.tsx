@@ -19,7 +19,7 @@ import {
   type GeoChartConfig,
 } from '@timeplus/vistral';
 import { ThemeContext } from './App';
-import { dataGenerators } from './data-utils';
+import { dataGenerators, generateNextValue } from './data-utils';
 
 // Hook to get current theme
 function useTheme() {
@@ -28,54 +28,31 @@ function useTheme() {
 }
 
 // =============================================================================
-// Helper: Generate random value with some continuity
-// =============================================================================
-
-function generateNextValue(current: number, min: number, max: number, volatility: number = 0.1): number {
-  const change = (Math.random() - 0.5) * 2 * volatility * (max - min);
-  return Math.min(max, Math.max(min, current + change));
-}
-
-// =============================================================================
 // Example 1: Streaming Line Chart
 // =============================================================================
 
 export function BasicLineChart() {
   const theme = useTheme();
-  const [dataPoints, setDataPoints] = useState<unknown[][]>([]);
+  const { data, append } = useStreamingData<Record<string, unknown>[]>([], 300);
 
   useEffect(() => {
-    let currentValue = dataPoints.length > 0
-      ? (dataPoints[dataPoints.length - 1][1] as number)
-      : 50;
+    append(dataGenerators.cpuLoad.generate(30));
+    const id = setInterval(() => {
+      append(dataGenerators.cpuLoad.generate());
+    }, dataGenerators.cpuLoad.interval);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const interval = setInterval(() => {
-      currentValue = generateNextValue(currentValue, 20, 80, 0.15);
-      const newPoint = [new Date().toISOString(), currentValue];
-
-      setDataPoints(prev => {
-        const updated = [...prev, newPoint];
-        // Keep last 300 points (5 minutes) to ensure we always have enough data for 2-minute view
-        return updated.slice(-300);
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const data: StreamDataSource = {
-    columns: [
-      { name: 'timestamp', type: 'datetime64' },
-      { name: 'cpu_usage', type: 'float64' },
-    ],
-    data: dataPoints,
+  const source: StreamDataSource = {
+    columns: dataGenerators.cpuLoad.columns,
+    data,
     isStreaming: true,
   };
 
   const config: TimeSeriesConfig = {
     chartType: 'line',
-    xAxis: 'timestamp',
-    yAxis: 'cpu_usage',
+    xAxis: 'time',
+    yAxis: 'value',
     lineStyle: 'curve',
     gridlines: true,
     yTitle: 'CPU Usage (%)',
@@ -86,7 +63,7 @@ export function BasicLineChart() {
 
   return (
     <div style={{ width: '100%', height: '400px' }}>
-      <StreamChart config={config} data={data} theme={theme} />
+      <StreamChart config={config} data={source} theme={theme} />
     </div>
   );
 }
@@ -97,23 +74,18 @@ export function BasicLineChart() {
 
 export function MultiSeriesAreaChart() {
   const theme = useTheme();
-  // Using 'sensors' generator (temperature by location)
   const { data, append } = useStreamingData<Record<string, unknown>[]>(
     [],
     240 // Keep ~240 points (60 per location * 4 locations)
   );
 
   useEffect(() => {
-    const generator = dataGenerators.sensors;
-
-    // Simulate streaming
-    const interval = setInterval(() => {
-      const newData = generator.generate();
-      append(newData);
-    }, generator.interval);
-
-    return () => clearInterval(interval);
-  }, [append]);
+    append(dataGenerators.sensors.generate(30));
+    const id = setInterval(() => {
+      append(dataGenerators.sensors.generate());
+    }, dataGenerators.sensors.interval);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const source: StreamDataSource = {
     columns: dataGenerators.sensors.columns,
@@ -146,52 +118,20 @@ export function MultiSeriesAreaChart() {
 
 export function StackedBarChart() {
   const theme = useTheme();
-  // Using 'revenue' generator from data-utils
   const { data, append } = useStreamingData<Record<string, unknown>[]>(
     [],
-    20 // Keep enough history if needed, though this updates in-place conceptually
+    20
   );
 
   useEffect(() => {
-    // Initial fetch
-    const generator = dataGenerators.revenue;
-
-    // Simulate streaming by calling generator
-    const interval = setInterval(() => {
-      const newData = generator.generate();
-      // For this specific chart, we are replacing the whole dataset effectively each tick
-      // But useStreamingData appends. 
-      // Wait, StreamChart expects a stream. If we want to update the bars in place, we usually use `isStreaming: true` and push updates.
-      // However, the original code used `setRevenues` which updated the *source* state, causing a re-render with new data array.
-      // Vistral's StreamChart with isStreaming: true and VistralChart handle appends.
-      // For a bar chart where categories are fixed (Q1-Q4), we might want to REPLACE data or just append new snapshots?
-      // The original logic updated keys in place. 
-
-      // Actually, StreamChart reacts to `data` prop changes.
-      // If we use useStreamingData, it appends.
-      // If we want to replace/update existing keys (like Q1 A changing value), we should probably just use local state + generator
-      // OR better: use existing Vistral behavior.
-
-      // Let's stick to the pattern:
-      // We can just call generator.generate() and pass it to StreamChart if we don't need history.
-      // BUT, useStreamingData is good for appending.
-      // The generator returns the FULL set of bars (12 items) every time.
-      // If we append 12 items every 1.5s, the chart will grow indefinitely or shift if we slice.
-      // The original code passed the 12 items as the `data` prop every render.
-
-      // So let's use useState + generator.generate()
-      append(newData);
-    }, generator.interval);
-
-    return () => clearInterval(interval);
-  }, [append]);
+    const id = setInterval(() => {
+      append(dataGenerators.revenue.generate());
+    }, dataGenerators.revenue.interval);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const source: StreamDataSource = {
     columns: dataGenerators.revenue.columns,
-    // We only want the latest snapshot for this visualization, but StreamChart might expect history?
-    // The original code was: data: [ ...12 items... ]. 
-    // It updated those 12 items in place.
-    // If we simply pass the latest generated batch, it mimics that.
     data: data.slice(-12), // Show only the latest snapshot (12 bars: 4 quarters * 3 products)
     isStreaming: true,
   };
@@ -223,23 +163,17 @@ export function StackedBarChart() {
 
 export function GroupedBarChart() {
   const theme = useTheme();
-  // Using 'sales' generator
   const { data, append } = useStreamingData<Record<string, unknown>[]>(
     [],
-    12 // Keep enough history for snapshot
+    12
   );
 
   useEffect(() => {
-    const generator = dataGenerators.sales;
-
-    // Simulate streaming
-    const interval = setInterval(() => {
-      const newData = generator.generate();
-      append(newData);
-    }, generator.interval);
-
-    return () => clearInterval(interval);
-  }, [append]);
+    const id = setInterval(() => {
+      append(dataGenerators.sales.generate());
+    }, dataGenerators.sales.interval);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const source: StreamDataSource = {
     columns: dataGenerators.sales.columns,
@@ -276,18 +210,15 @@ export function SingleValueWithSparkline() {
   const [value, setValue] = useState(1234);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setValue(prev => {
-        const newValue = Math.floor(generateNextValue(prev, 800, 1800, 0.1));
-        return newValue;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
+    const id = setInterval(() => {
+      const row = dataGenerators.activeUsers.generate()[0];
+      setValue(row.activeUsers as number);
+    }, dataGenerators.activeUsers.interval);
+    return () => clearInterval(id);
   }, []);
 
   const data: StreamDataSource = {
-    columns: [{ name: 'activeUsers', type: 'int64' }],
+    columns: dataGenerators.activeUsers.columns,
     data: [[value]],
     isStreaming: true,
   };
@@ -321,40 +252,15 @@ export function StreamingDataTable() {
   const { data, append } = useStreamingData<unknown[]>([], 50);
 
   useEffect(() => {
-    const levels = ['INFO', 'WARN', 'ERROR', 'DEBUG'];
-    const messages = [
-      'User login successful',
-      'API request completed',
-      'Database query executed',
-      'Cache hit for key',
-      'Connection established',
-      'Request timeout',
-      'Invalid token detected',
-      'Rate limit exceeded',
-      'Memory usage high',
-      'Background job started',
-    ];
-
-    const interval = setInterval(() => {
-      const now = new Date().toISOString();
-      const level = levels[Math.floor(Math.random() * levels.length)];
-      const message = messages[Math.floor(Math.random() * messages.length)];
-      const duration = Math.floor(Math.random() * 500) + 10;
-
-      // Wrap in array since append treats arrays as multiple items
-      append([[now, level, message, duration]]);
-    }, 800);
-
-    return () => clearInterval(interval);
-  }, [append]);
+    const id = setInterval(() => {
+      const row = dataGenerators.logs.generate()[0];
+      append([[row.timestamp, row.level, row.service, row.message, row.duration_ms]]);
+    }, dataGenerators.logs.interval);
+    return () => clearInterval(id);
+  }, []);
 
   const dataSource: StreamDataSource = {
-    columns: [
-      { name: 'timestamp', type: 'datetime64' },
-      { name: 'level', type: 'string' },
-      { name: 'message', type: 'string' },
-      { name: 'duration_ms', type: 'int64' },
-    ],
+    columns: dataGenerators.logs.columns,
     data,
     isStreaming: true,
   };
@@ -401,16 +307,19 @@ export function MetricsDashboard() {
   });
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMetrics(prev => ({
-        cpu: generateNextValue(prev.cpu, 10, 95, 0.15),
-        memory: generateNextValue(prev.memory, 30, 90, 0.08),
-        requests: prev.requests + Math.floor(Math.random() * 50) + 10,
-        errors: prev.errors + (Math.random() > 0.85 ? 1 : 0),
-      }));
-    }, 1000);
-
-    return () => clearInterval(interval);
+    const id = setInterval(() => {
+      const rows = dataGenerators.metrics.generate();
+      const s01 = rows.find(r => r.server === 'server-01');
+      if (s01) {
+        setMetrics(prev => ({
+          cpu: s01.cpu as number,
+          memory: s01.memory as number,
+          requests: prev.requests + Math.floor(Math.random() * 50) + 10,
+          errors: prev.errors + (Math.random() > 0.85 ? 1 : 0),
+        }));
+      }
+    }, dataGenerators.metrics.interval);
+    return () => clearInterval(id);
   }, []);
 
   const createMetricData = (value: number): StreamDataSource => ({
@@ -501,37 +410,21 @@ export function MetricsDashboard() {
 export function ChartWithTableToggle() {
   const theme = useTheme();
   const [showTable, setShowTable] = useState(false);
-  const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
-    const now = Date.now();
-    const points: unknown[][] = [];
-    let temp = 22, humidity = 45;
-
-    for (let i = 20; i >= 0; i--) {
-      temp = generateNextValue(temp, 18, 30, 0.1);
-      humidity = generateNextValue(humidity, 30, 70, 0.1);
-      points.push([new Date(now - i * 3000).toISOString(), temp, humidity]);
-    }
-    return points;
-  });
-
-  const valuesRef = React.useRef({ temp: 24, humidity: 45 });
+  const { data: streamData, append } = useStreamingData<unknown[]>([], 30);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      valuesRef.current.temp = generateNextValue(valuesRef.current.temp, 18, 30, 0.1);
-      valuesRef.current.humidity = generateNextValue(valuesRef.current.humidity, 30, 70, 0.1);
+    // Pre-populate with 20 sensor readings from Warehouse A
+    const history = dataGenerators.sensors.generate(20)
+      .filter(r => r.location === 'Warehouse A')
+      .map(r => [r.timestamp, r.temperature, r.humidity]);
+    append(history as unknown[][]);
 
-      setDataPoints(prev => {
-        const updated = [
-          ...prev,
-          [new Date().toISOString(), valuesRef.current.temp, valuesRef.current.humidity],
-        ];
-        return updated.slice(-30);
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
+    const id = setInterval(() => {
+      const row = dataGenerators.sensors.generate().find(r => r.location === 'Warehouse A');
+      if (row) append([[row.timestamp, row.temperature, row.humidity]]);
+    }, dataGenerators.sensors.interval);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const data: StreamDataSource = {
     columns: [
@@ -539,7 +432,7 @@ export function ChartWithTableToggle() {
       { name: 'temperature', type: 'float64' },
       { name: 'humidity', type: 'float64' },
     ],
-    data: dataPoints,
+    data: streamData,
     isStreaming: true,
   };
 
@@ -588,66 +481,19 @@ export function ChartWithTableToggle() {
 
 export function StreamingGeoChart() {
   const theme = useTheme();
-  const [points, setPoints] = useState<unknown[][]>(() => {
-    // Initialize with some random points around the world
-    const initialPoints: unknown[][] = [];
-    const cities = [
-      { lat: 40.7128, lng: -74.006, name: 'New York' },
-      { lat: 51.5074, lng: -0.1278, name: 'London' },
-      { lat: 35.6762, lng: 139.6503, name: 'Tokyo' },
-      { lat: -33.8688, lng: 151.2093, name: 'Sydney' },
-      { lat: 48.8566, lng: 2.3522, name: 'Paris' },
-      { lat: 55.7558, lng: 37.6173, name: 'Moscow' },
-      { lat: -23.5505, lng: -46.6333, name: 'São Paulo' },
-      { lat: 19.4326, lng: -99.1332, name: 'Mexico City' },
-      { lat: 31.2304, lng: 121.4737, name: 'Shanghai' },
-      { lat: 1.3521, lng: 103.8198, name: 'Singapore' },
-    ];
-
-    cities.forEach((city) => {
-      // Add some random variation
-      for (let i = 0; i < 20; i++) {
-        initialPoints.push([
-          city.lat + (Math.random() - 0.5) * 5,
-          city.lng + (Math.random() - 0.5) * 5,
-          Math.floor(Math.random() * 100),
-          city.name,
-        ]);
-      }
-    });
-    return initialPoints;
-  });
+  const { data, append } = useStreamingData<Record<string, unknown>[]>([], 300);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newPoints: unknown[][] = [];
-      const categories = ['Category A', 'Category B', 'Category C'];
+    append(dataGenerators.globalEvents.generate(40));
+    const id = setInterval(() => {
+      append(dataGenerators.globalEvents.generate());
+    }, dataGenerators.globalEvents.interval);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-      for (let i = 0; i < 5; i++) {
-        const lat = (Math.random() - 0.5) * 140; // -70 to 70
-        const lng = (Math.random() - 0.5) * 360; // -180 to 180
-        const value = Math.floor(Math.random() * 100);
-        const category = categories[Math.floor(Math.random() * categories.length)];
-        newPoints.push([lat, lng, value, category]);
-      }
-
-      setPoints((prev) => {
-        const updated = [...prev, ...newPoints];
-        return updated.slice(-300); // Keep last 300 points
-      });
-    }, 200);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const data: StreamDataSource = {
-    columns: [
-      { name: 'latitude', type: 'float64' },
-      { name: 'longitude', type: 'float64' },
-      { name: 'value', type: 'int64' },
-      { name: 'category', type: 'string' },
-    ],
-    data: points,
+  const source: StreamDataSource = {
+    columns: dataGenerators.globalEvents.columns,
+    data,
     isStreaming: true,
   };
 
@@ -669,7 +515,7 @@ export function StreamingGeoChart() {
 
   return (
     <div style={{ width: '100%', height: '500px' }}>
-      <StreamChart config={config} data={data} theme={theme} />
+      <StreamChart config={config} data={source} theme={theme} />
     </div>
   );
 }
@@ -684,23 +530,12 @@ export function FrameBoundTable() {
   const { data, append } = useStreamingData<unknown[]>([], 200);
 
   useEffect(() => {
-    const servers = ['server-01', 'server-02', 'server-03', 'server-04'];
-
-    const interval = setInterval(() => {
-      const now = new Date().toISOString();
-      // Add metrics for all servers at the same timestamp
-      const newRows = servers.map(server => [
-        now,
-        server,
-        generateNextValue(50, 10, 95, 0.2), // CPU
-        generateNextValue(60, 20, 90, 0.15), // Memory
-        Math.floor(Math.random() * 1000) + 100, // Requests
-      ]);
-      append(newRows);
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [append]);
+    const id = setInterval(() => {
+      const rows = dataGenerators.metrics.generate();
+      append(rows.map(r => [r.timestamp, r.server, r.cpu, r.memory, r.requests]));
+    }, dataGenerators.metrics.interval);
+    return () => clearInterval(id);
+  }, []);
 
   const dataSource: StreamDataSource = {
     columns: [
@@ -714,7 +549,6 @@ export function FrameBoundTable() {
     isStreaming: true,
   };
 
-  // Using new temporal config for frame-bound mode
   const config: TableConfig = {
     chartType: 'table',
     temporal: {
@@ -753,24 +587,20 @@ export function KeyBoundTable() {
 
   useEffect(() => {
     const services = ['auth-service', 'api-gateway', 'user-service', 'payment-service', 'notification-service'];
+    const statuses = ['healthy', 'healthy', 'healthy', 'degraded', 'down'];
 
-    const interval = setInterval(() => {
-      // Update a random service
+    const id = setInterval(() => {
       const service = services[Math.floor(Math.random() * services.length)];
-      const statuses = ['healthy', 'healthy', 'healthy', 'degraded', 'down'];
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-
       append([[
         new Date().toISOString(),
         service,
-        status,
-        Math.floor(Math.random() * 200) + 10, // latency
-        generateNextValue(99, 95, 100, 0.02), // uptime
+        statuses[Math.floor(Math.random() * statuses.length)],
+        Math.floor(Math.random() * 200) + 10,
+        99 + (Math.random() - 0.5) * 2,
       ]]);
     }, 1000);
-
-    return () => clearInterval(interval);
-  }, [append]);
+    return () => clearInterval(id);
+  }, []);
 
   const dataSource: StreamDataSource = {
     columns: [
@@ -784,7 +614,6 @@ export function KeyBoundTable() {
     isStreaming: true,
   };
 
-  // Using new temporal config for key-bound mode
   const config: TableConfig = {
     chartType: 'table',
     temporal: {
@@ -829,82 +658,26 @@ export function KeyBoundTable() {
 
 export function KeyBoundGeoChart() {
   const theme = useTheme();
-  const [points, setPoints] = useState<unknown[][]>(() => {
-    // Initialize vehicles with starting positions
-    const vehicles: unknown[][] = [];
-    for (let i = 1; i <= 10; i++) {
-      vehicles.push([
-        new Date().toISOString(),
-        `vehicle-${i}`,
-        40 + Math.random() * 5,  // lat around NYC area
-        -74 + Math.random() * 2, // lng around NYC area
-        Math.floor(Math.random() * 60) + 20, // speed
-      ]);
-    }
-    return vehicles;
-  });
-
-  // Keep track of latest positions for smooth movement simulation
-  const vehiclePositions = React.useRef<Map<string, { lat: number, lng: number }>>(new Map());
-
-  // Initialize positions map if empty
-  if (vehiclePositions.current.size === 0 && points.length > 0) {
-    points.forEach(p => {
-      vehiclePositions.current.set(String(p[1]), { lat: Number(p[2]), lng: Number(p[3]) });
-    });
-  }
+  const { data, append } = useStreamingData<Record<string, unknown>[]>([], 500);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date().toISOString();
-      const updates: unknown[][] = [];
+    append(dataGenerators.vehicles.generate(10));
+    const id = setInterval(() => {
+      append(dataGenerators.vehicles.generate());
+    }, dataGenerators.vehicles.interval);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-      // Update all vehicles
-      for (let i = 1; i <= 10; i++) {
-        const vehicleId = `vehicle-${i}`;
-        const current = vehiclePositions.current.get(vehicleId) || { lat: 42, lng: -73 };
-
-        // Move larger distance for "fast" effect
-        const newLat = current.lat + (Math.random() - 0.5) * 0.4;
-        const newLng = current.lng + (Math.random() - 0.5) * 0.4;
-
-        // Update ref
-        vehiclePositions.current.set(vehicleId, { lat: newLat, lng: newLng });
-
-        updates.push([
-          now,
-          vehicleId,
-          newLat,
-          newLng,
-          Math.floor(Math.random() * 60) + 20,
-        ]);
-      }
-
-      setPoints(prev => {
-        return [...prev, ...updates].slice(-500); // Keep enough history
-      });
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const data: StreamDataSource = {
-    columns: [
-      { name: 'timestamp', type: 'datetime64' },
-      { name: 'vehicle_id', type: 'string' },
-      { name: 'lat', type: 'float64' },
-      { name: 'lng', type: 'float64' },
-      { name: 'speed', type: 'int64' },
-    ],
-    data: points,
+  const source: StreamDataSource = {
+    columns: dataGenerators.vehicles.columns,
+    data,
     isStreaming: true,
   };
 
-  // Using new temporal config for key-bound mode
   const config: GeoChartConfig = {
     chartType: 'geo',
-    latitude: 'lat',
-    longitude: 'lng',
+    latitude: 'latitude',
+    longitude: 'longitude',
     temporal: {
       mode: 'key',
       field: 'vehicle_id',
@@ -914,7 +687,6 @@ export function KeyBoundGeoChart() {
       min: 6,
       max: 14,
     },
-    // Center zoomed out to see fast movement better
     center: [40, -74],
     zoom: 5,
     showZoomControl: true,
@@ -926,10 +698,10 @@ export function KeyBoundGeoChart() {
   return (
     <div>
       <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
-        Key-bound GeoChart: Shows latest position per vehicle (10 fast-moving vehicles)
+        Key-bound GeoChart: Shows latest position per vehicle (vehicles in NYC area)
       </p>
       <div style={{ width: '100%', height: '500px' }}>
-        <StreamChart config={config} data={data} theme={theme} />
+        <StreamChart config={config} data={source} theme={theme} />
       </div>
     </div>
   );
@@ -942,50 +714,27 @@ export function KeyBoundGeoChart() {
 
 export function FrameBoundBarChart() {
   const theme = useTheme();
-  const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
-    const now = new Date().toISOString();
-    return [
-      [now, 'Widgets', 120],
-      [now, 'Gadgets', 85],
-      [now, 'Gizmos', 95],
-      [now, 'Doodads', 65],
-    ];
-  });
+  const { data, append } = useStreamingData<Record<string, unknown>[]>([], 100);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date().toISOString();
-      setDataPoints(prev => [
-        ...prev,
-        [now, 'Widgets', generateNextValue(Number(prev[prev.length - 4]?.[2] || 120), 80, 160, 0.1)],
-        [now, 'Gadgets', generateNextValue(Number(prev[prev.length - 3]?.[2] || 85), 50, 120, 0.1)],
-        [now, 'Gizmos', generateNextValue(Number(prev[prev.length - 2]?.[2] || 95), 60, 130, 0.1)],
-        [now, 'Doodads', generateNextValue(Number(prev[prev.length - 1]?.[2] || 65), 40, 100, 0.1)],
-      ].slice(-100)); // Keep some history
-    }, 2000);
+    append(dataGenerators.productInventory.generate());
+    const id = setInterval(() => {
+      append(dataGenerators.productInventory.generate());
+    }, dataGenerators.productInventory.interval);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    return () => clearInterval(interval);
-  }, []);
-
-  const data: StreamDataSource = {
-    columns: [
-      { name: 'timestamp', type: 'datetime64' },
-      { name: 'product', type: 'string' },
-      { name: 'sales', type: 'float64' },
-    ],
-    data: dataPoints,
+  const source: StreamDataSource = {
+    columns: dataGenerators.productInventory.columns,
+    data,
     isStreaming: true,
   };
 
-  // Using new temporal config for frame-bound mode
   const config: BarColumnConfig = {
     chartType: 'column',
     xAxis: 'product',
     yAxis: 'sales',
-    temporal: {
-      mode: 'frame',
-      field: 'timestamp',
-    },
+    temporal: { mode: 'frame', field: 'timestamp' },
     dataLabel: true,
     gridlines: true,
     yTitle: 'Sales',
@@ -999,7 +748,7 @@ export function FrameBoundBarChart() {
         Frame-bound BarChart: Shows only the latest timestamp snapshot
       </p>
       <div style={{ width: '100%', height: '400px' }}>
-        <StreamChart config={config} data={data} theme={theme} />
+        <StreamChart config={config} data={source} theme={theme} />
       </div>
     </div>
   );
@@ -1012,40 +761,26 @@ export function FrameBoundBarChart() {
 
 export function AxisBoundLineChart() {
   const theme = useTheme();
-  const [dataPoints, setDataPoints] = useState<unknown[][]>([]);
+  const { data, append } = useStreamingData<Record<string, unknown>[]>([], 300);
 
   useEffect(() => {
-    let currentValue = 50; // Start with default value
-
-    const interval = setInterval(() => {
-      currentValue = generateNextValue(currentValue, 20, 80, 0.15);
-      const newPoint = [new Date().toISOString(), currentValue];
-
-      setDataPoints(prev => [...prev, newPoint].slice(-300)); // Keep 5 minutes of data
-    }, 1000);
-
-    return () => clearInterval(interval);
+    const id = setInterval(() => {
+      append(dataGenerators.cpuLoad.generate());
+    }, dataGenerators.cpuLoad.interval);
+    return () => clearInterval(id);
   }, []);
 
-  const data: StreamDataSource = {
-    columns: [
-      { name: 'timestamp', type: 'datetime64' },
-      { name: 'value', type: 'float64' },
-    ],
-    data: dataPoints,
+  const source: StreamDataSource = {
+    columns: dataGenerators.cpuLoad.columns,
+    data,
     isStreaming: true,
   };
 
-  // Using new temporal config for axis-bound mode (sliding window)
   const config: TimeSeriesConfig = {
     chartType: 'line',
-    xAxis: 'timestamp',
+    xAxis: 'time',
     yAxis: 'value',
-    temporal: {
-      mode: 'axis',
-      field: 'timestamp',
-      range: 1, // 1 minute sliding window
-    },
+    temporal: { mode: 'axis', field: 'time', range: 1 },
     lineStyle: 'curve',
     gridlines: true,
     yTitle: 'Metric Value',
@@ -1059,7 +794,7 @@ export function AxisBoundLineChart() {
         Axis-bound mode: 1-minute sliding window (starts with no data)
       </p>
       <div style={{ width: '100%', height: '400px' }}>
-        <StreamChart config={config} data={data} theme={theme} />
+        <StreamChart config={config} data={source} theme={theme} />
       </div>
     </div>
   );
