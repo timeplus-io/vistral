@@ -356,4 +356,286 @@ export const dataGenerators: Record<string, DataGenerator> = {
         },
         interval: 1200,
     },
+    cpuLoad: {
+        name: 'CPU Load',
+        description: 'Single server CPU utilization over time',
+        columns: [
+            { name: 'time', type: 'datetime64' },
+            { name: 'value', type: 'float64' },
+        ],
+        generate: (historyCount?: number) => {
+            const INTERVAL_MS = 1000; // must equal this generator's interval property
+            if (historyCount && historyCount > 0) {
+                const frames: Record<string, unknown>[] = [];
+                const now = Date.now();
+                for (let i = historyCount; i >= 0; i--) {
+                    currentValues['cpuLoad'] = generateNextValue(currentValues['cpuLoad'] ?? 50, 10, 90, 0.15);
+                    frames.push({ time: new Date(now - i * INTERVAL_MS).toISOString(), value: currentValues['cpuLoad'] });
+                }
+                return frames;
+            }
+            currentValues['cpuLoad'] = generateNextValue(currentValues['cpuLoad'] ?? 50, 10, 90, 0.15);
+            return [{ time: new Date().toISOString(), value: currentValues['cpuLoad'] }];
+        },
+        interval: 1000,
+    },
+    apiTraffic: {
+        name: 'API Traffic',
+        description: 'HTTP requests, errors, and timeouts per second',
+        columns: [
+            { name: 'time', type: 'datetime64' },
+            { name: 'metric', type: 'string' },
+            { name: 'value', type: 'float64' },
+        ],
+        generate: (historyCount?: number) => {
+            const INTERVAL_MS = 2000; // must equal this generator's interval property
+            const metrics = ['requests', 'errors', 'timeouts'];
+            const defaults: Record<string, number> = { requests: 120, errors: 5, timeouts: 2 };
+            const bounds: Record<string, [number, number]> = { requests: [50, 300], errors: [0, 30], timeouts: [0, 15] };
+            const generateFrame = (ts: string): Record<string, unknown>[] =>
+                metrics.map(m => {
+                    const key = `apiTraffic_${m}`;
+                    currentValues[key] = generateNextValue(currentValues[key] ?? defaults[m], bounds[m][0], bounds[m][1], 0.12);
+                    return { time: ts, metric: m, value: currentValues[key] };
+                });
+            if (historyCount && historyCount > 0) {
+                const frames: Record<string, unknown>[] = [];
+                const now = Date.now();
+                for (let i = historyCount; i >= 0; i--) {
+                    frames.push(...generateFrame(new Date(now - i * INTERVAL_MS).toISOString()));
+                }
+                return frames;
+            }
+            return generateFrame(new Date().toISOString());
+        },
+        interval: 2000,
+    },
+    globalEvents: {
+        name: 'Global Events',
+        description: 'Geo-distributed events with category and magnitude',
+        columns: [
+            { name: 'latitude', type: 'float64' },
+            { name: 'longitude', type: 'float64' },
+            { name: 'value', type: 'int64' },
+            { name: 'category', type: 'string' },
+        ],
+        generate: (historyCount?: number) => {
+            const categories = ['Category A', 'Category B', 'Category C'];
+            const count = historyCount && historyCount > 0 ? historyCount * 5 : 5;
+            const rows: Record<string, unknown>[] = [];
+            for (let i = 0; i < count; i++) {
+                rows.push({
+                    latitude: (Math.random() - 0.5) * 140,
+                    longitude: (Math.random() - 0.5) * 360,
+                    value: Math.floor(Math.random() * 100),
+                    category: categories[Math.floor(Math.random() * categories.length)],
+                });
+            }
+            return rows;
+        },
+        interval: 200,
+    },
+    productInventory: {
+        name: 'Product Inventory',
+        description: 'Current stock levels for store products',
+        columns: [
+            { name: 'timestamp', type: 'datetime64' },
+            { name: 'product', type: 'string' },
+            { name: 'sales', type: 'float64' },
+        ],
+        generate: (historyCount?: number) => {
+            // historyCount is intentionally ignored for frame-bound generators
+            const products = ['Widgets', 'Gadgets', 'Gizmos', 'Doodads'];
+            const defaults: Record<string, number> = { Widgets: 120, Gadgets: 85, Gizmos: 95, Doodads: 65 };
+            const bounds: Record<string, [number, number]> = {
+                Widgets: [80, 160], Gadgets: [50, 120], Gizmos: [60, 130], Doodads: [40, 100],
+            };
+            const now = new Date().toISOString();
+            return products.map(p => {
+                const key = `inventory_${p}`;
+                currentValues[key] = generateNextValue(currentValues[key] ?? defaults[p], bounds[p][0], bounds[p][1], 0.1);
+                return { timestamp: now, product: p, sales: currentValues[key] };
+            });
+        },
+        interval: 2000,
+    },
+    serviceLoad: {
+        name: 'Service Load',
+        description: 'Request counts per microservice',
+        columns: [
+            { name: 'service', type: 'string' },
+            { name: 'requests', type: 'float64' },
+        ],
+        generate: (historyCount?: number) => {
+            // historyCount is intentionally ignored for frame-bound generators
+            const services = ['API', 'Auth', 'DB', 'Cache', 'Worker', 'Gateway'];
+            const defaults: Record<string, number> = { API: 500, Auth: 300, DB: 400, Cache: 800, Worker: 200, Gateway: 600 };
+            return services.map(s => {
+                const key = `serviceLoad_${s}`;
+                currentValues[key] = generateNextValue(currentValues[key] ?? defaults[s], 50, 1200, 0.1);
+                return { service: s, requests: currentValues[key] };
+            });
+        },
+        interval: 1500,
+    },
+    httpResponses: {
+        name: 'HTTP Responses',
+        description: 'HTTP status code distribution',
+        columns: [
+            { name: 'status', type: 'string' },
+            { name: 'count', type: 'float64' },
+        ],
+        generate: (historyCount?: number) => {
+            // historyCount is intentionally ignored for frame-bound generators
+            const statuses = [
+                { code: '200 OK', base: 800 },
+                { code: '301 Redirect', base: 100 },
+                { code: '404 Not Found', base: 50 },
+                { code: '500 Error', base: 20 },
+                { code: '503 Unavailable', base: 10 },
+            ];
+            return statuses.map(s => {
+                const key = `http_${s.code}`;
+                currentValues[key] = generateNextValue(currentValues[key] ?? s.base, 1, s.base * 2, 0.08);
+                return { status: s.code, count: currentValues[key] };
+            });
+        },
+        interval: 1500,
+    },
+    cloudRegions: {
+        name: 'Cloud Regions',
+        description: 'Performance metrics across cloud regions',
+        columns: [
+            { name: 'region', type: 'string' },
+            { name: 'latency', type: 'float64' },
+            { name: 'throughput', type: 'float64' },
+            { name: 'connections', type: 'float64' },
+        ],
+        generate: (historyCount?: number) => {
+            // historyCount is intentionally ignored for frame-bound generators
+            const regions = ['us-east', 'us-west', 'eu-west', 'ap-southeast', 'ap-northeast'];
+            const defaults: Record<string, [number, number, number]> = {
+                'us-east': [20, 800, 1200],
+                'us-west': [35, 600, 900],
+                'eu-west': [45, 700, 1000],
+                'ap-southeast': [80, 500, 700],
+                'ap-northeast': [60, 550, 800],
+            };
+            return regions.map(r => {
+                const [dLat, dThru, dConn] = defaults[r];
+                currentValues[`cr_lat_${r}`] = generateNextValue(currentValues[`cr_lat_${r}`] ?? dLat, 5, 200, 0.08);
+                currentValues[`cr_thru_${r}`] = generateNextValue(currentValues[`cr_thru_${r}`] ?? dThru, 100, 1500, 0.08);
+                currentValues[`cr_conn_${r}`] = generateNextValue(currentValues[`cr_conn_${r}`] ?? dConn, 100, 2000, 0.08);
+                return {
+                    region: r,
+                    latency: currentValues[`cr_lat_${r}`],
+                    throughput: currentValues[`cr_thru_${r}`],
+                    connections: currentValues[`cr_conn_${r}`],
+                };
+            });
+        },
+        interval: 1500,
+    },
+    serverProfile: {
+        name: 'Server Profile',
+        description: 'Multi-dimensional health scores for two servers',
+        columns: [
+            { name: 'dimension', type: 'string' },
+            { name: 'value', type: 'float64' },
+            { name: 'server', type: 'string' },
+        ],
+        generate: (historyCount?: number) => {
+            // historyCount is intentionally ignored for frame-bound generators
+            const dimensions = ['CPU', 'Memory', 'Disk', 'Network', 'Latency'];
+            const servers = ['server-a', 'server-b'];
+            const rows: Record<string, unknown>[] = [];
+            servers.forEach(srv => {
+                dimensions.forEach(dim => {
+                    const key = `sp_${srv}_${dim}`;
+                    currentValues[key] = generateNextValue(currentValues[key] ?? 70, 20, 100, 0.1);
+                    rows.push({ dimension: dim, value: currentValues[key], server: srv });
+                });
+            });
+            return rows;
+        },
+        interval: 2000,
+    },
+    datacenterLoad: {
+        name: 'Datacenter Load',
+        description: 'CPU load by hour of day and day of week',
+        columns: [
+            { name: 'hour', type: 'string' },
+            { name: 'day', type: 'string' },
+            { name: 'load', type: 'float64' },
+        ],
+        generate: (historyCount?: number) => {
+            // historyCount is intentionally ignored for frame-bound generators
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0') + ':00');
+            const rows: Record<string, unknown>[] = [];
+            days.forEach(day => {
+                hours.forEach(hour => {
+                    const key = `dc_${day}_${hour}`;
+                    const h = parseInt(hour);
+                    const base = (h >= 9 && h <= 17 && !['Sat', 'Sun'].includes(day)) ? 70 : 30;
+                    currentValues[key] = generateNextValue(currentValues[key] ?? base, 5, 100, 0.05);
+                    rows.push({ hour, day, load: currentValues[key] });
+                });
+            });
+            return rows;
+        },
+        interval: 3000,
+    },
+    stockCandles: {
+        name: 'Stock Candles',
+        description: 'OHLC candlestick data for a single symbol',
+        columns: [
+            { name: 'time', type: 'datetime64' },
+            { name: 'open', type: 'float64' },
+            { name: 'high', type: 'float64' },
+            { name: 'low', type: 'float64' },
+            { name: 'close', type: 'float64' },
+        ],
+        generate: (historyCount?: number) => {
+            const INTERVAL_MS = 2000; // must equal this generator's interval property
+            const generateCandle = (prevClose: number, ts: string): Record<string, unknown> => {
+                const open = prevClose;
+                const move = (Math.random() - 0.5) * 6;
+                const close = Math.max(80, Math.min(220, open + move));
+                const high = Math.max(open, close) + Math.random() * 3;
+                const low = Math.min(open, close) - Math.random() * 3;
+                return { time: ts, open, high, low, close };
+            };
+            if (historyCount && historyCount > 0) {
+                const frames: Record<string, unknown>[] = [];
+                const now = Date.now();
+                currentValues['candle_close'] = currentValues['candle_close'] ?? 150;
+                for (let i = historyCount; i >= 0; i--) {
+                    const ts = new Date(now - i * INTERVAL_MS).toISOString();
+                    const candle = generateCandle(currentValues['candle_close'], ts);
+                    currentValues['candle_close'] = candle.close as number;
+                    frames.push(candle);
+                }
+                return frames;
+            }
+            currentValues['candle_close'] = currentValues['candle_close'] ?? 150;
+            const candle = generateCandle(currentValues['candle_close'], new Date().toISOString());
+            currentValues['candle_close'] = candle.close as number;
+            return [candle];
+        },
+        interval: 2000,
+    },
+    activeUsers: {
+        name: 'Active Users',
+        description: 'Live count of active users on the platform',
+        columns: [
+            { name: 'activeUsers', type: 'int64' },
+        ],
+        generate: (historyCount?: number) => {
+            // historyCount is intentionally ignored for this single-value generator
+            currentValues['activeUsers'] = generateNextValue(currentValues['activeUsers'] ?? 1234, 800, 1800, 0.1);
+            return [{ activeUsers: Math.floor(currentValues['activeUsers']) }];
+        },
+        interval: 1000,
+    },
 };
