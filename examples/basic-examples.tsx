@@ -606,10 +606,10 @@ export function StreamingGeoChart() {
 
     cities.forEach((city) => {
       // Add some random variation
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 20; i++) {
         initialPoints.push([
-          city.lat + (Math.random() - 0.5) * 2,
-          city.lng + (Math.random() - 0.5) * 2,
+          city.lat + (Math.random() - 0.5) * 5,
+          city.lng + (Math.random() - 0.5) * 5,
           Math.floor(Math.random() * 100),
           city.name,
         ]);
@@ -620,18 +620,22 @@ export function StreamingGeoChart() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      // Add a new random point
-      const lat = (Math.random() - 0.5) * 140; // -70 to 70
-      const lng = (Math.random() - 0.5) * 360; // -180 to 180
-      const value = Math.floor(Math.random() * 100);
+      const newPoints: unknown[][] = [];
       const categories = ['Category A', 'Category B', 'Category C'];
-      const category = categories[Math.floor(Math.random() * categories.length)];
+
+      for (let i = 0; i < 5; i++) {
+        const lat = (Math.random() - 0.5) * 140; // -70 to 70
+        const lng = (Math.random() - 0.5) * 360; // -180 to 180
+        const value = Math.floor(Math.random() * 100);
+        const category = categories[Math.floor(Math.random() * categories.length)];
+        newPoints.push([lat, lng, value, category]);
+      }
 
       setPoints((prev) => {
-        const updated = [...prev, [lat, lng, value, category]];
-        return updated.slice(-100); // Keep last 100 points
+        const updated = [...prev, ...newPoints];
+        return updated.slice(-300); // Keep last 300 points
       });
-    }, 2000);
+    }, 200);
 
     return () => clearInterval(interval);
   }, []);
@@ -840,33 +844,46 @@ export function KeyBoundGeoChart() {
     return vehicles;
   });
 
+  // Keep track of latest positions for smooth movement simulation
+  const vehiclePositions = React.useRef<Map<string, { lat: number, lng: number }>>(new Map());
+
+  // Initialize positions map if empty
+  if (vehiclePositions.current.size === 0 && points.length > 0) {
+    points.forEach(p => {
+      vehiclePositions.current.set(String(p[1]), { lat: Number(p[2]), lng: Number(p[3]) });
+    });
+  }
+
   useEffect(() => {
     const interval = setInterval(() => {
-      // Update a random vehicle's position
-      const vehicleId = `vehicle-${Math.floor(Math.random() * 10) + 1}`;
+      const now = new Date().toISOString();
+      const updates: unknown[][] = [];
+
+      // Update all vehicles
+      for (let i = 1; i <= 10; i++) {
+        const vehicleId = `vehicle-${i}`;
+        const current = vehiclePositions.current.get(vehicleId) || { lat: 42, lng: -73 };
+
+        // Move larger distance for "fast" effect
+        const newLat = current.lat + (Math.random() - 0.5) * 0.4;
+        const newLng = current.lng + (Math.random() - 0.5) * 0.4;
+
+        // Update ref
+        vehiclePositions.current.set(vehicleId, { lat: newLat, lng: newLng });
+
+        updates.push([
+          now,
+          vehicleId,
+          newLat,
+          newLng,
+          Math.floor(Math.random() * 60) + 20,
+        ]);
+      }
 
       setPoints(prev => {
-        // Find current position of this vehicle
-        const currentVehicle = prev.find(p => p[1] === vehicleId);
-        const currentLat = currentVehicle ? Number(currentVehicle[2]) : 42;
-        const currentLng = currentVehicle ? Number(currentVehicle[3]) : -73;
-
-        // Move slightly
-        const newLat = currentLat + (Math.random() - 0.5) * 0.1;
-        const newLng = currentLng + (Math.random() - 0.5) * 0.1;
-
-        return [
-          ...prev,
-          [
-            new Date().toISOString(),
-            vehicleId,
-            newLat,
-            newLng,
-            Math.floor(Math.random() * 60) + 20,
-          ],
-        ].slice(-200); // Keep history for key-bound deduplication
+        return [...prev, ...updates].slice(-500); // Keep enough history
       });
-    }, 1500);
+    }, 100);
 
     return () => clearInterval(interval);
   }, []);
@@ -897,18 +914,19 @@ export function KeyBoundGeoChart() {
       min: 6,
       max: 14,
     },
-    center: [41, -73],
-    zoom: 7,
+    // Center zoomed out to see fast movement better
+    center: [40, -74],
+    zoom: 5,
     showZoomControl: true,
     showCenterDisplay: true,
     pointOpacity: 0.9,
-    pointColor: '#10B981',
+    color: 'vehicle_id',
   };
 
   return (
     <div>
       <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
-        Key-bound GeoChart: Shows latest position per vehicle (10 vehicles tracking)
+        Key-bound GeoChart: Shows latest position per vehicle (10 fast-moving vehicles)
       </p>
       <div style={{ width: '100%', height: '500px' }}>
         <StreamChart config={config} data={data} theme={theme} />
