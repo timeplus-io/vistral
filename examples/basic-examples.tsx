@@ -498,10 +498,6 @@ export function StreamingGeoChart() {
   const loadedRef = React.useRef(false);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      loadedRef.current = true;
-      append(dataGenerators.globalEvents.generate(40));
-    }
     const id = setInterval(() => {
       append(dataGenerators.globalEvents.generate());
     }, dataGenerators.globalEvents.interval);
@@ -524,7 +520,6 @@ export function StreamingGeoChart() {
       min: 4,
       max: 16,
     },
-    zoom: 2,
     showZoomControl: true,
     showCenterDisplay: true,
     pointOpacity: 0.7,
@@ -708,8 +703,7 @@ export function KeyBoundGeoChart() {
       min: 6,
       max: 14,
     },
-    center: [40, -74],
-    zoom: 5,
+    autoFit: true,
     showZoomControl: true,
     showCenterDisplay: true,
     pointOpacity: 0.9,

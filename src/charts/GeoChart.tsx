@@ -141,6 +141,86 @@ function latLngToPixel(
 }
 
 /**
+ * Calculate bounding box for a set of points
+ */
+function calculateBounds(points: Array<{ lat: number; lng: number }>): {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+} {
+  if (points.length === 0) {
+    return { minLat: -90, maxLat: 90, minLng: -180, maxLng: 180 };
+  }
+
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  let minLng = Infinity;
+  let maxLng = -Infinity;
+
+  points.forEach(point => {
+    minLat = Math.min(minLat, point.lat);
+    maxLat = Math.max(maxLat, point.lat);
+    minLng = Math.min(minLng, point.lng);
+    maxLng = Math.max(maxLng, point.lng);
+  });
+
+  // Add small padding
+  const latPadding = Math.max(0.01, (maxLat - minLat) * 0.1);
+  const lngPadding = Math.max(0.01, (maxLng - minLng) * 0.1);
+
+  return {
+    minLat: Math.max(-85, minLat - latPadding),
+    maxLat: Math.min(85, maxLat + latPadding),
+    minLng: Math.max(-180, minLng - lngPadding),
+    maxLng: Math.min(180, maxLng + lngPadding),
+  };
+}
+
+/**
+ * Calculate optimal zoom level for bounds
+ */
+function calculateZoomLevel(
+  bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number },
+  width: number,
+  height: number
+): number {
+  if (width <= 0 || height <= 0) return 2;
+
+  const WORLD_DIM = { height: 256, width: 256 };
+  const ZOOM_MAX = 18;
+
+  function latRad(lat: number) {
+    const sin = Math.sin((lat * Math.PI) / 180);
+    const radX2 = Math.log((1 + sin) / (1 - sin)) / 2;
+    return Math.max(-Math.PI, Math.min(Math.PI, radX2));
+  }
+
+  function zoom(mapPx: number, worldPx: number, fraction: number) {
+    return Math.floor(Math.log(mapPx / worldPx / fraction) / Math.LN2);
+  }
+
+  const latFraction = (latRad(bounds.maxLat) - latRad(bounds.minLat)) / Math.PI;
+  const lngDiff = bounds.maxLng - bounds.minLng;
+  const lngFraction = (lngDiff < 0 ? lngDiff + 360 : lngDiff) / 360;
+
+  const latZoom = zoom(height, WORLD_DIM.height, latFraction);
+  const lngZoom = zoom(width, WORLD_DIM.width, lngFraction);
+
+  return Math.max(1, Math.min(ZOOM_MAX, Math.min(latZoom, lngZoom)));
+}
+
+/**
+ * Calculate center point from bounds
+ */
+function calculateCenterFromBounds(bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }): [number, number] {
+  return [
+    (bounds.minLat + bounds.maxLat) / 2,
+    (bounds.minLng + bounds.maxLng) / 2
+  ];
+}
+
+/**
  * Get color for a category value
  */
 function getCategoryColor(value: string, categories: string[], colors: string[]): string {
@@ -165,7 +245,28 @@ export const GeoChart: React.FC<GeoChartProps> = ({
   const [zoom, setZoom] = useState(configRaw.zoom || 2);
   const [center, setCenter] = useState<[number, number]>(configRaw.center || [0, 0]);
   const [isDragging, setIsDragging] = useState(false);
+  const [autoFitEnabled, setAutoFitEnabled] = useState(configRaw.autoFit !== false);
   const dragStart = useRef<{ x: number; y: number; center: [number, number] } | null>(null);
+  const lastAutoFitRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
+
+  // Handle resize
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        setDimensions({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
+        });
+      }
+    });
+
+    resizeObserver.observe(container);
+    return () => resizeObserver.disconnect();
+  }, []);
 
   // Merge with defaults
   const defaults = getGeoChartDefaults(dataSource.columns);
@@ -266,31 +367,48 @@ export const GeoChart: React.FC<GeoChartProps> = ({
     return result;
   }, [dataSource, latIndex, lngIndex, colorIndex, sizeIndex, config]);
 
-  // Set initial center from first point if not specified
+  // Auto-fit functionality
   useEffect(() => {
-    if (!configRaw.center && points.length > 0 && center[0] === 0 && center[1] === 0) {
-      setCenter([points[0].lat, points[0].lng]);
+    if (!autoFitEnabled || points.length === 0 || dimensions.width <= 0 || dimensions.height <= 0) {
+      return;
     }
-  }, [points, configRaw.center, center]);
 
-  // Handle resize
+    // Calculate bounds and optimal view
+    const bounds = calculateBounds(points);
+    const optimalZoom = calculateZoomLevel(bounds, dimensions.width, dimensions.height);
+    const optimalCenter = calculateCenterFromBounds(bounds);
+
+    // Only update if significantly different from current view
+    const centerChanged = Math.abs(optimalCenter[0] - center[0]) > 0.001 || 
+                          Math.abs(optimalCenter[1] - center[1]) > 0.001;
+    const zoomChanged = Math.abs(optimalZoom - zoom) > 0.1;
+
+    if (centerChanged || zoomChanged) {
+      setCenter(optimalCenter);
+      setZoom(optimalZoom);
+      lastAutoFitRef.current = { center: optimalCenter, zoom: optimalZoom };
+    }
+  }, [points, dimensions, autoFitEnabled]);
+
+  // Handle manual interaction disabling auto-fit
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const resizeObserver = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (entry) {
-        setDimensions({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height,
-        });
+    const handleManualInteraction = () => {
+      if (autoFitEnabled) {
+        setAutoFitEnabled(false);
       }
-    });
+    };
 
-    resizeObserver.observe(container);
-    return () => resizeObserver.disconnect();
-  }, []);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    canvas.addEventListener('mousedown', handleManualInteraction);
+    canvas.addEventListener('wheel', handleManualInteraction);
+
+    return () => {
+      canvas.removeEventListener('mousedown', handleManualInteraction);
+      canvas.removeEventListener('wheel', handleManualInteraction);
+    };
+  }, [autoFitEnabled]);
 
   // Draw the map and points
   useEffect(() => {
@@ -404,9 +522,12 @@ export const GeoChart: React.FC<GeoChartProps> = ({
 
   // Mouse event handlers for panning
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (autoFitEnabled) {
+      setAutoFitEnabled(false);
+    }
     setIsDragging(true);
     dragStart.current = { x: e.clientX, y: e.clientY, center: [...center] as [number, number] };
-  }, [center]);
+  }, [autoFitEnabled, center]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDragging || !dragStart.current) return;
@@ -432,18 +553,27 @@ export const GeoChart: React.FC<GeoChartProps> = ({
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
+    if (autoFitEnabled) {
+      setAutoFitEnabled(false);
+    }
     const delta = e.deltaY > 0 ? -0.5 : 0.5;
     setZoom((z) => Math.max(1, Math.min(18, z + delta)));
-  }, []);
+  }, [autoFitEnabled]);
 
   // Zoom controls
   const handleZoomIn = useCallback(() => {
+    if (autoFitEnabled) {
+      setAutoFitEnabled(false);
+    }
     setZoom((z) => Math.min(18, z + 1));
-  }, []);
+  }, [autoFitEnabled]);
 
   const handleZoomOut = useCallback(() => {
+    if (autoFitEnabled) {
+      setAutoFitEnabled(false);
+    }
     setZoom((z) => Math.max(1, z - 1));
-  }, []);
+  }, [autoFitEnabled]);
 
   const buttonStyle: React.CSSProperties = {
     width: '32px',

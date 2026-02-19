@@ -234,6 +234,8 @@ export interface GeoChartConfig extends ChartConfigBase {
   pointOpacity?: number;
   /** Default point color */
   pointColor?: string;
+  /** Automatically fit map to data bounds */
+  autoFit?: boolean;
 }
 
 // Union of all chart configurations
