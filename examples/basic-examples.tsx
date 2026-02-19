@@ -19,7 +19,7 @@ import {
   type GeoChartConfig,
 } from '@timeplus/vistral';
 import { ThemeContext } from './App';
-import { dataGenerators, generateNextValue } from './data-utils';
+import { dataGenerators } from './data-utils';
 
 // Hook to get current theme
 function useTheme() {
