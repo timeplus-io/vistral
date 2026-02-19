@@ -36,7 +36,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
         ],
         generate: (historyCount?: number) => {
             const servers = ['server-01', 'server-02', 'server-03', 'server-04'];
-            const INTERVAL_MS = 1000;
+            const INTERVAL_MS = 1000; // must equal this generator's interval property
 
             const generateFrame = (ts: string): Record<string, unknown>[] => {
                 return servers.map(server => {
@@ -81,7 +81,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
         ],
         generate: (historyCount?: number) => {
             const symbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN'];
-            const INTERVAL_MS = 1500;
+            const INTERVAL_MS = 1500; // must equal this generator's interval property
 
             const generateFrame = (ts: string): Record<string, unknown>[] => {
                 return symbols.map(symbol => {
@@ -130,7 +130,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
         ],
         generate: (historyCount?: number) => {
             const locations = ['Warehouse A', 'Warehouse B', 'Office', 'Lab'];
-            const INTERVAL_MS = 2000;
+            const INTERVAL_MS = 2000; // must equal this generator's interval property
 
             const generateFrame = (ts: string): Record<string, unknown>[] => {
                 return locations.map(location => {
@@ -177,7 +177,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
         generate: (historyCount?: number) => {
             const vehicles = ['truck-01', 'truck-02', 'truck-03', 'van-01', 'van-02'];
             const statuses = ['moving', 'moving', 'moving', 'stopped', 'loading'];
-            const INTERVAL_MS = 1000;
+            const INTERVAL_MS = 1000; // must equal this generator's interval property
 
             const generateFrame = (ts: string): Record<string, unknown>[] => {
                 // Pick a random vehicle for each frame
@@ -234,7 +234,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
                 'Rate limit exceeded',
                 'Memory usage high',
             ];
-            const INTERVAL_MS = 500;
+            const INTERVAL_MS = 500; // must equal this generator's interval property
 
             const generateFrame = (ts: string): Record<string, unknown>[] => {
                 return [{
@@ -269,6 +269,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             { name: 'product', type: 'string' },
         ],
         generate: (historyCount?: number) => {
+            // historyCount is intentionally ignored for non-timestamped category generators
             const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
             const products = ['Product A', 'Product B', 'Product C'];
             const results: Record<string, unknown>[] = [];
@@ -300,15 +301,6 @@ export const dataGenerators: Record<string, DataGenerator> = {
                 });
             });
 
-            if (historyCount && historyCount > 0) {
-                // Return historyCount copies of the dataset
-                const allResults: Record<string, unknown>[] = [];
-                for (let i = 0; i < historyCount; i++) {
-                    allResults.push(...results);
-                }
-                return allResults;
-            }
-
             return results;
         },
         interval: 1500,
@@ -322,6 +314,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             { name: 'year', type: 'string' },
         ],
         generate: (historyCount?: number) => {
+            // historyCount is intentionally ignored for non-timestamped category generators
             const categories = ['Electronics', 'Clothing', 'Food', 'Books'];
             const years = ['2023', '2024'];
             const results: Record<string, unknown>[] = [];
@@ -358,15 +351,6 @@ export const dataGenerators: Record<string, DataGenerator> = {
                     });
                 });
             });
-
-            if (historyCount && historyCount > 0) {
-                // Return historyCount copies of the dataset
-                const allResults: Record<string, unknown>[] = [];
-                for (let i = 0; i < historyCount; i++) {
-                    allResults.push(...results);
-                }
-                return allResults;
-            }
 
             return results;
         },
