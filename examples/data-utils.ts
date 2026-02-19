@@ -433,7 +433,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             }
             return rows;
         },
-        interval: 200,
+        interval: 2000,
     },
     productInventory: {
         name: 'Product Inventory',
