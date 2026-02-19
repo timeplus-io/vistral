@@ -128,7 +128,7 @@ export function GrammarMultiMark() {
     streaming: { maxItems: 1000, throttle: 100 },
     axes: {
       x: { title: false, grid: false },
-      y: { title: 'Usage (%)', grid: true },
+      y: { title: 'Count / sec', grid: true },
     },
     legend: { position: 'bottom', interactive: true },
     theme: theme as 'dark' | 'light',
@@ -754,15 +754,13 @@ export function GrammarTimeSeriesBar() {
   };
 
   useEffect(() => {
-    if (!loadedRef.current) {
+    if (!loadedRef.current && handleRef.current) {
       loadedRef.current = true;
-      if (handleRef.current) {
-        handleRef.current.append(dataGenerators.cpuLoad.generate(40));
-      }
+      handleRef.current.append(dataGenerators.cpuLoad.generate(40));
     }
     const interval = setInterval(() => {
       handleRef.current?.append(dataGenerators.cpuLoad.generate());
-    }, dataGenerators.cpuLoad.interval);
+    }, BAR_INTERVAL_MS);
     return () => clearInterval(interval);
   }, []);
 
