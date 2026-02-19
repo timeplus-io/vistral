@@ -14,7 +14,6 @@ import {
   compileTimeSeriesConfig,
   type VistralSpec,
   type ChartHandle,
-  type StreamDataSource,
   type TimeSeriesConfig,
 } from '@timeplus/vistral';
 import { ThemeContext } from './App';
