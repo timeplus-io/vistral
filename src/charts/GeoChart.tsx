@@ -245,7 +245,7 @@ export const GeoChart: React.FC<GeoChartProps> = ({
   const [zoom, setZoom] = useState(configRaw.zoom || 2);
   const [center, setCenter] = useState<[number, number]>(configRaw.center || [0, 0]);
   const [isDragging, setIsDragging] = useState(false);
-  const [autoFitEnabled, setAutoFitEnabled] = useState(configRaw.autoFit !== false);
+  const [autoFitEnabled, setAutoFitEnabled] = useState(configRaw.autoFit === true);
   const dragStart = useRef<{ x: number; y: number; center: [number, number] } | null>(null);
   const lastAutoFitRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
 
