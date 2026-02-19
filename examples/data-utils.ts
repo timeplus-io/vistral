@@ -10,12 +10,12 @@ export interface DataGenerator {
     name: string;
     description?: string;
     columns: Column[];
-    generate: () => Record<string, unknown>[];
+    generate: (historyCount?: number) => Record<string, unknown>[];
     interval: number;
 }
 
 // Helper to simulate random walk
-const generateNextValue = (current: number, min: number, max: number, volatility: number = 0.1): number => {
+export const generateNextValue = (current: number, min: number, max: number, volatility: number = 0.1): number => {
     const change = (Math.random() - 0.5) * 2 * volatility * (max - min);
     return Math.min(max, Math.max(min, current + change));
 };
@@ -34,23 +34,38 @@ export const dataGenerators: Record<string, DataGenerator> = {
             { name: 'memory', type: 'float64' },
             { name: 'requests', type: 'int64' },
         ],
-        generate: () => {
+        generate: (historyCount?: number) => {
             const servers = ['server-01', 'server-02', 'server-03', 'server-04'];
-            const now = new Date().toISOString();
-            return servers.map(server => {
-                const cpuKey = `${server}_cpu`;
-                const memKey = `${server}_mem`;
-                currentValues[cpuKey] = generateNextValue(currentValues[cpuKey] ?? 50, 10, 95, 0.15);
-                currentValues[memKey] = generateNextValue(currentValues[memKey] ?? 60, 20, 90, 0.1);
+            const INTERVAL_MS = 1000;
 
-                return {
-                    timestamp: now,
-                    server,
-                    cpu: currentValues[cpuKey],
-                    memory: currentValues[memKey],
-                    requests: Math.floor(Math.random() * 500) + 100,
-                };
-            });
+            const generateFrame = (ts: string): Record<string, unknown>[] => {
+                return servers.map(server => {
+                    const cpuKey = `${server}_cpu`;
+                    const memKey = `${server}_mem`;
+                    currentValues[cpuKey] = generateNextValue(currentValues[cpuKey] ?? 50, 10, 95, 0.15);
+                    currentValues[memKey] = generateNextValue(currentValues[memKey] ?? 60, 20, 90, 0.1);
+
+                    return {
+                        timestamp: ts,
+                        server,
+                        cpu: currentValues[cpuKey],
+                        memory: currentValues[memKey],
+                        requests: Math.floor(Math.random() * 500) + 100,
+                    };
+                });
+            };
+
+            if (historyCount && historyCount > 0) {
+                const frames: Record<string, unknown>[] = [];
+                const now = Date.now();
+                for (let i = historyCount; i >= 0; i--) {
+                    const ts = new Date(now - i * INTERVAL_MS).toISOString();
+                    frames.push(...generateFrame(ts));
+                }
+                return frames;
+            }
+
+            return generateFrame(new Date().toISOString());
         },
         interval: 1000,
     },
@@ -64,27 +79,42 @@ export const dataGenerators: Record<string, DataGenerator> = {
             { name: 'volume', type: 'int64' },
             { name: 'change', type: 'float64' },
         ],
-        generate: () => {
+        generate: (historyCount?: number) => {
             const symbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN'];
-            const now = new Date().toISOString();
-            return symbols.map(symbol => {
-                const priceKey = `${symbol}_price`;
-                const basePrices: Record<string, number> = { AAPL: 180, GOOGL: 140, MSFT: 380, AMZN: 175 };
-                const basePrice = basePrices[symbol] || 100;
-                currentValues[priceKey] = generateNextValue(currentValues[priceKey] ?? basePrice, basePrice * 0.9, basePrice * 1.1, 0.02);
+            const INTERVAL_MS = 1500;
 
-                const prevPrice = currentValues[`${symbol}_prev`] ?? currentValues[priceKey];
-                const change = ((currentValues[priceKey] - prevPrice) / prevPrice) * 100;
-                currentValues[`${symbol}_prev`] = currentValues[priceKey];
+            const generateFrame = (ts: string): Record<string, unknown>[] => {
+                return symbols.map(symbol => {
+                    const priceKey = `${symbol}_price`;
+                    const basePrices: Record<string, number> = { AAPL: 180, GOOGL: 140, MSFT: 380, AMZN: 175 };
+                    const basePrice = basePrices[symbol] || 100;
+                    currentValues[priceKey] = generateNextValue(currentValues[priceKey] ?? basePrice, basePrice * 0.9, basePrice * 1.1, 0.02);
 
-                return {
-                    timestamp: now,
-                    symbol,
-                    price: currentValues[priceKey],
-                    volume: Math.floor(Math.random() * 10000) + 1000,
-                    change,
-                };
-            });
+                    const prevPrice = currentValues[`${symbol}_prev`] ?? currentValues[priceKey];
+                    const change = ((currentValues[priceKey] - prevPrice) / prevPrice) * 100;
+                    currentValues[`${symbol}_prev`] = currentValues[priceKey];
+
+                    return {
+                        timestamp: ts,
+                        symbol,
+                        price: currentValues[priceKey],
+                        volume: Math.floor(Math.random() * 10000) + 1000,
+                        change,
+                    };
+                });
+            };
+
+            if (historyCount && historyCount > 0) {
+                const frames: Record<string, unknown>[] = [];
+                const now = Date.now();
+                for (let i = historyCount; i >= 0; i--) {
+                    const ts = new Date(now - i * INTERVAL_MS).toISOString();
+                    frames.push(...generateFrame(ts));
+                }
+                return frames;
+            }
+
+            return generateFrame(new Date().toISOString());
         },
         interval: 1500,
     },
@@ -98,23 +128,38 @@ export const dataGenerators: Record<string, DataGenerator> = {
             { name: 'humidity', type: 'float64' },
             { name: 'battery', type: 'int64' },
         ],
-        generate: () => {
+        generate: (historyCount?: number) => {
             const locations = ['Warehouse A', 'Warehouse B', 'Office', 'Lab'];
-            const now = new Date().toISOString();
-            return locations.map(location => {
-                const tempKey = `${location}_temp`;
-                const humKey = `${location}_hum`;
-                currentValues[tempKey] = generateNextValue(currentValues[tempKey] ?? 22, 15, 35, 0.08);
-                currentValues[humKey] = generateNextValue(currentValues[humKey] ?? 45, 30, 70, 0.1);
+            const INTERVAL_MS = 2000;
 
-                return {
-                    timestamp: now,
-                    location,
-                    temperature: currentValues[tempKey],
-                    humidity: currentValues[humKey],
-                    battery: Math.floor(Math.random() * 30) + 70,
-                };
-            });
+            const generateFrame = (ts: string): Record<string, unknown>[] => {
+                return locations.map(location => {
+                    const tempKey = `${location}_temp`;
+                    const humKey = `${location}_hum`;
+                    currentValues[tempKey] = generateNextValue(currentValues[tempKey] ?? 22, 15, 35, 0.08);
+                    currentValues[humKey] = generateNextValue(currentValues[humKey] ?? 45, 30, 70, 0.1);
+
+                    return {
+                        timestamp: ts,
+                        location,
+                        temperature: currentValues[tempKey],
+                        humidity: currentValues[humKey],
+                        battery: Math.floor(Math.random() * 30) + 70,
+                    };
+                });
+            };
+
+            if (historyCount && historyCount > 0) {
+                const frames: Record<string, unknown>[] = [];
+                const now = Date.now();
+                for (let i = historyCount; i >= 0; i--) {
+                    const ts = new Date(now - i * INTERVAL_MS).toISOString();
+                    frames.push(...generateFrame(ts));
+                }
+                return frames;
+            }
+
+            return generateFrame(new Date().toISOString());
         },
         interval: 2000,
     },
@@ -129,25 +174,40 @@ export const dataGenerators: Record<string, DataGenerator> = {
             { name: 'speed', type: 'float64' },
             { name: 'status', type: 'string' },
         ],
-        generate: () => {
+        generate: (historyCount?: number) => {
             const vehicles = ['truck-01', 'truck-02', 'truck-03', 'van-01', 'van-02'];
             const statuses = ['moving', 'moving', 'moving', 'stopped', 'loading'];
-            const now = new Date().toISOString();
-            // Updat random vehicle
-            const vehicle = vehicles[Math.floor(Math.random() * vehicles.length)];
-            const latKey = `${vehicle}_lat`;
-            const lngKey = `${vehicle}_lng`;
-            currentValues[latKey] = generateNextValue(currentValues[latKey] ?? (40 + Math.random() * 2), 39, 42, 0.01);
-            currentValues[lngKey] = generateNextValue(currentValues[lngKey] ?? (-74 + Math.random() * 2), -76, -72, 0.01);
+            const INTERVAL_MS = 1000;
 
-            return [{
-                timestamp: now,
-                vehicle_id: vehicle,
-                latitude: currentValues[latKey],
-                longitude: currentValues[lngKey],
-                speed: Math.floor(Math.random() * 60) + 20,
-                status: statuses[Math.floor(Math.random() * statuses.length)],
-            }];
+            const generateFrame = (ts: string): Record<string, unknown>[] => {
+                // Pick a random vehicle for each frame
+                const vehicle = vehicles[Math.floor(Math.random() * vehicles.length)];
+                const latKey = `${vehicle}_lat`;
+                const lngKey = `${vehicle}_lng`;
+                currentValues[latKey] = generateNextValue(currentValues[latKey] ?? (40 + Math.random() * 2), 39, 42, 0.01);
+                currentValues[lngKey] = generateNextValue(currentValues[lngKey] ?? (-74 + Math.random() * 2), -76, -72, 0.01);
+
+                return [{
+                    timestamp: ts,
+                    vehicle_id: vehicle,
+                    latitude: currentValues[latKey],
+                    longitude: currentValues[lngKey],
+                    speed: Math.floor(Math.random() * 60) + 20,
+                    status: statuses[Math.floor(Math.random() * statuses.length)],
+                }];
+            };
+
+            if (historyCount && historyCount > 0) {
+                const frames: Record<string, unknown>[] = [];
+                const now = Date.now();
+                for (let i = historyCount; i >= 0; i--) {
+                    const ts = new Date(now - i * INTERVAL_MS).toISOString();
+                    frames.push(...generateFrame(ts));
+                }
+                return frames;
+            }
+
+            return generateFrame(new Date().toISOString());
         },
         interval: 1000,
     },
@@ -161,7 +221,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             { name: 'message', type: 'string' },
             { name: 'duration_ms', type: 'int64' },
         ],
-        generate: () => {
+        generate: (historyCount?: number) => {
             const levels = ['INFO', 'INFO', 'INFO', 'WARN', 'ERROR', 'DEBUG'];
             const services = ['api', 'auth', 'database', 'cache', 'worker'];
             const messages = [
@@ -174,15 +234,29 @@ export const dataGenerators: Record<string, DataGenerator> = {
                 'Rate limit exceeded',
                 'Memory usage high',
             ];
-            const now = new Date().toISOString();
+            const INTERVAL_MS = 500;
 
-            return [{
-                timestamp: now,
-                level: levels[Math.floor(Math.random() * levels.length)],
-                service: services[Math.floor(Math.random() * services.length)],
-                message: messages[Math.floor(Math.random() * messages.length)],
-                duration_ms: Math.floor(Math.random() * 500) + 10,
-            }];
+            const generateFrame = (ts: string): Record<string, unknown>[] => {
+                return [{
+                    timestamp: ts,
+                    level: levels[Math.floor(Math.random() * levels.length)],
+                    service: services[Math.floor(Math.random() * services.length)],
+                    message: messages[Math.floor(Math.random() * messages.length)],
+                    duration_ms: Math.floor(Math.random() * 500) + 10,
+                }];
+            };
+
+            if (historyCount && historyCount > 0) {
+                const frames: Record<string, unknown>[] = [];
+                const now = Date.now();
+                for (let i = historyCount; i >= 0; i--) {
+                    const ts = new Date(now - i * INTERVAL_MS).toISOString();
+                    frames.push(...generateFrame(ts));
+                }
+                return frames;
+            }
+
+            return generateFrame(new Date().toISOString());
         },
         interval: 500,
     },
@@ -194,7 +268,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             { name: 'revenue', type: 'float64' },
             { name: 'product', type: 'string' },
         ],
-        generate: () => {
+        generate: (historyCount?: number) => {
             const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
             const products = ['Product A', 'Product B', 'Product C'];
             const results: Record<string, unknown>[] = [];
@@ -225,6 +299,16 @@ export const dataGenerators: Record<string, DataGenerator> = {
                     });
                 });
             });
+
+            if (historyCount && historyCount > 0) {
+                // Return historyCount copies of the dataset
+                const allResults: Record<string, unknown>[] = [];
+                for (let i = 0; i < historyCount; i++) {
+                    allResults.push(...results);
+                }
+                return allResults;
+            }
+
             return results;
         },
         interval: 1500,
@@ -237,7 +321,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             { name: 'value', type: 'float64' },
             { name: 'year', type: 'string' },
         ],
-        generate: () => {
+        generate: (historyCount?: number) => {
             const categories = ['Electronics', 'Clothing', 'Food', 'Books'];
             const years = ['2023', '2024'];
             const results: Record<string, unknown>[] = [];
@@ -274,6 +358,16 @@ export const dataGenerators: Record<string, DataGenerator> = {
                     });
                 });
             });
+
+            if (historyCount && historyCount > 0) {
+                // Return historyCount copies of the dataset
+                const allResults: Record<string, unknown>[] = [];
+                for (let i = 0; i < historyCount; i++) {
+                    allResults.push(...results);
+                }
+                return allResults;
+            }
+
             return results;
         },
         interval: 1200,
