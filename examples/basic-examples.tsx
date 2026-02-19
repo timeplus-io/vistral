@@ -34,9 +34,13 @@ function useTheme() {
 export function BasicLineChart() {
   const theme = useTheme();
   const { data, append } = useStreamingData<Record<string, unknown>[]>([], 300);
+  const loadedRef = React.useRef(false);
 
   useEffect(() => {
-    append(dataGenerators.cpuLoad.generate(30));
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      append(dataGenerators.cpuLoad.generate(30));
+    }
     const id = setInterval(() => {
       append(dataGenerators.cpuLoad.generate());
     }, dataGenerators.cpuLoad.interval);
@@ -78,9 +82,13 @@ export function MultiSeriesAreaChart() {
     [],
     240 // Keep ~240 points (60 per location * 4 locations)
   );
+  const loadedRef = React.useRef(false);
 
   useEffect(() => {
-    append(dataGenerators.sensors.generate(30));
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      append(dataGenerators.sensors.generate(30));
+    }
     const id = setInterval(() => {
       append(dataGenerators.sensors.generate());
     }, dataGenerators.sensors.interval);
@@ -280,6 +288,7 @@ export function StreamingDataTable() {
           ],
         },
       },
+      service: { name: 'Service', width: 120 },
       message: { name: 'Message', width: 300 },
       duration_ms: { name: 'Duration (ms)', width: 120 },
     },
@@ -411,13 +420,17 @@ export function ChartWithTableToggle() {
   const theme = useTheme();
   const [showTable, setShowTable] = useState(false);
   const { data: streamData, append } = useStreamingData<unknown[]>([], 30);
+  const loadedRef = React.useRef(false);
 
   useEffect(() => {
-    // Pre-populate with 20 sensor readings from Warehouse A
-    const history = dataGenerators.sensors.generate(20)
-      .filter(r => r.location === 'Warehouse A')
-      .map(r => [r.timestamp, r.temperature, r.humidity]);
-    append(history as unknown[][]);
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      // Pre-populate with 20 sensor readings from Warehouse A
+      const history = dataGenerators.sensors.generate(20)
+        .filter(r => r.location === 'Warehouse A')
+        .map(r => [r.timestamp, r.temperature, r.humidity]);
+      append(history as unknown[][]);
+    }
 
     const id = setInterval(() => {
       const row = dataGenerators.sensors.generate().find(r => r.location === 'Warehouse A');
@@ -482,9 +495,13 @@ export function ChartWithTableToggle() {
 export function StreamingGeoChart() {
   const theme = useTheme();
   const { data, append } = useStreamingData<Record<string, unknown>[]>([], 300);
+  const loadedRef = React.useRef(false);
 
   useEffect(() => {
-    append(dataGenerators.globalEvents.generate(40));
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      append(dataGenerators.globalEvents.generate(40));
+    }
     const id = setInterval(() => {
       append(dataGenerators.globalEvents.generate());
     }, dataGenerators.globalEvents.interval);
@@ -659,9 +676,13 @@ export function KeyBoundTable() {
 export function KeyBoundGeoChart() {
   const theme = useTheme();
   const { data, append } = useStreamingData<Record<string, unknown>[]>([], 500);
+  const loadedRef = React.useRef(false);
 
   useEffect(() => {
-    append(dataGenerators.vehicles.generate(10));
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      append(dataGenerators.vehicles.generate(10));
+    }
     const id = setInterval(() => {
       append(dataGenerators.vehicles.generate());
     }, dataGenerators.vehicles.interval);
