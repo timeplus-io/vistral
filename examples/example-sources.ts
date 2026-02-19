@@ -4,44 +4,36 @@
  */
 
 export const exampleSources: Record<string, string> = {
-  'Line Chart': `import { StreamChart, type StreamDataSource, type TimeSeriesConfig } from '@timeplus/vistral';
+  'Line Chart': `import { StreamChart, useStreamingData, type StreamDataSource, type TimeSeriesConfig } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
 
 function BasicLineChart() {
   const theme = useTheme();
-  const [dataPoints, setDataPoints] = useState<unknown[][]>([]);
+  const { data, append } = useStreamingData([], 300);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
-    let currentValue = dataPoints.length > 0
-      ? (dataPoints[dataPoints.length - 1][1] as number)
-      : 50;
-
-    const interval = setInterval(() => {
-      currentValue = generateNextValue(currentValue, 20, 80, 0.15);
-      const newPoint = [new Date().toISOString(), currentValue];
-
-      setDataPoints(prev => {
-        const updated = [...prev, newPoint];
-        return updated.slice(-300);
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      append(dataGenerators.cpuLoad.generate(30));
+    }
+    const id = setInterval(() => {
+      append(dataGenerators.cpuLoad.generate());
+    }, dataGenerators.cpuLoad.interval);
+    return () => clearInterval(id);
   }, []);
 
-  const data: StreamDataSource = {
-    columns: [
-      { name: 'timestamp', type: 'datetime64' },
-      { name: 'cpu_usage', type: 'float64' },
-    ],
-    data: dataPoints,
+  const source: StreamDataSource = {
+    columns: dataGenerators.cpuLoad.columns,
+    data,
     isStreaming: true,
   };
 
   const config: TimeSeriesConfig = {
     chartType: 'line',
-    xAxis: 'timestamp',
-    yAxis: 'cpu_usage',
+    xAxis: 'time',
+    yAxis: 'value',
     lineStyle: 'curve',
     gridlines: true,
     yTitle: 'CPU Usage (%)',
@@ -52,7 +44,7 @@ function BasicLineChart() {
 
   return (
     <div style={{ width: '100%', height: '400px' }}>
-      <StreamChart config={config} data={data} theme={theme} />
+      <StreamChart config={config} data={source} theme={theme} />
     </div>
   );
 }`,
@@ -63,25 +55,23 @@ import { useTheme } from './App';
 
 function MultiSeriesAreaChart() {
   const theme = useTheme();
-  const { data, append } = useStreamingData<Record<string, unknown>[]>(
-    [],
-    240 // Keep ~240 points
-  );
+  const { data, append } = useStreamingData([], 240);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
-    const generator = dataGenerators.sensors;
-
-    const interval = setInterval(() => {
-      const newData = generator.generate();
-      append(newData);
-    }, generator.interval);
-
-    return () => clearInterval(interval);
-  }, [append]);
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      append(dataGenerators.sensors.generate(30));
+    }
+    const id = setInterval(() => {
+      append(dataGenerators.sensors.generate());
+    }, dataGenerators.sensors.interval);
+    return () => clearInterval(id);
+  }, []);
 
   const source: StreamDataSource = {
     columns: dataGenerators.sensors.columns,
-    data: data,
+    data,
     isStreaming: true,
   };
 
@@ -110,21 +100,14 @@ import { useTheme } from './App';
 
 function StackedBarChart() {
   const theme = useTheme();
-  const { data, append } = useStreamingData<Record<string, unknown>[]>(
-    [],
-    20
-  );
+  const { data, append } = useStreamingData([], 20);
 
   useEffect(() => {
-    const generator = dataGenerators.revenue;
-
-    const interval = setInterval(() => {
-      const newData = generator.generate();
-      append(newData);
-    }, generator.interval);
-
-    return () => clearInterval(interval);
-  }, [append]);
+    const id = setInterval(() => {
+      append(dataGenerators.revenue.generate());
+    }, dataGenerators.revenue.interval);
+    return () => clearInterval(id);
+  }, []);
 
   const source: StreamDataSource = {
     columns: dataGenerators.revenue.columns,
@@ -159,21 +142,14 @@ import { useTheme } from './App';
 
 function GroupedBarChart() {
   const theme = useTheme();
-  const { data, append } = useStreamingData<Record<string, unknown>[]>(
-    [],
-    12
-  );
+  const { data, append } = useStreamingData([], 12);
 
   useEffect(() => {
-    const generator = dataGenerators.sales;
-
-    const interval = setInterval(() => {
-      const newData = generator.generate();
-      append(newData);
-    }, generator.interval);
-
-    return () => clearInterval(interval);
-  }, [append]);
+    const id = setInterval(() => {
+      append(dataGenerators.sales.generate());
+    }, dataGenerators.sales.interval);
+    return () => clearInterval(id);
+  }, []);
 
   const source: StreamDataSource = {
     columns: dataGenerators.sales.columns,
@@ -201,19 +177,21 @@ function GroupedBarChart() {
 }`,
 
   'Single Value': `import { StreamChart, type StreamDataSource, type SingleValueConfig } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 
 function SingleValue() {
   const [value, setValue] = useState(1234);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setValue(prev => Math.floor(generateNextValue(prev, 800, 1800, 0.1)));
-    }, 1000);
-    return () => clearInterval(interval);
+    const id = setInterval(() => {
+      const row = dataGenerators.activeUsers.generate()[0];
+      setValue(row.activeUsers as number);
+    }, dataGenerators.activeUsers.interval);
+    return () => clearInterval(id);
   }, []);
 
   const data: StreamDataSource = {
-    columns: [{ name: 'activeUsers', type: 'int64' }],
+    columns: dataGenerators.activeUsers.columns,
     data: [[value]],
     isStreaming: true,
   };
@@ -239,46 +217,23 @@ function SingleValue() {
 }`,
 
   'Data Table': `import { StreamChart, useStreamingData, type StreamDataSource, type TableConfig } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
 
 function StreamingDataTable() {
   const theme = useTheme();
-  const { data, append } = useStreamingData<unknown[]>([], 50);
+  const { data, append } = useStreamingData([], 50);
 
   useEffect(() => {
-    const levels = ['INFO', 'WARN', 'ERROR', 'DEBUG'];
-    const messages = [
-      'User login successful',
-      'API request completed',
-      'Database query executed',
-      'Cache hit for key',
-      'Connection established',
-      'Request timeout',
-      'Invalid token detected',
-      'Rate limit exceeded',
-      'Memory usage high',
-      'Background job started',
-    ];
-
-    const interval = setInterval(() => {
-      const now = new Date().toISOString();
-      const level = levels[Math.floor(Math.random() * levels.length)];
-      const message = messages[Math.floor(Math.random() * messages.length)];
-      const duration = Math.floor(Math.random() * 500) + 10;
-
-      append([[now, level, message, duration]]);
-    }, 800);
-
-    return () => clearInterval(interval);
-  }, [append]);
+    const id = setInterval(() => {
+      const row = dataGenerators.logs.generate()[0];
+      append([[row.timestamp, row.level, row.service, row.message, row.duration_ms]]);
+    }, dataGenerators.logs.interval);
+    return () => clearInterval(id);
+  }, []);
 
   const dataSource: StreamDataSource = {
-    columns: [
-      { name: 'timestamp', type: 'datetime64' },
-      { name: 'level', type: 'string' },
-      { name: 'message', type: 'string' },
-      { name: 'duration_ms', type: 'int64' },
-    ],
+    columns: dataGenerators.logs.columns,
     data,
     isStreaming: true,
   };
@@ -298,6 +253,7 @@ function StreamingDataTable() {
           ],
         },
       },
+      service: { name: 'Service', width: 120 },
       message: { name: 'Message', width: 300 },
       duration_ms: { name: 'Duration (ms)', width: 120 },
     },
@@ -312,6 +268,7 @@ function StreamingDataTable() {
 }`,
 
   'Metrics Dashboard': `import { SingleValueChart, type StreamDataSource } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
 
 function MetricsDashboard() {
@@ -324,16 +281,19 @@ function MetricsDashboard() {
   });
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMetrics(prev => ({
-        cpu: generateNextValue(prev.cpu, 10, 95, 0.15),
-        memory: generateNextValue(prev.memory, 30, 90, 0.08),
-        requests: prev.requests + Math.floor(Math.random() * 50) + 10,
-        errors: prev.errors + (Math.random() > 0.85 ? 1 : 0),
-      }));
-    }, 1000);
-
-    return () => clearInterval(interval);
+    const id = setInterval(() => {
+      const rows = dataGenerators.metrics.generate();
+      const s01 = rows.find(r => r.server === 'server-01');
+      if (s01) {
+        setMetrics(prev => ({
+          cpu: s01.cpu as number,
+          memory: s01.memory as number,
+          requests: prev.requests + Math.floor(Math.random() * 50) + 10,
+          errors: prev.errors + (Math.random() > 0.85 ? 1 : 0),
+        }));
+      }
+    }, dataGenerators.metrics.interval);
+    return () => clearInterval(id);
   }, []);
 
   const createMetricData = (value: number): StreamDataSource => ({
@@ -417,42 +377,29 @@ function MetricsDashboard() {
   );
 }`,
 
-  'Chart/Table Toggle': `import { StreamChart, type StreamDataSource, type TimeSeriesConfig } from '@timeplus/vistral';
+  'Chart/Table Toggle': `import { StreamChart, useStreamingData, type StreamDataSource, type TimeSeriesConfig } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
 
 function ChartWithTableToggle() {
   const theme = useTheme();
   const [showTable, setShowTable] = useState(false);
-  const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
-    const now = Date.now();
-    const points: unknown[][] = [];
-    let temp = 22, humidity = 45;
-
-    for (let i = 20; i >= 0; i--) {
-      temp = generateNextValue(temp, 18, 30, 0.1);
-      humidity = generateNextValue(humidity, 30, 70, 0.1);
-      points.push([new Date(now - i * 3000).toISOString(), temp, humidity]);
-    }
-    return points;
-  });
-
-  const valuesRef = useRef({ temp: 24, humidity: 45 });
+  const { data: streamData, append } = useStreamingData([], 30);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      valuesRef.current.temp = generateNextValue(valuesRef.current.temp, 18, 30, 0.1);
-      valuesRef.current.humidity = generateNextValue(valuesRef.current.humidity, 30, 70, 0.1);
-
-      setDataPoints(prev => {
-        const updated = [
-          ...prev,
-          [new Date().toISOString(), valuesRef.current.temp, valuesRef.current.humidity],
-        ];
-        return updated.slice(-30);
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      const history = dataGenerators.sensors.generate(20)
+        .filter(r => r.location === 'Warehouse A')
+        .map(r => [r.timestamp, r.temperature, r.humidity]);
+      append(history);
+    }
+    const id = setInterval(() => {
+      const row = dataGenerators.sensors.generate().find(r => r.location === 'Warehouse A');
+      if (row) append([[row.timestamp, row.temperature, row.humidity]]);
+    }, dataGenerators.sensors.interval);
+    return () => clearInterval(id);
   }, []);
 
   const data: StreamDataSource = {
@@ -461,7 +408,7 @@ function ChartWithTableToggle() {
       { name: 'temperature', type: 'float64' },
       { name: 'humidity', type: 'float64' },
     ],
-    data: dataPoints,
+    data: streamData,
     isStreaming: true,
   };
 
@@ -477,84 +424,39 @@ function ChartWithTableToggle() {
 
   return (
     <div>
-      <button
-        onClick={() => setShowTable(!showTable)}
-        style={{
-          marginBottom: '16px',
-          padding: '8px 16px',
-          backgroundColor: '#3B82F6',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-        }}
-      >
+      <button onClick={() => setShowTable(!showTable)}>
         {showTable ? 'Show Chart' : 'Show Table'}
       </button>
-
       <div style={{ width: '100%', height: '400px' }}>
-        <StreamChart
-          config={config}
-          data={data}
-          theme={theme}
-          showTable={showTable}
-        />
+        <StreamChart config={config} data={data} theme={theme} showTable={showTable} />
       </div>
     </div>
   );
 }`,
 
-  'Geo Chart': `import { StreamChart, type StreamDataSource, type GeoChartConfig } from '@timeplus/vistral';
+  'Geo Chart': `import { StreamChart, useStreamingData, type StreamDataSource, type GeoChartConfig } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
 
 function StreamingGeoChart() {
   const theme = useTheme();
-  const [points, setPoints] = useState<unknown[][]>(() => {
-    const initialPoints: unknown[][] = [];
-    const cities = [
-      { lat: 40.7128, lng: -74.006 },
-      { lat: 51.5074, lng: -0.1278 },
-      { lat: 35.6762, lng: 139.6503 },
-    ];
-
-    cities.forEach((city) => {
-      for (let i = 0; i < 3; i++) {
-        initialPoints.push([
-          city.lat + (Math.random() - 0.5) * 2,
-          city.lng + (Math.random() - 0.5) * 2,
-          Math.floor(Math.random() * 100),
-          'Category A',
-        ]);
-      }
-    });
-    return initialPoints;
-  });
+  const { data, append } = useStreamingData([], 300);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const lat = (Math.random() - 0.5) * 140;
-      const lng = (Math.random() - 0.5) * 360;
-      const value = Math.floor(Math.random() * 100);
-      const categories = ['Category A', 'Category B', 'Category C'];
-      const category = categories[Math.floor(Math.random() * categories.length)];
-
-      setPoints((prev) => {
-        const updated = [...prev, [lat, lng, value, category]];
-        return updated.slice(-100);
-      });
-    }, 2000);
-
-    return () => clearInterval(interval);
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      append(dataGenerators.globalEvents.generate(40));
+    }
+    const id = setInterval(() => {
+      append(dataGenerators.globalEvents.generate());
+    }, dataGenerators.globalEvents.interval);
+    return () => clearInterval(id);
   }, []);
 
-  const data: StreamDataSource = {
-    columns: [
-      { name: 'latitude', type: 'float64' },
-      { name: 'longitude', type: 'float64' },
-      { name: 'value', type: 'int64' },
-      { name: 'category', type: 'string' },
-    ],
-    data: points,
+  const source: StreamDataSource = {
+    columns: dataGenerators.globalEvents.columns,
+    data,
     isStreaming: true,
   };
 
@@ -563,11 +465,7 @@ function StreamingGeoChart() {
     latitude: 'latitude',
     longitude: 'longitude',
     color: 'category',
-    size: {
-      key: 'value',
-      min: 4,
-      max: 16,
-    },
+    size: { key: 'value', min: 4, max: 16 },
     zoom: 2,
     showZoomControl: true,
     showCenterDisplay: true,
@@ -576,35 +474,26 @@ function StreamingGeoChart() {
 
   return (
     <div style={{ width: '100%', height: '500px' }}>
-      <StreamChart config={config} data={data} theme={theme} />
+      <StreamChart config={config} data={source} theme={theme} />
     </div>
   );
 }`,
 
   'Table (Frame-Bound)': `import { StreamChart, useStreamingData, type StreamDataSource, type TableConfig } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
 
 function FrameBoundTable() {
   const theme = useTheme();
-  const { data, append } = useStreamingData<unknown[]>([], 200);
+  const { data, append } = useStreamingData([], 200);
 
   useEffect(() => {
-    const servers = ['server-01', 'server-02', 'server-03', 'server-04'];
-
-    const interval = setInterval(() => {
-      const now = new Date().toISOString();
-      const newRows = servers.map(server => [
-        now,
-        server,
-        generateNextValue(50, 10, 95, 0.2),
-        generateNextValue(60, 20, 90, 0.15),
-        Math.floor(Math.random() * 1000) + 100,
-      ]);
-      append(newRows);
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [append]);
+    const id = setInterval(() => {
+      const rows = dataGenerators.metrics.generate();
+      append(rows.map(r => [r.timestamp, r.server, r.cpu, r.memory, r.requests]));
+    }, dataGenerators.metrics.interval);
+    return () => clearInterval(id);
+  }, []);
 
   const dataSource: StreamDataSource = {
     columns: [
@@ -654,18 +543,16 @@ function KeyBoundTable() {
 
   useEffect(() => {
     const services = ['auth-service', 'api-gateway', 'user-service', 'payment-service', 'notification-service'];
+    const statuses = ['healthy', 'healthy', 'healthy', 'degraded', 'down'];
 
     const interval = setInterval(() => {
       const service = services[Math.floor(Math.random() * services.length)];
-      const statuses = ['healthy', 'healthy', 'healthy', 'degraded', 'down'];
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-
       append([[
         new Date().toISOString(),
         service,
-        status,
+        statuses[Math.floor(Math.random() * statuses.length)],
         Math.floor(Math.random() * 200) + 10,
-        generateNextValue(99, 95, 100, 0.02),
+        99 + (Math.random() - 0.5) * 2,
       ]]);
     }, 1000);
 
@@ -721,135 +608,80 @@ function KeyBoundTable() {
   );
 }`,
 
-  'Geo Chart (Key-Bound)': `import { StreamChart, type StreamDataSource, type GeoChartConfig } from '@timeplus/vistral';
+  'Geo Chart (Key-Bound)': `import { StreamChart, useStreamingData, type StreamDataSource, type GeoChartConfig } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
 
 function KeyBoundGeoChart() {
   const theme = useTheme();
-  const [points, setPoints] = useState<unknown[][]>(() => {
-    const vehicles: unknown[][] = [];
-    for (let i = 1; i <= 10; i++) {
-      vehicles.push([
-        new Date().toISOString(),
-        \`vehicle-\${i}\`,
-        40 + Math.random() * 5,
-        -74 + Math.random() * 2,
-        Math.floor(Math.random() * 60) + 20,
-      ]);
-    }
-    return vehicles;
-  });
+  const { data, append } = useStreamingData([], 500);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const vehicleId = \`vehicle-\${Math.floor(Math.random() * 10) + 1}\`;
-
-      setPoints(prev => {
-        const currentVehicle = prev.find(p => p[1] === vehicleId);
-        const currentLat = currentVehicle ? Number(currentVehicle[2]) : 42;
-        const currentLng = currentVehicle ? Number(currentVehicle[3]) : -73;
-
-        const newLat = currentLat + (Math.random() - 0.5) * 0.1;
-        const newLng = currentLng + (Math.random() - 0.5) * 0.1;
-
-        return [
-          ...prev,
-          [
-            new Date().toISOString(),
-            vehicleId,
-            newLat,
-            newLng,
-            Math.floor(Math.random() * 60) + 20,
-          ],
-        ].slice(-200);
-      });
-    }, 1500);
-
-    return () => clearInterval(interval);
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      append(dataGenerators.vehicles.generate(10));
+    }
+    const id = setInterval(() => {
+      append(dataGenerators.vehicles.generate());
+    }, dataGenerators.vehicles.interval);
+    return () => clearInterval(id);
   }, []);
 
-  const data: StreamDataSource = {
-    columns: [
-      { name: 'timestamp', type: 'datetime64' },
-      { name: 'vehicle_id', type: 'string' },
-      { name: 'lat', type: 'float64' },
-      { name: 'lng', type: 'float64' },
-      { name: 'speed', type: 'int64' },
-    ],
-    data: points,
+  const source: StreamDataSource = {
+    columns: dataGenerators.vehicles.columns,
+    data,
     isStreaming: true,
   };
 
   const config: GeoChartConfig = {
     chartType: 'geo',
-    latitude: 'lat',
-    longitude: 'lng',
+    latitude: 'latitude',
+    longitude: 'longitude',
     temporal: {
       mode: 'key',
       field: 'vehicle_id',
     },
-    size: {
-      key: 'speed',
-      min: 6,
-      max: 14,
-    },
-    center: [41, -73],
-    zoom: 7,
+    size: { key: 'speed', min: 6, max: 14 },
+    center: [40, -74],
+    zoom: 5,
     showZoomControl: true,
     showCenterDisplay: true,
     pointOpacity: 0.9,
-    pointColor: '#10B981',
+    color: 'vehicle_id',
   };
 
   return (
     <div>
       <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
-        Key-bound GeoChart: Shows latest position per vehicle (10 vehicles tracking)
+        Key-bound GeoChart: Shows latest position per vehicle (vehicles in NYC area)
       </p>
       <div style={{ width: '100%', height: '500px' }}>
-        <StreamChart config={config} data={data} theme={theme} />
+        <StreamChart config={config} data={source} theme={theme} />
       </div>
     </div>
   );
 }`,
 
-  'Bar Chart (Frame-Bound)': `import { StreamChart, findPaletteByLabel, type StreamDataSource, type BarColumnConfig } from '@timeplus/vistral';
+  'Bar Chart (Frame-Bound)': `import { StreamChart, useStreamingData, findPaletteByLabel, type StreamDataSource, type BarColumnConfig } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
 
 function FrameBoundBarChart() {
   const theme = useTheme();
-  const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
-    const now = new Date().toISOString();
-    return [
-      [now, 'Widgets', 120],
-      [now, 'Gadgets', 85],
-      [now, 'Gizmos', 95],
-      [now, 'Doodads', 65],
-    ];
-  });
+  const { data, append } = useStreamingData([], 100);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date().toISOString();
-      setDataPoints(prev => [
-        ...prev,
-        [now, 'Widgets', generateNextValue(Number(prev[prev.length - 4]?.[2] || 120), 80, 160, 0.1)],
-        [now, 'Gadgets', generateNextValue(Number(prev[prev.length - 3]?.[2] || 85), 50, 120, 0.1)],
-        [now, 'Gizmos', generateNextValue(Number(prev[prev.length - 2]?.[2] || 95), 60, 130, 0.1)],
-        [now, 'Doodads', generateNextValue(Number(prev[prev.length - 1]?.[2] || 65), 40, 100, 0.1)],
-      ].slice(-100));
-    }, 2000);
-
-    return () => clearInterval(interval);
+    append(dataGenerators.productInventory.generate());
+    const id = setInterval(() => {
+      append(dataGenerators.productInventory.generate());
+    }, dataGenerators.productInventory.interval);
+    return () => clearInterval(id);
   }, []);
 
-  const data: StreamDataSource = {
-    columns: [
-      { name: 'timestamp', type: 'datetime64' },
-      { name: 'product', type: 'string' },
-      { name: 'sales', type: 'float64' },
-    ],
-    data: dataPoints,
+  const source: StreamDataSource = {
+    columns: dataGenerators.productInventory.columns,
+    data,
     isStreaming: true,
   };
 
@@ -874,59 +706,40 @@ function FrameBoundBarChart() {
         Frame-bound BarChart: Shows only the latest timestamp snapshot
       </p>
       <div style={{ width: '100%', height: '400px' }}>
-        <StreamChart config={config} data={data} theme={theme} />
+        <StreamChart config={config} data={source} theme={theme} />
       </div>
     </div>
   );
 }`,
 
-  'Line Chart (Axis-Bound)': `import { StreamChart, type StreamDataSource, type TimeSeriesConfig } from '@timeplus/vistral';
+  'Line Chart (Axis-Bound)': `import { StreamChart, useStreamingData, type StreamDataSource, type TimeSeriesConfig } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
 
 function AxisBoundLineChart() {
   const theme = useTheme();
-  const [dataPoints, setDataPoints] = useState<unknown[][]>(() => {
-    const now = Date.now();
-    const points: unknown[][] = [];
-    let value = 50;
-    for (let i = 120; i >= 0; i--) {
-      value = generateNextValue(value, 20, 80, 0.15);
-      points.push([new Date(now - i * 1000).toISOString(), value]);
-    }
-    return points;
-  });
+  const { data, append } = useStreamingData([], 300);
 
   useEffect(() => {
-    let currentValue = dataPoints.length > 0
-      ? (dataPoints[dataPoints.length - 1][1] as number)
-      : 50;
-
-    const interval = setInterval(() => {
-      currentValue = generateNextValue(currentValue, 20, 80, 0.15);
-      const newPoint = [new Date().toISOString(), currentValue];
-
-      setDataPoints(prev => [...prev, newPoint].slice(-300));
-    }, 1000);
-
-    return () => clearInterval(interval);
+    const id = setInterval(() => {
+      append(dataGenerators.cpuLoad.generate());
+    }, dataGenerators.cpuLoad.interval);
+    return () => clearInterval(id);
   }, []);
 
-  const data: StreamDataSource = {
-    columns: [
-      { name: 'timestamp', type: 'datetime64' },
-      { name: 'value', type: 'float64' },
-    ],
-    data: dataPoints,
+  const source: StreamDataSource = {
+    columns: dataGenerators.cpuLoad.columns,
+    data,
     isStreaming: true,
   };
 
   const config: TimeSeriesConfig = {
     chartType: 'line',
-    xAxis: 'timestamp',
+    xAxis: 'time',
     yAxis: 'value',
     temporal: {
       mode: 'axis',
-      field: 'timestamp',
+      field: 'time',
       range: 1,
     },
     lineStyle: 'curve',
@@ -942,7 +755,7 @@ function AxisBoundLineChart() {
         Axis-bound mode: 1-minute sliding window
       </p>
       <div style={{ width: '100%', height: '400px' }}>
-        <StreamChart config={config} data={data} theme={theme} />
+        <StreamChart config={config} data={source} theme={theme} />
       </div>
     </div>
   );
@@ -953,11 +766,11 @@ function AxisBoundLineChart() {
   // =========================================================================
 
   'Grammar: Line Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 
 function GrammarLineChart() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
-  const valueRef = useRef(50);
   const loadedRef = useRef(false);
 
   const spec: VistralSpec = {
@@ -984,30 +797,13 @@ function GrammarLineChart() {
   };
 
   useEffect(() => {
-    // Pre-populate with 30 historical points
-    const now = Date.now();
-    const history: Record<string, unknown>[] = [];
-    let v = 50;
-    for (let i = 30; i >= 0; i--) {
-      v = generateNextValue(v, 10, 90, 0.15);
-      history.push({ time: new Date(now - i * 1000).toISOString(), value: v });
-    }
-    valueRef.current = v;
-
     if (!loadedRef.current && handleRef.current) {
       loadedRef.current = true;
-      handleRef.current.append(history);
+      handleRef.current.append(dataGenerators.cpuLoad.generate(30));
     }
-
-    // Continue streaming
     const interval = setInterval(() => {
-      if (handleRef.current) {
-        valueRef.current = generateNextValue(valueRef.current, 10, 90, 0.15);
-        handleRef.current.append([
-          { time: new Date().toISOString(), value: valueRef.current },
-        ]);
-      }
-    }, 500);
+      handleRef.current?.append(dataGenerators.cpuLoad.generate());
+    }, dataGenerators.cpuLoad.interval);
     return () => clearInterval(interval);
   }, []);
 
@@ -1016,32 +812,30 @@ function GrammarLineChart() {
       <VistralChart
         spec={spec}
         height={400}
-        onReady={(handle) => {
-          handleRef.current = handle;
-        }}
+        onReady={(handle) => { handleRef.current = handle; }}
       />
     </div>
   );
 }`,
 
   'Grammar: Multi-Mark': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 
 function GrammarMultiMark() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
-  const valuesRef = useRef({ cpu: 55, memory: 65 });
   const loadedRef = useRef(false);
 
   const spec: VistralSpec = {
     marks: [
       {
         type: 'line',
-        encode: { x: 'time', y: 'value', color: 'series' },
+        encode: { x: 'time', y: 'value', color: 'metric' },
         style: { connect: true, shape: 'smooth' },
       },
       {
         type: 'point',
-        encode: { x: 'time', y: 'value', color: 'series' },
+        encode: { x: 'time', y: 'value', color: 'metric' },
         tooltip: false,
       },
     ],
@@ -1053,7 +847,7 @@ function GrammarMultiMark() {
     streaming: { maxItems: 1000, throttle: 100 },
     axes: {
       x: { title: false, grid: false },
-      y: { title: 'Usage (%)', grid: true },
+      y: { title: 'Count / sec', grid: true },
     },
     legend: { position: 'bottom', interactive: true },
     theme: theme as 'dark' | 'light',
@@ -1061,36 +855,13 @@ function GrammarMultiMark() {
   };
 
   useEffect(() => {
-    // Pre-populate with 20 historical points for each series
-    const now = Date.now();
-    const history: Record<string, unknown>[] = [];
-    let cpu = 55, mem = 65;
-    for (let i = 20; i >= 0; i--) {
-      const time = new Date(now - i * 2000).toISOString();
-      cpu = generateNextValue(cpu, 20, 90, 0.12);
-      mem = generateNextValue(mem, 30, 95, 0.1);
-      history.push({ time, value: cpu, series: 'cpu' });
-      history.push({ time, value: mem, series: 'memory' });
-    }
-    valuesRef.current = { cpu, memory: mem };
-
     if (!loadedRef.current && handleRef.current) {
       loadedRef.current = true;
-      handleRef.current.append(history);
+      handleRef.current.append(dataGenerators.apiTraffic.generate(20));
     }
-
-    // Continue streaming
     const interval = setInterval(() => {
-      if (handleRef.current) {
-        const time = new Date().toISOString();
-        valuesRef.current.cpu = generateNextValue(valuesRef.current.cpu, 20, 90, 0.12);
-        valuesRef.current.memory = generateNextValue(valuesRef.current.memory, 30, 95, 0.1);
-        handleRef.current.append([
-          { time, value: valuesRef.current.cpu, series: 'cpu' },
-          { time, value: valuesRef.current.memory, series: 'memory' },
-        ]);
-      }
-    }, 500);
+      handleRef.current?.append(dataGenerators.apiTraffic.generate());
+    }, dataGenerators.apiTraffic.interval);
     return () => clearInterval(interval);
   }, []);
 
@@ -1099,32 +870,24 @@ function GrammarMultiMark() {
       <VistralChart
         spec={spec}
         height={400}
-        onReady={(handle) => {
-          handleRef.current = handle;
-        }}
+        onReady={(handle) => { handleRef.current = handle; }}
       />
     </div>
   );
 }`,
 
   'Grammar: Bar Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 
 function GrammarBarChart() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
-  const currentValues = useRef<Record<string, number>>({
-    Widgets: 120,
-    Gadgets: 85,
-    Gizmos: 95,
-    Doodads: 65,
-    Thingamajigs: 110,
-  });
 
   const spec: VistralSpec = {
     marks: [
       {
         type: 'interval',
-        encode: { x: 'category', y: 'value', color: 'category' },
+        encode: { x: 'product', y: 'sales', color: 'product' },
       },
     ],
     scales: {
@@ -1134,7 +897,7 @@ function GrammarBarChart() {
     coordinate: {
       transforms: [{ type: 'transpose' }],
     },
-    temporal: { mode: 'frame', field: 'snapshot' },
+    temporal: { mode: 'frame', field: 'timestamp' },
     streaming: { maxItems: 500 },
     axes: {
       x: { title: false, grid: false },
@@ -1146,28 +909,10 @@ function GrammarBarChart() {
   };
 
   useEffect(() => {
-    const categories = Object.keys(currentValues.current);
-
-    // Pre-populate with initial data
-    const snapshot = new Date().toISOString();
-    const initialRows = categories.map((category) => ({
-      snapshot, category, value: Math.round(currentValues.current[category]),
-    }));
-    if (handleRef.current) {
-      handleRef.current.replace(initialRows);
-    }
-
-    // Continue streaming updates
+    handleRef.current?.replace(dataGenerators.productInventory.generate());
     const interval = setInterval(() => {
-      if (handleRef.current) {
-        const snap = new Date().toISOString();
-        const rows = categories.map((category) => {
-          currentValues.current[category] = generateNextValue(currentValues.current[category], 30, 160, 0.1);
-          return { snapshot: snap, category, value: Math.round(currentValues.current[category]) };
-        });
-        handleRef.current.replace(rows);
-      }
-    }, 1500);
+      handleRef.current?.replace(dataGenerators.productInventory.generate());
+    }, dataGenerators.productInventory.interval);
     return () => clearInterval(interval);
   }, []);
 
@@ -1176,27 +921,25 @@ function GrammarBarChart() {
       <VistralChart
         spec={spec}
         height={400}
-        onReady={(handle) => {
-          handleRef.current = handle;
-        }}
+        onReady={(handle) => { handleRef.current = handle; }}
       />
     </div>
   );
 }`,
 
   'Grammar: Stacked Area': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 
 function GrammarStackedArea() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
-  const valuesRef = useRef({ requests: 200, errors: 30, timeouts: 15 });
   const loadedRef = useRef(false);           // Guard against Strict Mode double-run
 
   const spec: VistralSpec = {
     marks: [
       {
         type: 'area',
-        encode: { x: 'time', y: 'value', color: 'series' },
+        encode: { x: 'time', y: 'value', color: 'metric' },
         style: { connect: true },
       },
     ],
@@ -1212,45 +955,19 @@ function GrammarStackedArea() {
       y: { title: 'Count', grid: true },
     },
     legend: { position: 'bottom', interactive: true },
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
   useEffect(() => {
-    // Pre-populate with 20 historical points for each series
-    const now = Date.now();
-    const history: Record<string, unknown>[] = [];
-    let req = 200, err = 30, tout = 15;
-    for (let i = 20; i >= 0; i--) {
-      const time = new Date(now - i * 2000).toISOString();
-      req = generateNextValue(req, 100, 400, 0.1);
-      err = generateNextValue(err, 5, 80, 0.15);
-      tout = generateNextValue(tout, 2, 40, 0.12);
-      history.push({ time, value: req, series: 'requests' });
-      history.push({ time, value: err, series: 'errors' });
-      history.push({ time, value: tout, series: 'timeouts' });
-    }
-    valuesRef.current = { requests: req, errors: err, timeouts: tout };
-
     // Guard against React 18 Strict Mode double-run
     if (!loadedRef.current && handleRef.current) {
       loadedRef.current = true;
-      handleRef.current.append(history);
+      handleRef.current.append(dataGenerators.apiTraffic.generate(40));
     }
-
-    // Continue streaming
     const interval = setInterval(() => {
-      if (handleRef.current) {
-        const time = new Date().toISOString();
-        valuesRef.current.requests = generateNextValue(valuesRef.current.requests, 100, 400, 0.1);
-        valuesRef.current.errors = generateNextValue(valuesRef.current.errors, 5, 80, 0.15);
-        valuesRef.current.timeouts = generateNextValue(valuesRef.current.timeouts, 2, 40, 0.12);
-        handleRef.current.append([
-          { time, value: valuesRef.current.requests, series: 'requests' },
-          { time, value: valuesRef.current.errors, series: 'errors' },
-          { time, value: valuesRef.current.timeouts, series: 'timeouts' },
-        ]);
-      }
-    }, 2000);
+      handleRef.current?.append(dataGenerators.apiTraffic.generate());
+    }, dataGenerators.apiTraffic.interval);
     return () => clearInterval(interval);
   }, []);
 
@@ -1259,9 +976,7 @@ function GrammarStackedArea() {
       <VistralChart
         spec={spec}
         height={400}
-        onReady={(handle) => {
-          handleRef.current = handle;
-        }}
+        onReady={(handle) => { handleRef.current = handle; }}
       />
     </div>
   );
@@ -1271,23 +986,23 @@ function GrammarStackedArea() {
   VistralChart, compileTimeSeriesConfig,
   type VistralSpec, type ChartHandle, type TimeSeriesConfig,
 } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 
 function GrammarCompiledChart() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
-  const valueRef = useRef(50);
   const loadedRef = useRef(false);
 
   // Start with a high-level TimeSeriesConfig
   const config: TimeSeriesConfig = {
     chartType: 'line',
-    xAxis: 'timestamp',
-    yAxis: 'cpu_usage',
+    xAxis: 'time',
+    yAxis: 'value',
     lineStyle: 'curve',
     gridlines: true,
     yTitle: 'CPU Usage (%)',
     yRange: { min: 0, max: 100 },
-    temporal: { mode: 'axis', field: 'timestamp', range: 1 },
+    temporal: { mode: 'axis', field: 'time', range: 1 },
   };
 
   // Compile it into a VistralSpec using the config compiler
@@ -1300,30 +1015,13 @@ function GrammarCompiledChart() {
   };
 
   useEffect(() => {
-    // Pre-populate with 30 historical data points
-    const now = Date.now();
-    const history: Record<string, unknown>[] = [];
-    let v = 50;
-    for (let i = 30; i >= 0; i--) {
-      v = generateNextValue(v, 10, 90, 0.15);
-      history.push({ timestamp: new Date(now - i * 1000).toISOString(), cpu_usage: v });
-    }
-    valueRef.current = v;
-
     if (!loadedRef.current && handleRef.current) {
       loadedRef.current = true;
-      handleRef.current.append(history);
+      handleRef.current.append(dataGenerators.cpuLoad.generate(30));
     }
-
-    // Continue streaming
     const interval = setInterval(() => {
-      if (handleRef.current) {
-        valueRef.current = generateNextValue(valueRef.current, 10, 90, 0.15);
-        handleRef.current.append([
-          { timestamp: new Date().toISOString(), cpu_usage: valueRef.current },
-        ]);
-      }
-    }, 1000);
+      handleRef.current?.append(dataGenerators.cpuLoad.generate());
+    }, dataGenerators.cpuLoad.interval);
     return () => clearInterval(interval);
   }, []);
 
@@ -1335,23 +1033,18 @@ function GrammarCompiledChart() {
       <VistralChart
         spec={spec}
         height={360}
-        onReady={(handle) => {
-          handleRef.current = handle;
-        }}
+        onReady={(handle) => { handleRef.current = handle; }}
       />
     </div>
   );
 }`,
 
   'Grammar: Rose Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 
 function GrammarRoseChart() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
-  const currentValues = useRef<Record<string, number>>({
-    'API': 80, 'Auth': 45, 'Database': 95,
-    'Cache': 60, 'Worker': 70, 'Gateway': 55,
-  });
 
   const spec: VistralSpec = {
     marks: [
@@ -1366,7 +1059,6 @@ function GrammarRoseChart() {
       y: { type: 'linear', nice: true },
     },
     coordinate: { type: 'polar' },
-    temporal: { mode: 'frame', field: 'snapshot' },
     streaming: { maxItems: 500 },
     axes: {
       x: { title: false },
@@ -1378,25 +1070,10 @@ function GrammarRoseChart() {
   };
 
   useEffect(() => {
-    const services = Object.keys(currentValues.current);
-    const snapshot = new Date().toISOString();
-    const initialRows = services.map((service) => ({
-      snapshot, service, requests: Math.round(currentValues.current[service]),
-    }));
-    if (handleRef.current) {
-      handleRef.current.replace(initialRows);
-    }
-
+    handleRef.current?.replace(dataGenerators.serviceLoad.generate());
     const interval = setInterval(() => {
-      if (handleRef.current) {
-        const snap = new Date().toISOString();
-        const rows = services.map((service) => {
-          currentValues.current[service] = generateNextValue(currentValues.current[service], 10, 150, 0.15);
-          return { snapshot: snap, service, requests: Math.round(currentValues.current[service]) };
-        });
-        handleRef.current.replace(rows);
-      }
-    }, 1200);
+      handleRef.current?.replace(dataGenerators.serviceLoad.generate());
+    }, dataGenerators.serviceLoad.interval);
     return () => clearInterval(interval);
   }, []);
 
@@ -1412,14 +1089,11 @@ function GrammarRoseChart() {
 }`,
 
   'Grammar: Donut Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 
 function GrammarDonutChart() {
   const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
-  const currentValues = useRef<Record<string, number>>({
-    'HTTP 200': 600, 'HTTP 301': 80, 'HTTP 404': 45,
-    'HTTP 500': 20, 'HTTP 503': 12,
-  });
 
   const spec: VistralSpec = {
     marks: [
@@ -1435,7 +1109,6 @@ function GrammarDonutChart() {
       type: 'theta',
       innerRadius: 0.5,
     },
-    temporal: { mode: 'frame', field: 'snapshot' },
     streaming: { maxItems: 500 },
     legend: { position: 'bottom' },
     theme: theme as 'dark' | 'light',
@@ -1443,28 +1116,10 @@ function GrammarDonutChart() {
   };
 
   useEffect(() => {
-    const statuses = Object.keys(currentValues.current);
-
-    const snapshot = new Date().toISOString();
-    const initialRows = statuses.map((status) => ({
-      snapshot, status,
-      count: Math.round(currentValues.current[status]),
-    }));
-    if (handleRef.current) {
-      handleRef.current.replace(initialRows);
-    }
-
+    handleRef.current?.replace(dataGenerators.httpResponses.generate());
     const interval = setInterval(() => {
-      if (handleRef.current) {
-        const snap = new Date().toISOString();
-        const rows = statuses.map((status) => {
-          currentValues.current[status] =
-            generateNextValue(currentValues.current[status], 5, 800, 0.1);
-          return { snapshot: snap, status, count: Math.round(currentValues.current[status]) };
-        });
-        handleRef.current.replace(rows);
-      }
-    }, 1000);
+      handleRef.current?.replace(dataGenerators.httpResponses.generate());
+    }, dataGenerators.httpResponses.interval);
     return () => clearInterval(interval);
   }, []);
 
@@ -1480,33 +1135,31 @@ function GrammarDonutChart() {
 }`,
 
   'Grammar: Radar Chart': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 
 // Radar Chart — line + area + point marks in polar coordinate
 // Combines three marks (line for outline, area for fill, point for vertices)
 // all in polar coordinates to create a multi-series radar comparison.
 
 function GrammarRadarChart() {
+  const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
-  const currentValues = useRef({
-    'server-a': { CPU: 70, Memory: 55, Disk: 40, Network: 80, Latency: 30 },
-    'server-b': { CPU: 50, Memory: 75, Disk: 60, Network: 45, Latency: 65 },
-  });
 
   const spec: VistralSpec = {
     marks: [
       {
         type: 'line',                          // Outline
-        encode: { x: 'metric', y: 'value', color: 'server' },
+        encode: { x: 'dimension', y: 'value', color: 'server' },
         style: { connect: true },
       },
       {
         type: 'area',                          // Filled region
-        encode: { x: 'metric', y: 'value', color: 'server' },
+        encode: { x: 'dimension', y: 'value', color: 'server' },
         style: { fillOpacity: 0.15 },
       },
       {
         type: 'point',                         // Vertices
-        encode: { x: 'metric', y: 'value', color: 'server' },
+        encode: { x: 'dimension', y: 'value', color: 'server' },
         tooltip: false,
       },
     ],
@@ -1515,41 +1168,21 @@ function GrammarRadarChart() {
       y: { type: 'linear', domain: [0, 100], nice: true },
     },
     coordinate: { type: 'polar' },            // Polar makes it a radar
-    temporal: { mode: 'frame', field: 'snapshot' },
     streaming: { maxItems: 500 },
     axes: {
       x: { title: false, grid: true },
       y: { title: false, grid: true },
     },
     legend: { position: 'bottom', interactive: true },
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
   useEffect(() => {
-    const servers = Object.keys(currentValues.current);
-    const metrics = ['CPU', 'Memory', 'Disk', 'Network', 'Latency'];
-
-    // Build rows: one per server per metric
-    const buildRows = (snap: string) => {
-      const rows = [];
-      for (const server of servers) {
-        for (const metric of metrics) {
-          currentValues.current[server][metric] =
-            generateNextValue(currentValues.current[server][metric], 10, 95, 0.12);
-          rows.push({
-            snapshot: snap, server, metric,
-            value: Math.round(currentValues.current[server][metric]),
-          });
-        }
-      }
-      return rows;
-    };
-
-    handleRef.current?.replace(buildRows(new Date().toISOString()));
-
+    handleRef.current?.replace(dataGenerators.serverProfile.generate());
     const interval = setInterval(() => {
-      handleRef.current?.replace(buildRows(new Date().toISOString()));
-    }, 1000);
+      handleRef.current?.replace(dataGenerators.serverProfile.generate());
+    }, dataGenerators.serverProfile.interval);
     return () => clearInterval(interval);
   }, []);
 
@@ -1563,64 +1196,46 @@ function GrammarRadarChart() {
 }`,
 
   'Grammar: Radial Bar': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 
 // Radial Bar Chart — interval mark + radial coordinate
 // Uses "radial" coordinate which maps categories to concentric arcs.
-// Compare with the regular bar chart (interval + transpose) and
-// rose chart (interval + polar) — same mark, different coordinates.
 
 function GrammarRadialBar() {
+  const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
-  const currentValues = useRef<Record<string, number>>({
-    'us-east': 72, 'us-west': 58, 'eu-west': 85,
-    'ap-south': 43, 'ap-east': 66,
-  });
 
   const spec: VistralSpec = {
     marks: [
       {
         type: 'interval',
-        encode: { x: 'region', y: 'throughput', color: 'region' },
+        encode: { x: 'region', y: 'latency', color: 'region' },
         style: { lineWidth: 1 },
       },
     ],
     scales: {
       x: { padding: 0.3 },
-      y: { type: 'linear', domain: [0, 100] },
+      y: { type: 'linear', domain: [0, 200] },
     },
     coordinate: {
       type: 'radial',                         // Radial = concentric arc bars
       innerRadius: 0.3,
     },
-    temporal: { mode: 'frame', field: 'snapshot' },
     streaming: { maxItems: 500 },
     axes: {
       x: { title: false },
       y: { title: false, grid: true },
     },
     legend: false,
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
   useEffect(() => {
-    const regions = Object.keys(currentValues.current);
-
-    handleRef.current?.replace(
-      regions.map(region => ({
-        snapshot: new Date().toISOString(), region,
-        throughput: Math.round(currentValues.current[region]),
-      }))
-    );
-
+    handleRef.current?.replace(dataGenerators.cloudRegions.generate());
     const interval = setInterval(() => {
-      const snap = new Date().toISOString();
-      const rows = regions.map(region => {
-        currentValues.current[region] =
-          generateNextValue(currentValues.current[region], 15, 98, 0.1);
-        return { snapshot: snap, region, throughput: Math.round(currentValues.current[region]) };
-      });
-      handleRef.current?.replace(rows);
-    }, 1500);
+      handleRef.current?.replace(dataGenerators.cloudRegions.generate());
+    }, dataGenerators.cloudRegions.interval);
     return () => clearInterval(interval);
   }, []);
 
@@ -1634,13 +1249,14 @@ function GrammarRadialBar() {
 }`,
 
   'Grammar: Scatter/Bubble': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 
 // Scatter / Bubble Chart — point mark with size encoding
 // Each point encodes 4 dimensions: x=latency, y=throughput,
-// color=region, size=connections. Live streaming updates move
-// the bubbles around as metrics change in real time.
+// color=region, size=connections.
 
 function GrammarScatterChart() {
+  const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
 
   const spec: VistralSpec = {
@@ -1661,43 +1277,21 @@ function GrammarScatterChart() {
       y: { type: 'linear', nice: true },
       size: { range: [4, 20] },
     },
-    temporal: { mode: 'frame', field: 'snapshot' },
     streaming: { maxItems: 500 },
     axes: {
       x: { title: 'Latency (ms)', grid: true },
       y: { title: 'Throughput (req/s)', grid: true },
     },
     legend: { position: 'bottom', interactive: true },
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
-  const regions = useRef([
-    { name: 'us-east', latency: 45, throughput: 850, connections: 120 },
-    { name: 'us-west', latency: 65, throughput: 720, connections: 90 },
-    { name: 'eu-west', latency: 30, throughput: 950, connections: 150 },
-    { name: 'ap-south', latency: 120, throughput: 450, connections: 60 },
-    { name: 'ap-east', latency: 95, throughput: 580, connections: 80 },
-  ]);
-
   useEffect(() => {
-    const buildRows = (snap: string) =>
-      regions.current.map(r => {
-        r.latency = generateNextValue(r.latency, 10, 200, 0.12);
-        r.throughput = generateNextValue(r.throughput, 200, 1200, 0.1);
-        r.connections = generateNextValue(r.connections, 20, 200, 0.08);
-        return {
-          snapshot: snap, region: r.name,
-          latency: Math.round(r.latency),
-          throughput: Math.round(r.throughput),
-          connections: Math.round(r.connections),
-        };
-      });
-
-    handleRef.current?.replace(buildRows(new Date().toISOString()));
-
+    handleRef.current?.replace(dataGenerators.cloudRegions.generate());
     const interval = setInterval(() => {
-      handleRef.current?.replace(buildRows(new Date().toISOString()));
-    }, 800);
+      handleRef.current?.replace(dataGenerators.cloudRegions.generate());
+    }, dataGenerators.cloudRegions.interval);
     return () => clearInterval(interval);
   }, []);
 
@@ -1711,17 +1305,15 @@ function GrammarScatterChart() {
 }`,
 
   'Grammar: Heatmap': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 
 // Heatmap — cell mark with color encoding
 // The "cell" mark renders a grid where each cell's color intensity
-// represents a value. Great for showing patterns across two
-// categorical dimensions (day of week x hour of day).
+// represents a value. Shows CPU load by hour and day of week.
 
 function GrammarHeatmap() {
+  const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
-  const hours = ['00', '04', '08', '12', '16', '20'];
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const gridValues = useRef<Record<string, number>>({});
 
   const spec: VistralSpec = {
     marks: [
@@ -1737,45 +1329,21 @@ function GrammarHeatmap() {
         range: ['#0d47a1', '#2196f3', '#64b5f6', '#fff176', '#ff9800', '#f44336'],
       },
     },
-    temporal: { mode: 'frame', field: 'snapshot' },
     streaming: { maxItems: 500 },
     axes: {
       x: { title: 'Hour of Day', grid: false },
       y: { title: false, grid: false },
     },
     legend: { position: 'bottom' },
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
   useEffect(() => {
-    // Initialize with realistic load pattern
-    days.forEach(day => {
-      hours.forEach(hour => {
-        const hourNum = parseInt(hour);
-        const base = (hourNum >= 8 && hourNum <= 16) ? 70 : 30;
-        const weekendFactor = (day === 'Sat' || day === 'Sun') ? 0.5 : 1;
-        gridValues.current[\`\${day}_\${hour}\`] = base * weekendFactor + Math.random() * 20;
-      });
-    });
-
-    const buildRows = (snap: string) => {
-      const rows = [];
-      for (const day of days) {
-        for (const hour of hours) {
-          const key = \`\${day}_\${hour}\`;
-          gridValues.current[key] =
-            generateNextValue(gridValues.current[key], 5, 100, 0.08);
-          rows.push({ snapshot: snap, day, hour, load: Math.round(gridValues.current[key]) });
-        }
-      }
-      return rows;
-    };
-
-    handleRef.current?.replace(buildRows(new Date().toISOString()));
-
+    handleRef.current?.replace(dataGenerators.datacenterLoad.generate());
     const interval = setInterval(() => {
-      handleRef.current?.replace(buildRows(new Date().toISOString()));
-    }, 1500);
+      handleRef.current?.replace(dataGenerators.datacenterLoad.generate());
+    }, dataGenerators.datacenterLoad.interval);
     return () => clearInterval(interval);
   }, []);
 
@@ -1789,6 +1357,7 @@ function GrammarHeatmap() {
 }`,
 
   'Grammar: Time Series Bar': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 
 // Time Series Bar Chart — rect marks on a continuous time axis
 // G2's "interval" mark requires a band scale, which is incompatible with
@@ -1796,8 +1365,8 @@ function GrammarHeatmap() {
 // bar widths around each timestamp instead.
 
 function GrammarTimeSeriesBar() {
+  const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
-  const valueRef = useRef(50);
   const loadedRef = useRef(false);
 
   const BAR_INTERVAL_MS = 2000;
@@ -1836,34 +1405,17 @@ function GrammarTimeSeriesBar() {
       y: { title: 'Requests / sec', grid: true },
     },
     legend: false,
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
   useEffect(() => {
-    if (!loadedRef.current) {
+    if (!loadedRef.current && handleRef.current) {
       loadedRef.current = true;
-      const now = Date.now();
-      const history = [];
-      let v = 50;
-      for (let i = 40; i >= 0; i--) {
-        v = generateNextValue(v, 10, 100, 0.15);
-        history.push({
-          time: new Date(now - i * BAR_INTERVAL_MS).toISOString(),
-          value: +v.toFixed(1),
-        });
-      }
-      valueRef.current = v;
-      handleRef.current?.append(history);
+      handleRef.current.append(dataGenerators.cpuLoad.generate(40));
     }
-
     const interval = setInterval(() => {
-      if (handleRef.current) {
-        valueRef.current = generateNextValue(valueRef.current, 10, 100, 0.15);
-        handleRef.current.append([{
-          time: new Date().toISOString(),
-          value: +valueRef.current.toFixed(1),
-        }]);
-      }
+      handleRef.current?.append(dataGenerators.cpuLoad.generate());
     }, BAR_INTERVAL_MS);
     return () => clearInterval(interval);
   }, []);
@@ -1878,24 +1430,24 @@ function GrammarTimeSeriesBar() {
 }`,
 
   'Grammar: Candlestick': `import { VistralChart, type VistralSpec, type ChartHandle } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
 
 // Candlestick (OHLC) Chart — rect marks with EncodeFn on a time axis
-// G2 has no native candlestick mark, so we compose one from:
-//   1. Hidden point mark — anchors the time scale for axis-bound sliding window
-//   2. Wick: thin rect mapping y to [low, high]
-//   3. Body: wider rect mapping y to [open, close]
-// We use "rect" instead of "interval" because interval requires a band scale,
-// while rect works with continuous time scales. Each rect's x is an EncodeFn
-// that computes a small time range around the candle's timestamp.
+// Composed from: invisible anchor point, thin wick rect, wider body rect.
+// Uses dataGenerators.stockCandles for OHLC data, then adds direction field.
 
 function GrammarCandlestickChart() {
+  const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
-  const priceRef = useRef(100);
   const loadedRef = useRef(false);           // Guard against Strict Mode double-run
 
-  const CANDLE_MS = 3000;                  // Interval between candles
+  const CANDLE_MS = dataGenerators.stockCandles.interval;
   const BODY_HALF = CANDLE_MS * 0.35;      // Body width (70% of candle spacing)
   const WICK_HALF = CANDLE_MS * 0.03;      // Wick width (thin line)
+
+  // Add direction field based on open vs close
+  const addDirection = (candles) =>
+    candles.map(c => ({ ...c, direction: c.close >= c.open ? 'bullish' : 'bearish' }));
 
   // Map direction → color directly (identity scale prevents group dodging)
   const dirColor = (d) => d.direction === 'bullish' ? '#22C55E' : '#EF4444';
@@ -1941,52 +1493,28 @@ function GrammarCandlestickChart() {
       x: { type: 'time' },                  // Continuous time axis
       y: { type: 'linear', nice: true },
     },
-    temporal: { mode: 'axis', field: 'time', range: 2 },  // 2-min sliding window
+    temporal: { mode: 'axis', field: 'time', range: 2 },
     streaming: { maxItems: 500, throttle: 100 },
     axes: {
       x: { title: false, grid: false },
       y: { title: 'Price ($)', grid: true },
     },
     legend: false,
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
   useEffect(() => {
-    function generateCandle(basePrice: number, time: string) {
-      const volatility = basePrice * 0.02;
-      const open = basePrice;
-      const moves = Array.from({ length: 4 }, () => (Math.random() - 0.48) * volatility);
-      const close = open + moves.reduce((a, b) => a + b, 0);
-      const high = Math.max(open, close) + Math.random() * volatility * 0.5;
-      const low = Math.min(open, close) - Math.random() * volatility * 0.5;
-      const direction = close >= open ? 'bullish' : 'bearish';
-      return { time, open: +open.toFixed(2), high: +high.toFixed(2),
-               low: +low.toFixed(2), close: +close.toFixed(2), direction };
-    }
-
     // Pre-populate once (guard against React 18 Strict Mode double-run)
     if (!loadedRef.current) {
       loadedRef.current = true;
-      const now = Date.now();
-      const history = [];
-      let price = 100;
-      for (let i = 30; i >= 0; i--) {
-        const candle = generateCandle(price, new Date(now - i * CANDLE_MS).toISOString());
-        history.push(candle);
-        price = candle.close;
-      }
-      priceRef.current = price;
-      handleRef.current?.append(history);
-    }
-
-    // Stream new candles via append()
-    const interval = setInterval(() => {
       if (handleRef.current) {
-        const candle = generateCandle(priceRef.current, new Date().toISOString());
-        priceRef.current = candle.close;
-        handleRef.current.append([candle]);
+        handleRef.current.append(addDirection(dataGenerators.stockCandles.generate(30)));
       }
-    }, CANDLE_MS);
+    }
+    const interval = setInterval(() => {
+      handleRef.current?.append(addDirection(dataGenerators.stockCandles.generate()));
+    }, dataGenerators.stockCandles.interval);
     return () => clearInterval(interval);
   }, []);
 
