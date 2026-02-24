@@ -73,8 +73,10 @@ export default [
       typescript({
         tsconfig: './tsconfig.json',
         declaration: false,
+        exclude: ['src/__tests__/**'],
         compilerOptions: {
           jsx: 'react',
+          declarationDir: null,
         },
       }),
       postcss({
