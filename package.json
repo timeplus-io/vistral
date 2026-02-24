@@ -4,6 +4,8 @@
   "description": "A powerful streaming data visualization library follow grammar of graphics",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
+  "unpkg": "dist/index.umd.min.js",
+  "jsdelivr": "dist/index.umd.min.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
@@ -60,6 +62,7 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.0",
     "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.0.0",
     "@types/lodash": "^4.14.195",
     "@types/ramda": "^0.29.0",
