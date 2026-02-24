@@ -27,6 +27,8 @@ Design Principles [docs/design-principles.md](docs/design-principles.md)
 
 - [Features](#features)
 - [Installation](#installation)
+  - [NPM/Yarn/PNPM](#npmyarnpnpm)
+  - [UMD (Browser/CDN)](#umd-browsercdn)
 - [Quick Start](#quick-start)
 - [Chart Types](#chart-types)
   - [Line Chart](#line-chart)
@@ -60,19 +62,48 @@ Design Principles [docs/design-principles.md](docs/design-principles.md)
 
 ## Installation
 
+### NPM/Yarn/PNPM
+
 ```bash
 npm install @timeplus/vistral
+```
 
-# or with yarn
-yarn add @timeplus/vistral
+### UMD (Browser/CDN)
 
-# or with pnpm
-pnpm add @timeplus/vistral
+Vistral is available as a UMD bundle, allowing you to use it directly in the browser via script tags.
+
+```html
+<!-- 1. Dependencies -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/lodash@4/lodash.min.js"></script>
+<script src="https://unpkg.com/ramda@0.29/dist/ramda.min.js"></script>
+<script src="https://unpkg.com/@antv/g2@5/dist/g2.min.js"></script>
+<script src="https://unpkg.com/@antv/s2@2/dist/s2.min.js"></script>
+
+<!-- 2. Vistral -->
+<script src="https://unpkg.com/@timeplus/vistral/dist/index.umd.min.js"></script>
+
+<!-- 3. Usage -->
+<script>
+  const { Vistral, React, ReactDOM } = window;
+  const { StreamChart } = Vistral;
+
+  const data = {
+    columns: [{ name: 'val', type: 'number' }],
+    data: [{ val: 10 }, { val: 20 }]
+  };
+
+  const config = { chartType: 'table' };
+
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(React.createElement(StreamChart, { data, config }));
+</script>
 ```
 
 ### Peer Dependencies
 
-Make sure you have React installed:
+Make sure you have React installed (if using NPM):
 
 ```bash
 npm install react react-dom
