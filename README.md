@@ -15,6 +15,8 @@ A powerful streaming data visualization library based on the Grammar of Graphics
 
 ![Gallery](./docs/images/gallery.gif "Gallery")
 
+Introduction Blog https://www.timeplus.com/post/vistral
+
 Examples and Playground can be found here https://timeplus-io.github.io/vistral/ 
 
 Concept Introduction https://timeplus-io.github.io/vistra-temporal-binding/
