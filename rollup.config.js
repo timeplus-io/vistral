@@ -4,11 +4,24 @@ import typescript from '@rollup/plugin-typescript';
 import postcss from 'rollup-plugin-postcss';
 import dts from 'rollup-plugin-dts';
 import terser from '@rollup/plugin-terser';
+import replace from '@rollup/plugin-replace';
 
-const external = ['react', 'react-dom', '@antv/g2', '@antv/s2', 'lodash', 'ramda'];
+const external = [
+  'react',
+  'react-dom',
+  'react/jsx-runtime',
+  'react/jsx-dev-runtime',
+  '@antv/g2',
+  '@antv/s2',
+  'lodash',
+  'ramda'
+];
+
 const globals = {
   react: 'React',
   'react-dom': 'ReactDOM',
+  'react/jsx-runtime': 'React',
+  'react/jsx-dev-runtime': 'React',
   '@antv/g2': 'G2',
   '@antv/s2': 'S2',
   lodash: '_',
@@ -24,6 +37,7 @@ export default [
         file: 'dist/index.js',
         format: 'cjs',
         sourcemap: true,
+        exports: 'named',
       },
       {
         file: 'dist/index.esm.js',
@@ -36,6 +50,7 @@ export default [
         name: 'Vistral',
         globals,
         sourcemap: true,
+        exports: 'named',
       },
       {
         file: 'dist/index.umd.min.js',
@@ -43,19 +58,27 @@ export default [
         name: 'Vistral',
         globals,
         sourcemap: true,
+        exports: 'named',
         plugins: [terser()],
       },
     ],
     external,
     plugins: [
+      replace({
+        'process.env.NODE_ENV': JSON.stringify('production'),
+        preventAssignment: true,
+      }),
       resolve(),
       commonjs(),
       typescript({
         tsconfig: './tsconfig.json',
         declaration: false,
+        compilerOptions: {
+          jsx: 'react',
+        },
       }),
       postcss({
-        extract: 'styles.css',
+        extract: true,
         minimize: true,
       }),
     ],
