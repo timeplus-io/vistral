@@ -54,6 +54,31 @@ describe('applyTemporalTransforms Key Mode', () => {
         }
     });
 
+    // Tests: same-timestamp duplicates (issue #27 — last-write-wins)
+    it('should keep only the last-received row per key when multiple rows share the same timestamp', () => {
+        const spec: VistralSpec = {
+            temporal: { mode: 'key', field: 'symbol' },
+            marks: [{ type: 'interval', encode: { x: 'symbol', y: 'price' } }],
+        };
+
+        // Multiple trades for the same symbol at the same second (raw stream)
+        const data = [
+            { timestamp: '2024-01-01T00:00:01Z', symbol: 'AAPL', price: 100 },
+            { timestamp: '2024-01-01T00:00:01Z', symbol: 'AAPL', price: 101 },
+            { timestamp: '2024-01-01T00:00:01Z', symbol: 'AAPL', price: 102 }, // last AAPL
+            { timestamp: '2024-01-01T00:00:01Z', symbol: 'GOOG', price: 200 },
+            { timestamp: '2024-01-01T00:00:01Z', symbol: 'GOOG', price: 201 }, // last GOOG
+        ];
+
+        const g2 = buildG2Options(spec, data);
+
+        expect(g2.data?.length).toBe(2);
+        const aapl = g2.data?.find((d: any) => d.symbol === 'AAPL');
+        const goog = g2.data?.find((d: any) => d.symbol === 'GOOG');
+        expect(aapl?.price).toBe(102);
+        expect(goog?.price).toBe(201);
+    });
+
     // Tests: Fallback time detection (field named 'time')
     it('should detect "time" field if "timestamp" is missing', () => {
         const spec: VistralSpec = {

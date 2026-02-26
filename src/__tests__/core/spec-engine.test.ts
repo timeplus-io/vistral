@@ -74,32 +74,50 @@ describe('applyTemporalTransforms', () => {
       marks: [{ type: 'interval' }],
       temporal: {
         mode: 'key',
-        field: 'ts',
-        keyField: 'device',
+        field: 'device', // 'device' is the categorical key
       },
     };
-    const data = [
-      { ts: 1000, device: 'A', value: 10 },
-      { ts: 2000, device: 'A', value: 20 },
-      { ts: 1500, device: 'B', value: 30 },
-      { ts: 3000, device: 'B', value: 40 },
-    ];
+    const rowA1 = { ts: 1000, device: 'A', value: 10 };
+    const rowA2 = { ts: 2000, device: 'A', value: 20 }; // last A row — wins
+    const rowB1 = { ts: 1500, device: 'B', value: 30 };
+    const rowB2 = { ts: 3000, device: 'B', value: 40 }; // last B row — wins
+    const data = [rowA1, rowA2, rowB1, rowB2];
 
     const result = applyTemporalTransforms(spec, data);
 
     expect(result.transforms).toHaveLength(1);
     expect(result.transforms![0].type).toBe('filter');
 
-    // Verify the filter callback works correctly
+    // Verify the filter callback uses object identity (last-write-wins)
     const filterCallback = result.transforms![0].callback as (
       d: Record<string, unknown>
     ) => boolean;
-    // Device A: latest is ts=2000
-    expect(filterCallback({ ts: 2000, device: 'A' })).toBe(true);
-    expect(filterCallback({ ts: 1000, device: 'A' })).toBe(false);
-    // Device B: latest is ts=3000
-    expect(filterCallback({ ts: 3000, device: 'B' })).toBe(true);
-    expect(filterCallback({ ts: 1500, device: 'B' })).toBe(false);
+    expect(filterCallback(rowA2)).toBe(true);  // last-received A row passes
+    expect(filterCallback(rowA1)).toBe(false); // earlier A row rejected
+    expect(filterCallback(rowB2)).toBe(true);  // last-received B row passes
+    expect(filterCallback(rowB1)).toBe(false); // earlier B row rejected
+  });
+
+  it('should keep last-received row per key when multiple rows share the same timestamp', () => {
+    const spec: VistralSpec = {
+      marks: [{ type: 'interval' }],
+      temporal: { mode: 'key', field: 'device' },
+    };
+    const row1 = { ts: 1000, device: 'A', value: 10 };
+    const row2 = { ts: 1000, device: 'A', value: 20 }; // same ts — last received wins
+    const row3 = { ts: 1000, device: 'B', value: 30 };
+    const row4 = { ts: 1000, device: 'B', value: 40 }; // same ts — last received wins
+    const data = [row1, row2, row3, row4];
+
+    const result = applyTemporalTransforms(spec, data);
+    const filterCallback = result.transforms![0].callback as (
+      d: Record<string, unknown>
+    ) => boolean;
+
+    expect(filterCallback(row2)).toBe(true);  // last-received A row passes
+    expect(filterCallback(row1)).toBe(false); // earlier A row rejected
+    expect(filterCallback(row4)).toBe(true);  // last-received B row passes
+    expect(filterCallback(row3)).toBe(false); // earlier B row rejected
   });
 
   it('should prepend temporal transforms before existing transforms', () => {

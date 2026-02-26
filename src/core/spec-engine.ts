@@ -64,9 +64,10 @@ function getMaxTimestamp(
  * - **frame** — snapshot at latest timestamp.  A `filter` keeping only rows
  *   whose temporal field equals the max timestamp is prepended.
  *
- * - **key** — latest-per-key de-duplication.  A `filter` keeping only rows
- *   whose temporal value matches the latest timestamp for their key is
- *   prepended.  Requires `temporal.keyField`.
+ * - **key** — latest-per-key de-duplication using arrival order (last-write-wins).
+ *   A `filter` is prepended that keeps only the last-received row object for each
+ *   unique key value.  This correctly handles raw streams where multiple rows per
+ *   key can share the same timestamp.
  */
 export function applyTemporalTransforms(
   spec: VistralSpec,
@@ -121,47 +122,19 @@ export function applyTemporalTransforms(
 
     case 'key': {
       // In 'key' mode, the `field` property represents the categorical Key (e.g. 'server').
+      // Use last-write-wins per key (arrival order) and inject a G2 filter that keeps
+      // only the winning row objects via reference identity.
       const keyFields = Array.isArray(temporal.field) ? temporal.field : [temporal.field];
-      let timeField = 'timestamp'; // default guess
-
-      // We need to find the timestamp field to determine "latest".
-      // Heuristic: check for common names or first date-like field.
-      if (data.length > 0) {
-        const row = data[0];
-        if (Object.prototype.hasOwnProperty.call(row, 'timestamp')) timeField = 'timestamp';
-        else if (Object.prototype.hasOwnProperty.call(row, 'time')) timeField = 'time';
-        else if (Object.prototype.hasOwnProperty.call(row, 'date')) timeField = 'date';
-        else {
-          // Scan for a value that looks like a timestamp
-          for (const k in row) {
-            // key fields are NOT time fields
-            if (keyFields.includes(k)) continue;
-            if (parseDateTime(row[k]) > 0) {
-              timeField = k;
-              break;
-            }
-          }
-        }
-      }
-
-      // Build a lookup: keyValue -> latest timestamp.
-      const latestByKey = new Map<string, number>();
+      const latestPerKey = new Map<string, Record<string, unknown>>();
       for (const row of data) {
         const key = keyFields.map(f => String(row[f] ?? '')).join('::');
-        const ts = parseDateTime(row[timeField]);
-        const prev = latestByKey.get(key);
-        if (prev === undefined || ts > prev) {
-          latestByKey.set(key, ts);
-        }
+        latestPerKey.set(key, row); // last write wins = most recently received
       }
+      const winningRows = new Set(latestPerKey.values());
 
       newTransforms.push({
         type: 'filter',
-        callback: (d: Record<string, unknown>) => {
-          const key = keyFields.map(f => String(d[f] ?? '')).join('::');
-          const ts = parseDateTime(d[timeField]);
-          return latestByKey.get(key) === ts;
-        },
+        callback: (d: Record<string, unknown>) => winningRows.has(d),
       });
       break;
     }
@@ -642,43 +615,16 @@ export function filterDataByTemporal(
 
     case 'key': {
       // In 'key' mode, the `field` property represents the categorical Key (e.g. 'server').
+      // Use last-write-wins: iterate rows in arrival order; the last row for each key
+      // is the "latest" regardless of timestamp.  This correctly handles raw streams
+      // where multiple rows per key can share the same timestamp.
       const keyFields = Array.isArray(temporal.field) ? temporal.field : [temporal.field];
-      let timeField = 'timestamp'; // default guess
-
-      // We need to find the timestamp field to determine "latest".
-      // Heuristic: check for common names or first date-like field.
-      if (data.length > 0) {
-        const row = data[0];
-        if (Object.prototype.hasOwnProperty.call(row, 'timestamp')) timeField = 'timestamp';
-        else if (Object.prototype.hasOwnProperty.call(row, 'time')) timeField = 'time';
-        else if (Object.prototype.hasOwnProperty.call(row, 'date')) timeField = 'date';
-        else {
-          // Scan for a value that looks like a timestamp
-          for (const k in row) {
-            if (keyFields.includes(k)) continue;
-            if (parseDateTime(row[k]) > 0) {
-              timeField = k;
-              break;
-            }
-          }
-        }
-      }
-
-      const latestByKey = new Map<string, number>();
+      const latestPerKey = new Map<string, Record<string, unknown>>();
       for (const row of data) {
         const key = keyFields.map(f => String(row[f] ?? '')).join('::');
-        const ts = parseDateTime(row[timeField]);
-        const prev = latestByKey.get(key);
-        if (prev === undefined || ts > prev) {
-          latestByKey.set(key, ts);
-        }
+        latestPerKey.set(key, row); // last write wins = most recently received
       }
-
-      result = result.filter((d) => {
-        const key = keyFields.map(f => String(d[f] ?? '')).join('::');
-        const ts = parseDateTime(d[timeField]);
-        return latestByKey.get(key) === ts;
-      });
+      result = [...latestPerKey.values()];
       break;
     }
   }
