@@ -38,6 +38,7 @@ Design Principles [docs/design-principles.md](docs/design-principles.md)
   - [Bar Chart](#bar-chart-horizontal)
   - [Column Chart](#column-chart-vertical)
   - [Single Value](#single-value)
+  - [Multiple Value](#multiple-value)
   - [Data Table](#data-table)
   - [Geo Chart](#geo-chart)
 - [Temporal Binding Modes](#temporal-binding-modes)
@@ -257,6 +258,29 @@ Display a single metric with optional sparkline and delta indicator.
     sparkline: true,
     delta: true,
     unit: { position: 'left', value: '$' },
+  }}
+  data={data}
+/>
+```
+
+### Multiple Value
+
+![MultipleValue](./docs/images/multiplevalue.gif "MultipleValue")
+
+Display multiple values side-by-side, split by a specific key. Key bound is required.
+
+```tsx
+<StreamChart
+  config={{
+    chartType: 'multipleValue',
+    yAxis: 'cpu_usage',
+    key: 'server_id',
+    fontSize: 48,
+    color: 'cyan',
+    fractionDigits: 0,
+    sparkline: true,
+    delta: true,
+    unit: { position: 'right', value: '%' },
   }}
   data={data}
 />
