@@ -160,6 +160,33 @@ export interface SingleValueConfig extends ChartConfigBase {
   unit?: { position: 'left' | 'right'; value: string };
 }
 
+// Multiple Value Chart Configuration
+export interface MultipleValueConfig extends ChartConfigBase {
+  chartType: 'multipleValue';
+  /** Value field */
+  yAxis: string;
+  /** Field used to group/split values horizontally */
+  key?: string;
+  /** Font size */
+  fontSize?: number;
+  /** Value color */
+  color?: string;
+  /** Decimal places */
+  fractionDigits?: number;
+  /** Show sparkline */
+  sparkline?: boolean;
+  /** Sparkline color */
+  sparklineColor?: string;
+  /** Show delta/change indicator */
+  delta?: boolean;
+  /** Color for positive changes */
+  increaseColor?: string;
+  /** Color for negative changes */
+  decreaseColor?: string;
+  /** Unit configuration */
+  unit?: { position: 'left' | 'right'; value: string };
+}
+
 // Table Chart Configuration
 export interface TableConfig extends ChartConfigBase {
   chartType: 'table';
@@ -243,6 +270,7 @@ export type ChartConfig =
   | TimeSeriesConfig
   | BarColumnConfig
   | SingleValueConfig
+  | MultipleValueConfig
   | TableConfig
   | OHLCConfig
   | GeoChartConfig;

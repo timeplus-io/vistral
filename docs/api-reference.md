@@ -292,6 +292,25 @@ All chart configs extend this base:
 
 **Note:** SingleValue implicitly uses the latest value (key-bound behavior).
 
+### MultipleValueConfig
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `chartType` | `'multipleValue'` | required | Chart type |
+| `yAxis` | `string` | required | Value field |
+| `key` | `string` | required | Key field to split values horizontally |
+| `fontSize` | `number` | `48` | Font size in pixels |
+| `color` | `string` | `'cyan'` | Color palette name |
+| `fractionDigits` | `number` | `2` | Decimal places |
+| `sparkline` | `boolean` | `false` | Show sparkline |
+| `sparklineColor` | `string` | `'blue'` | Sparkline color |
+| `delta` | `boolean` | `false` | Show change indicator |
+| `increaseColor` | `string` | `'green'` | Color for positive changes |
+| `decreaseColor` | `string` | `'red'` | Color for negative changes |
+| `unit` | `{ position, value }` | - | Unit prefix/suffix |
+
+**Note:** MultipleValue auto-splits incoming streaming data by `key` and aligns them horizontally.
+
 ### TableConfig
 
 | Property | Type | Default | Description |

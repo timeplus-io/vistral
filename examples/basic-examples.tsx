@@ -11,13 +11,16 @@ import {
   SingleValueChart,
   useStreamingData,
   findPaletteByLabel,
-  type StreamDataSource,
-  type TimeSeriesConfig,
-  type BarColumnConfig,
-  type SingleValueConfig,
-  type TableConfig,
-  type GeoChartConfig,
 } from '@timeplus/vistral';
+import type {
+  StreamDataSource,
+  TimeSeriesConfig,
+  BarColumnConfig,
+  SingleValueConfig,
+  MultipleValueConfig,
+  TableConfig,
+  GeoChartConfig,
+} from '../src/types';
 import { ThemeContext } from './App';
 import { dataGenerators } from './data-utils';
 
@@ -247,6 +250,63 @@ export function SingleValueWithSparkline() {
   return (
     <div style={{ width: '300px', height: '200px' }}>
       <StreamChart config={config} data={data} theme={theme} />
+    </div>
+  );
+}
+
+// =============================================================================
+// Example 15: Multiple Value Chart (Streaming)
+// =============================================================================
+
+export function MultipleValueExample() {
+  const theme = useTheme();
+  const { data, append } = useStreamingData<unknown[]>([], 500);
+
+  useEffect(() => {
+    // initialize with history
+    append(
+      dataGenerators.metrics.generate(20).map(r => [r.timestamp, r.server, r.cpu])
+    );
+    const id = setInterval(() => {
+      const rows = dataGenerators.metrics.generate();
+      append(rows.map(r => [r.timestamp, r.server, r.cpu]));
+    }, dataGenerators.metrics.interval);
+    return () => clearInterval(id);
+  }, []);
+
+  const dataSource: StreamDataSource = {
+    columns: [
+      { name: 'timestamp', type: 'datetime64' },
+      { name: 'server_id', type: 'string' },
+      { name: 'cpu_usage', type: 'float64' },
+    ],
+    data,
+    isStreaming: true,
+  };
+
+  const config: MultipleValueConfig = {
+    chartType: 'multipleValue',
+    yAxis: 'cpu_usage',
+    key: 'server_id',
+    fontSize: 48,
+    color: 'cyan',
+    fractionDigits: 0,
+    sparkline: true,
+    sparklineColor: 'blue',
+    delta: true,
+    increaseColor: 'red',
+    decreaseColor: 'green',
+    unit: { position: 'right', value: '%' }
+  };
+
+  return (
+    <div>
+      <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
+        Multiple Value Component: Auto-splits values by a specific key horizontally
+      </p>
+      <div style={{ width: '100%', height: '300px' }}>
+        <StreamChart config={config} data={dataSource} theme={theme} />
+      </div>
     </div>
   );
 }
@@ -815,6 +875,8 @@ export function AxisBoundLineChart() {
   );
 }
 
+
+
 // =============================================================================
 // Default Export - All Examples
 // =============================================================================
@@ -825,6 +887,7 @@ export default {
   StackedBarChart,
   GroupedBarChart,
   SingleValueWithSparkline,
+  MultipleValueExample,
   StreamingDataTable,
   MetricsDashboard,
   ChartWithTableToggle,

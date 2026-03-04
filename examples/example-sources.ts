@@ -216,6 +216,63 @@ function SingleValue() {
   );
 }`,
 
+  'Multiple Value': `import { StreamChart, useStreamingData, type StreamDataSource, type MultipleValueConfig } from '@timeplus/vistral';
+import { dataGenerators } from './data-utils';
+import { useTheme } from './App';
+
+function MultipleValueExample() {
+  const theme = useTheme();
+  const { data, append } = useStreamingData([], 500);
+
+  useEffect(() => {
+    // initialize with history
+    append(
+      dataGenerators.metrics.generate(20).map(r => [r.timestamp, r.server, r.cpu])
+    );
+    const id = setInterval(() => {
+      const rows = dataGenerators.metrics.generate();
+      append(rows.map(r => [r.timestamp, r.server, r.cpu]));
+    }, dataGenerators.metrics.interval);
+    return () => clearInterval(id);
+  }, []);
+
+  const dataSource: StreamDataSource = {
+    columns: [
+      { name: 'timestamp', type: 'datetime64' },
+      { name: 'server_id', type: 'string' },
+      { name: 'cpu_usage', type: 'float64' },
+    ],
+    data,
+    isStreaming: true,
+  };
+
+  const config: MultipleValueConfig = {
+    chartType: 'multipleValue',
+    yAxis: 'cpu_usage',
+    key: 'server_id',
+    fontSize: 48,
+    color: 'cyan',
+    fractionDigits: 0,
+    sparkline: true,
+    sparklineColor: 'blue',
+    delta: true,
+    increaseColor: 'red',
+    decreaseColor: 'green',
+    unit: { position: 'right', value: '%' }
+  };
+
+  return (
+    <div>
+      <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
+        Multiple Value Component: Auto-splits values by a specific key horizontally
+      </p>
+      <div style={{ width: '100%', height: '300px' }}>
+        <StreamChart config={config} data={dataSource} theme={theme} />
+      </div>
+    </div>
+  );
+}`,
+
   'Data Table': `import { StreamChart, useStreamingData, type StreamDataSource, type TableConfig } from '@timeplus/vistral';
 import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
@@ -760,6 +817,7 @@ function AxisBoundLineChart() {
     </div>
   );
 }`,
+
 
   // =========================================================================
   // Grammar API Examples

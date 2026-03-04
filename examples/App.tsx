@@ -16,6 +16,7 @@ import {
   KeyBoundGeoChart,
   FrameBoundBarChart,
   AxisBoundLineChart,
+  MultipleValueExample,
 } from './basic-examples';
 import {
   GrammarLineChart,
@@ -64,6 +65,7 @@ const examples: ExampleItem[] = [
   { name: 'Column Chart (Stacked)', component: StackedBarChart, category: 'examples' },
   { name: 'Bar Chart (Grouped)', component: GroupedBarChart, category: 'examples' },
   { name: 'Single Value', component: SingleValueWithSparkline, category: 'examples' },
+  { name: 'Multiple Value', component: MultipleValueExample, category: 'examples' },
   { name: 'Data Table', component: StreamingDataTable, category: 'examples' },
   { name: 'Metrics Dashboard', component: MetricsDashboard, category: 'examples' },
   { name: 'Chart/Table Toggle', component: ChartWithTableToggle, category: 'examples' },

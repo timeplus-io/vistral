@@ -10,10 +10,12 @@ import type {
   TimeSeriesConfig,
   BarColumnConfig,
   SingleValueConfig,
+  MultipleValueConfig,
   TableConfig,
   GeoChartConfig,
 } from '../types';
 import { SingleValueChart } from './SingleValueChart';
+import { MultipleValueChart } from './MultipleValueChart';
 import { DataTable } from './DataTable';
 import { GeoChart } from './GeoChart';
 import { VistralChart } from './VistralChart';
@@ -55,6 +57,13 @@ function isBarColumnConfig(config: ChartConfig): config is BarColumnConfig {
  */
 function isSingleValueConfig(config: ChartConfig): config is SingleValueConfig {
   return config.chartType === 'singleValue';
+}
+
+/**
+ * Check if configuration is for a multiple value chart
+ */
+function isMultipleValueConfig(config: ChartConfig): config is MultipleValueConfig {
+  return config.chartType === 'multipleValue';
 }
 
 /**
@@ -287,6 +296,18 @@ export const StreamChart: React.FC<StreamChartProps> = ({
       );
     }
 
+    if (isMultipleValueConfig(config)) {
+      return (
+        <MultipleValueChart
+          config={config}
+          data={data}
+          theme={theme}
+          className={className}
+          style={style}
+        />
+      );
+    }
+
     if (isTableConfig(config)) {
       return (
         <DataTable
@@ -325,5 +346,6 @@ export default StreamChart;
 
 // Re-export individual chart components
 export { SingleValueChart } from './SingleValueChart';
+export { MultipleValueChart } from './MultipleValueChart';
 export { DataTable } from './DataTable';
 export { GeoChart } from './GeoChart';
