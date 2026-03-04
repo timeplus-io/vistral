@@ -7,7 +7,7 @@ import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import type { TableConfig, StreamDataSource, ColumnDefinition } from '../types';
 import { DEFAULT_MAX_ITEMS } from '../types/spec';
 import { useChart } from '../hooks';
-import { isNumericColumn, rowToArray, formatNumber, applyTemporalFilter } from '../utils';
+import { isNumericColumn, rowToArray, applyTemporalFilter } from '../utils';
 
 // Type alias for table cell color config
 type TableCellColorConfig = {
@@ -44,7 +44,7 @@ export function getTableDefaults(
   columns: { name: string; type: string }[]
 ): Partial<TableConfig> {
   const tableStyles: TableConfig['tableStyles'] = {};
-  
+
   columns.forEach((col) => {
     tableStyles[col.name] = {
       name: col.name,
@@ -153,7 +153,7 @@ const TableCell: React.FC<{
   theme: 'dark' | 'light';
 }> = ({ value, isNumeric, miniChart, sparklineData = [], color, wrap, theme }) => {
   const bgColor = getCellBackgroundColor(value, color);
-  const displayValue = isNumeric ? formatNumber(Number(value)) : String(value ?? '');
+  const displayValue = String(value ?? '');
 
   return (
     <td
@@ -452,8 +452,8 @@ export const DataTable: React.FC<DataTableProps> = ({
                   rowIndex % 2 === 0
                     ? 'transparent'
                     : theme === 'dark'
-                    ? 'rgba(55, 65, 81, 0.3)'
-                    : 'rgba(243, 244, 246, 0.5)',
+                      ? 'rgba(55, 65, 81, 0.3)'
+                      : 'rgba(243, 244, 246, 0.5)',
               }}
             >
               <td
