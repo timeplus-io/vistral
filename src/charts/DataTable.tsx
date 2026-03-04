@@ -140,6 +140,94 @@ function getCellBackgroundColor(
   return undefined;
 }
 
+const tableStyles = `
+  .vistral-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+  }
+  
+  /* Light Theme */
+  .vistral-data-table.theme-light {
+    color: #1a1c1d;
+    background-color: #ffffff;
+  }
+  .vistral-data-table.theme-light th {
+    background-color: #e0e0e0;
+    border-bottom: 1px solid #c0c0c0;
+    color: #4a4a4a;
+  }
+  .vistral-data-table.theme-light td {
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .vistral-data-table.theme-light tbody tr:nth-child(even) {
+    background-color: #fafafa;
+  }
+  .vistral-data-table.theme-light tbody tr:hover {
+    background-color: #f2f7ff;
+  }
+  .vistral-data-table.theme-light td.monospace {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    color: #333;
+  }
+  
+  /* Dark Theme */
+  .vistral-data-table.theme-dark {
+    color: #e5e7eb;
+    background-color: #111827;
+  }
+  .vistral-data-table.theme-dark th {
+    background-color: #374151; /* Darker gray header */
+    border-bottom: 1px solid #4b5563;
+    color: #d1d5db;
+  }
+  .vistral-data-table.theme-dark td {
+    border-bottom: 1px solid #1f2937;
+  }
+  .vistral-data-table.theme-dark tbody tr:nth-child(even) {
+    background-color: #1f2937; /* Even row background */
+  }
+  .vistral-data-table.theme-dark tbody tr:hover {
+    background-color: #374151; /* Hover effect */
+  }
+  .vistral-data-table.theme-dark td.monospace {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    color: #d1d5db;
+  }
+
+  /* Common Cell Styles */
+  .vistral-data-table th, .vistral-data-table td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .vistral-data-table th {
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 500;
+    position: relative;
+  }
+  .vistral-data-table td {
+    padding: 10px 12px;
+  }
+  
+  /* Column type badge */
+  .type-badge {
+    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+  .theme-light .type-badge {
+    background-color: #e5e7eb;
+    color: #6b7280;
+  }
+  .theme-dark .type-badge {
+    background-color: #374151;
+    color: #9ca3af;
+  }
+`;
+
 /**
  * Table Cell Component
  */
@@ -150,26 +238,23 @@ const TableCell: React.FC<{
   sparklineData?: number[];
   color?: TableCellColorConfig;
   wrap?: boolean;
-  theme: 'dark' | 'light';
-}> = ({ value, isNumeric, miniChart, sparklineData = [], color, wrap, theme }) => {
+  isMonospace?: boolean;
+}> = ({ value, isNumeric, miniChart, sparklineData = [], color, wrap, isMonospace }) => {
   const bgColor = getCellBackgroundColor(value, color);
   const displayValue = String(value ?? '');
 
   return (
     <td
+      className={isMonospace ? 'monospace' : ''}
       style={{
-        padding: '8px 12px',
-        borderBottom: `1px solid ${theme === 'dark' ? '#374151' : '#E5E7EB'}`,
         textAlign: isNumeric ? 'right' : 'left',
         backgroundColor: bgColor,
         whiteSpace: wrap ? 'normal' : 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
         maxWidth: '200px',
       }}
       title={String(value ?? '')}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: isNumeric ? 'flex-end' : 'flex-start' }}>
         {miniChart === 'sparkline' && sparklineData.length > 0 && (
           <CellSparkline data={sparklineData} />
         )}
@@ -218,27 +303,13 @@ const TableHeaderCell: React.FC<{
   return (
     <th
       style={{
-        position: 'relative',
-        padding: '12px',
-        borderBottom: `2px solid ${theme === 'dark' ? '#374151' : '#E5E7EB'}`,
-        backgroundColor: theme === 'dark' ? '#1F2937' : '#F3F4F6',
-        textAlign: 'left',
-        fontWeight: 600,
         width: `${width}px`,
         minWidth: `${width}px`,
         userSelect: 'none',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span
-          style={{
-            fontSize: '10px',
-            padding: '2px 4px',
-            borderRadius: '4px',
-            backgroundColor: theme === 'dark' ? '#374151' : '#E5E7EB',
-            color: theme === 'dark' ? '#9CA3AF' : '#6B7280',
-          }}
-        >
+        <span className="type-badge">
           {column.type}
         </span>
         <span>{displayName || column.name}</span>
@@ -307,6 +378,9 @@ export const DataTable: React.FC<DataTableProps> = ({
   // Version counter to trigger re-renders when sparkline data changes
   const [, setSparklineVersion] = useState(0);
 
+  // Container ref for auto-scrolling
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // Process data for display
   const displayData = useMemo(() => {
     const { columns, data } = dataSource;
@@ -322,6 +396,13 @@ export const DataTable: React.FC<DataTableProps> = ({
     // Limit rows
     return processedData.slice(-maxRows);
   }, [dataSource, config, maxRows]);
+
+  // Auto-scroll to bottom when data changes
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, [displayData]);
 
   // Update sparkline history - use ref to avoid infinite loop
   const prevDataLengthRef = useRef(0);
@@ -397,36 +478,25 @@ export const DataTable: React.FC<DataTableProps> = ({
 
   return (
     <div
-      className={className}
+      ref={containerRef}
+      className={`${className || ''} vistral-data-table ${theme === 'dark' ? 'theme-dark' : 'theme-light'}`}
       style={{
         width: '100%',
         height: '100%',
         overflow: 'auto',
-        backgroundColor: theme === 'dark' ? '#111827' : '#FFFFFF',
-        color: theme === 'dark' ? '#F3F4F6' : '#1F2937',
         ...style,
       }}
       data-testid="data-table"
     >
-      <table
-        style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          fontSize: '14px',
-        }}
-      >
+      <style>{tableStyles}</style>
+      <table>
         <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
           <tr>
             <th
               style={{
-                padding: '12px 8px',
-                borderBottom: `2px solid ${theme === 'dark' ? '#374151' : '#E5E7EB'}`,
-                backgroundColor: theme === 'dark' ? '#1F2937' : '#F3F4F6',
-                textAlign: 'center',
-                fontWeight: 600,
                 width: '40px',
                 minWidth: '40px',
-                color: theme === 'dark' ? '#9CA3AF' : '#6B7280',
+                textAlign: 'center',
               }}
             >
               No.
@@ -445,24 +515,12 @@ export const DataTable: React.FC<DataTableProps> = ({
         </thead>
         <tbody>
           {displayData.map((row, rowIndex) => (
-            <tr
-              key={rowIndex}
-              style={{
-                backgroundColor:
-                  rowIndex % 2 === 0
-                    ? 'transparent'
-                    : theme === 'dark'
-                      ? 'rgba(55, 65, 81, 0.3)'
-                      : 'rgba(243, 244, 246, 0.5)',
-              }}
-            >
+            <tr key={rowIndex}>
               <td
                 style={{
-                  padding: '8px',
-                  borderBottom: `1px solid ${theme === 'dark' ? '#374151' : '#E5E7EB'}`,
                   textAlign: 'center',
-                  color: theme === 'dark' ? '#6B7280' : '#9CA3AF',
                   fontWeight: 500,
+                  opacity: 0.7,
                 }}
               >
                 {rowIndex + 1}
@@ -482,7 +540,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                     sparklineData={sparklineHistoryRef.current[sparklineKey]}
                     color={colStyle?.color}
                     wrap={config.tableWrap}
-                    theme={theme}
+                    isMonospace={col.type === 'string'}
                   />
                 );
               })}
@@ -496,7 +554,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           style={{
             padding: '48px',
             textAlign: 'center',
-            color: theme === 'dark' ? '#6B7280' : '#9CA3AF',
+            opacity: 0.6,
           }}
         >
           No data available
