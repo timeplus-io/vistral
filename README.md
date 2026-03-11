@@ -19,6 +19,8 @@ Introduction Blog https://www.timeplus.com/post/vistral
 
 Examples and Playground can be found here https://timeplus-io.github.io/vistral/ 
 
+Introduction Presentation https://timeplus-io.github.io/gg-vistral-introduction/
+
 Concept Introduction https://timeplus-io.github.io/vistra-temporal-binding/
 
 API Reference [docs/api-reference.md](docs/api-reference.md)
