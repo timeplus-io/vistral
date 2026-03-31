@@ -17,6 +17,7 @@ import type {
   CoordinateSpec,
   AxesSpec,
   AxisChannelSpec,
+  TooltipSpec,
 } from '../types/spec';
 import { parseDateTime, getTimeMask } from '../utils';
 import { getChartThemeColors } from './chart-utils';
@@ -210,6 +211,32 @@ function translateAxisChannel(
     if (axis.labels.rotate !== undefined) {
       result.labelTransform = [{ type: 'rotate', angle: axis.labels.rotate }];
     }
+  }
+
+  return result;
+}
+
+/**
+ * Translate a TooltipSpec to G2 tooltip format.
+ * Renames `items[].format` to `items[].valueFormatter` to match G2's API.
+ */
+function translateTooltip(
+  tooltip: TooltipSpec
+): Record<string, any> {
+  const result: Record<string, any> = {};
+
+  if (tooltip.title !== undefined) {
+    result.title = tooltip.title;
+  }
+
+  if (tooltip.items) {
+    result.items = tooltip.items.map(({ format, ...rest }) => {
+      const item: Record<string, any> = { ...rest };
+      if (format !== undefined) {
+        item.valueFormatter = format;
+      }
+      return item;
+    });
   }
 
   return result;
@@ -453,6 +480,11 @@ export function translateToG2Spec(
       interaction[type] = options;
     }
     g2.interaction = interaction;
+  }
+
+  // Tooltip
+  if (spec.tooltip !== undefined) {
+    g2.tooltip = spec.tooltip === false ? false : translateTooltip(spec.tooltip);
   }
 
   // Children: marks + annotations

@@ -252,3 +252,47 @@ describe('translateToG2Spec', () => {
     expect(g2.children[1].type).toBe('point');
   });
 });
+
+describe('translateToG2Spec — tooltip', () => {
+  it('should translate top-level tooltip and rename format to valueFormatter', () => {
+    const formatter = (v: unknown) => `${v} bps`;
+    const spec: VistralSpec = {
+      marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+      tooltip: {
+        title: (d: Record<string, unknown>) => String(d.time),
+        items: [{ field: 'value', name: 'Throughput', format: formatter }],
+      },
+    };
+
+    const g2 = translateToG2Spec(spec);
+
+    expect(g2.tooltip).toBeDefined();
+    expect(g2.tooltip.title).toBe((spec.tooltip as { title: unknown }).title);
+    expect(g2.tooltip.items).toHaveLength(1);
+    expect(g2.tooltip.items[0].field).toBe('value');
+    expect(g2.tooltip.items[0].name).toBe('Throughput');
+    expect(g2.tooltip.items[0].valueFormatter).toBe(formatter);
+    expect(g2.tooltip.items[0].format).toBeUndefined();
+  });
+
+  it('should pass tooltip: false through unchanged', () => {
+    const spec: VistralSpec = {
+      marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+      tooltip: false,
+    };
+
+    const g2 = translateToG2Spec(spec);
+
+    expect(g2.tooltip).toBe(false);
+  });
+
+  it('should not set tooltip on g2 when spec.tooltip is undefined', () => {
+    const spec: VistralSpec = {
+      marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+    };
+
+    const g2 = translateToG2Spec(spec);
+
+    expect(g2.tooltip).toBeUndefined();
+  });
+});
