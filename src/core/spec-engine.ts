@@ -772,9 +772,11 @@ function getTimeFieldFromSpec(spec: VistralSpec): string | null {
  * theme application into a single G2-ready options object.
  *
  * 1. `filterDataByTemporal(spec, data)` — filter/sort data in JavaScript
- * 2. `translateToG2Spec(spec)` — produce G2 options (no visual transforms)
- * 3. `applySpecTheme(spec.theme)` — attach theme configuration
- * 4. Attach filtered data + sliding time domain to each child mark
+ * 2. `resolveTheme(spec.theme)` — resolve theme name/object to full VistralTheme
+ * 3. `translateToG2Spec(spec, resolvedTheme)` — produce G2 options with theme colors
+ * 4. `buildG2ThemeObject(resolvedTheme)` — attach G2 theme + inject tooltip CSS
+ * 5. Attach filtered data + sliding time domain to each child mark
+ * 6. `deepMerge(g2Overrides)` — user overrides win at every leaf
  *
  * The returned object is ready for `chart.options(result)`.
  */
