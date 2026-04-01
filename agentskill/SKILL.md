@@ -186,9 +186,8 @@ function QuickChart() {
     temporal: { mode: 'axis', field: 'time', range: 5 },
   };
 
-  // StreamChart has NO theme prop and NO ref/ChartHandle
-  // theme is applied via the chart's internal defaults
-  return <StreamChart config={config} data={{ columns, data }} />;
+  // StreamChart has NO ref/ChartHandle (use VistralChart for imperative control)
+  return <StreamChart config={config} data={{ columns, data }} theme="dark" />;
 }
 ```
 
@@ -199,7 +198,7 @@ function QuickChart() {
 | Mistake | Fix |
 |---------|-----|
 | `useStreamingData<Row[]>` (wrong generic) | Use `useStreamingData<Row>` — element type, not array |
-| `<StreamChart theme="dark">` | `theme` is NOT a StreamChart prop. Use VistralChart for theme control. |
+| `<StreamChart ref={...}>` | `StreamChart` has NO ref/ChartHandle. Use `VistralChart` for imperative append/replace/clear. |
 | `append([singleRow])` when row is already an array | Wrap: `append([[singleRow]])` — `append` treats top-level array as multiple items |
 | No `loadedRef` guard when seeding history | React 18 Strict Mode runs effects twice → doubled rows |
 | `tooltip.items[].format` not working | `format` IS supported — translated to G2's `valueFormatter` internally (v0.1.6+). Use `g2Overrides.tooltip` only for raw G2 tooltip features beyond what `TooltipSpec` models. |
