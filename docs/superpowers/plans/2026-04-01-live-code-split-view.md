@@ -1,6 +1,7 @@
 ---
 render_with_liquid: false
 ---
+{% raw %}
 # Live Code Split View — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -789,3 +790,4 @@ git commit -m "feat: replace tab view with live split view for example detail pa
 **Type consistency:** `buildComponent(code, scope)` signature matches between Task 2 (definition) and Task 3 (usage). `LiveSplitViewProps.name: string` matches usage in Task 4.
 
 **No placeholders found.**
+{% endraw %}

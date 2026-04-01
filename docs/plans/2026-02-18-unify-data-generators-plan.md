@@ -1,6 +1,7 @@
 ---
 render_with_liquid: false
 ---
+{% raw %}
 # Unify Data Generators Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -1215,3 +1216,4 @@ Walk through every example in the sidebar:
 git add -p
 git commit -m "chore: final cleanup from data generator unification"
 ```
+{% endraw %}
