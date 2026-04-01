@@ -1,7 +1,8 @@
 // src/core/theme-registry.ts
 import type { VistralTheme } from '../types/theme';
 import { DARK_THEME, LIGHT_THEME } from '../types/theme';
-import { deepMerge } from './spec-engine';
+import { deepMerge } from './utils';
+import { DEFAULT_PALETTE } from '../themes';
 
 const registry = new Map<string, VistralTheme>([
   ['dark',  DARK_THEME],
@@ -104,9 +105,16 @@ export function buildG2ThemeObject(theme: VistralTheme): Record<string, unknown>
     },
   };
 
-  if (theme.palette && theme.palette.length > 0) {
-    g2Theme.color = theme.palette;
-  }
+  // Always apply a palette so G2 uses Vistral colors instead of its own defaults.
+  // Falls back to DEFAULT_PALETTE when the theme doesn't define one.
+  const palette = (theme.palette && theme.palette.length > 0)
+    ? theme.palette
+    : DEFAULT_PALETTE.values;
+  // color: single default stroke for marks with no color encode (single series)
+  g2Theme.color = palette[0];
+  // category10/20: palette used by G2's categorical color scale (multi-series)
+  g2Theme.category10 = palette;
+  g2Theme.category20 = palette;
 
   if (theme.g2ThemeOverrides) {
     return deepMerge(g2Theme, theme.g2ThemeOverrides);

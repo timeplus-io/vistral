@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { buildG2Options } from '../../core/spec-engine';
 import type { VistralSpec } from '../../types/spec';
 

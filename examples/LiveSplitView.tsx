@@ -117,9 +117,10 @@ function LivePreview({ code, theme }: LivePreviewProps) {
 
 interface LiveSplitViewProps {
   name: string;
+  showCode?: boolean;
 }
 
-export function LiveSplitView({ name }: LiveSplitViewProps) {
+export function LiveSplitView({ name, showCode = true }: LiveSplitViewProps) {
   const { theme: appTheme } = useTheme();
   const isDark = appTheme === 'dark';
 
@@ -185,7 +186,7 @@ export function LiveSplitView({ name }: LiveSplitViewProps) {
     >
       {/* Left pane: live chart */}
       <div style={{
-        width: `${splitRatio * 100}%`,
+        width: showCode ? `${splitRatio * 100}%` : '100%',
         flexShrink: 0,
         overflow: 'auto',
         padding: '16px',
@@ -193,47 +194,51 @@ export function LiveSplitView({ name }: LiveSplitViewProps) {
         <LivePreview code={deferredCode} theme={appTheme} />
       </div>
 
-      {/* Drag handle */}
-      <div
-        style={dragHandleStyle}
-        onPointerDown={handlePointerDown}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#D53F8C';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = isDark ? '#3A3741' : '#DAD9DB';
-        }}
-      />
-
-      {/* Right pane: Monaco editor */}
-      <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-        <MonacoEditor
-          height="100%"
-          language="typescript"
-          theme={isDark ? 'vs-dark' : 'light'}
-          value={code}
-          onChange={handleCodeChange}
-          beforeMount={(monaco) => {
-            // Disable semantic and suggestion diagnostics so Monaco doesn't
-            // show "Cannot find module" errors for injected scope symbols.
-            // Syntax highlighting and basic editing still work normally.
-            monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-              noSemanticValidation: true,
-              noSyntaxValidation: true,
-              noSuggestionDiagnostics: true,
-            });
+      {/* Drag handle — hidden when code panel is closed */}
+      {showCode && (
+        <div
+          style={dragHandleStyle}
+          onPointerDown={handlePointerDown}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#D53F8C';
           }}
-          options={{
-            fontSize: 13,
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            wordWrap: 'on',
-            lineNumbers: 'on',
-            tabSize: 2,
-            padding: { top: 12 },
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = isDark ? '#3A3741' : '#DAD9DB';
           }}
         />
-      </div>
+      )}
+
+      {/* Right pane: Monaco editor — hidden when showCode is false */}
+      {showCode && (
+        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+          <MonacoEditor
+            height="100%"
+            language="typescript"
+            theme={isDark ? 'vs-dark' : 'light'}
+            value={code}
+            onChange={handleCodeChange}
+            beforeMount={(monaco) => {
+              // Disable semantic and suggestion diagnostics so Monaco doesn't
+              // show "Cannot find module" errors for injected scope symbols.
+              // Syntax highlighting and basic editing still work normally.
+              monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+                noSemanticValidation: true,
+                noSyntaxValidation: true,
+                noSuggestionDiagnostics: true,
+              });
+            }}
+            options={{
+              fontSize: 13,
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              wordWrap: 'on',
+              lineNumbers: 'on',
+              tabSize: 2,
+              padding: { top: 12 },
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
