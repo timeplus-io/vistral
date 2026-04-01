@@ -167,6 +167,19 @@ describe('compileTimeSeriesConfig', () => {
     expect(yAxis.labels).toBeUndefined();
   });
 
+  it('should add tooltip formatter when fractionDigits is set', () => {
+    const spec = compileTimeSeriesConfig({ ...baseConfig, fractionDigits: 2 });
+    const items = (spec.tooltip as any)?.items;
+    expect(items).toHaveLength(1);
+    expect(items[0].field).toBe('value');
+    expect(items[0].format(3.14159)).toBe('3.14');
+  });
+
+  it('should not add tooltip when fractionDigits is not set', () => {
+    const spec = compileTimeSeriesConfig(baseConfig);
+    expect(spec.tooltip).toBeUndefined();
+  });
+
   it('should always set animate to false', () => {
     const spec = compileTimeSeriesConfig(baseConfig);
     expect(spec.animate).toBe(false);
@@ -307,6 +320,19 @@ describe('compileBarColumnConfig', () => {
     const spec = compileBarColumnConfig(baseConfig);
     const yAxis = spec.axes?.y as { labels?: unknown };
     expect(yAxis.labels).toBeUndefined();
+  });
+
+  it('should add tooltip formatter when fractionDigits is set', () => {
+    const spec = compileBarColumnConfig({ ...baseConfig, fractionDigits: 1 });
+    const items = (spec.tooltip as any)?.items;
+    expect(items).toHaveLength(1);
+    expect(items[0].field).toBe('value');
+    expect(items[0].format(9.99)).toBe('10.0');
+  });
+
+  it('should not add tooltip when fractionDigits is not set', () => {
+    const spec = compileBarColumnConfig(baseConfig);
+    expect(spec.tooltip).toBeUndefined();
   });
 
   it('should always set animate to false', () => {
