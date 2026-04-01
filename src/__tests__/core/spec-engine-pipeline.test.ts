@@ -11,20 +11,23 @@ describe('buildG2Options — theme integration', () => {
 
   it('uses dark theme colors by default', () => {
     const g2 = buildG2Options(baseSpec, []);
-    expect((g2.theme as any).axis.x.label.fill).toBe('#E5E5E5');
+    // G2 uses flat keys in its theme: labelFill, not axis.x.label.fill
+    expect((g2.theme as any).axis.labelFill).toBe('#E5E5E5');
+    expect((g2.theme as any).axis.labelOpacity).toBe(1);
   });
 
   it('uses light theme colors when spec.theme is "light"', () => {
     const spec: VistralSpec = { ...baseSpec, theme: 'light' };
     const g2 = buildG2Options(spec, []);
-    expect((g2.theme as any).axis.x.label.fill).toBe('#000000');
+    expect((g2.theme as any).axis.labelFill).toBe('#000000');
+    expect((g2.theme as any).axis.labelOpacity).toBe(1);
   });
 
   it('applies a custom VistralTheme object passed via spec.theme', () => {
     const customTheme: VistralTheme = { axis: { label: { color: '#AABBCC' } } };
     const spec: VistralSpec = { ...baseSpec, theme: customTheme };
     const g2 = buildG2Options(spec, []);
-    expect((g2.theme as any).axis.x.label.fill).toBe('#AABBCC');
+    expect((g2.theme as any).axis.labelFill).toBe('#AABBCC');
   });
 
   it('applies a registered custom theme by name', () => {
@@ -34,9 +37,9 @@ describe('buildG2Options — theme integration', () => {
     });
     const spec: VistralSpec = { ...baseSpec, theme: 'test-corporate' };
     const g2 = buildG2Options(spec, []);
-    expect((g2.theme as any).axis.x.grid.stroke).toBe('#FEDCBA');
+    expect((g2.theme as any).axis.gridStroke).toBe('#FEDCBA');
     // Light base preserved for label
-    expect((g2.theme as any).axis.x.label.fill).toBe('#000000');
+    expect((g2.theme as any).axis.labelFill).toBe('#000000');
   });
 
   it('injects tooltip CSS into interaction config', () => {
@@ -180,7 +183,7 @@ describe('buildG2Options', () => {
     // Theme should be applied
     expect(g2.theme).toBeDefined();
     expect(g2.theme.view.viewFill).toBe('transparent');
-    expect(g2.theme.axis.x.label.fill).toBe('#E5E5E5');
+    expect(g2.theme.axis.labelFill).toBe('#E5E5E5');
   });
 
   it('should handle spec with no temporal and no theme', () => {
@@ -208,7 +211,7 @@ describe('buildG2Options', () => {
 
     // No theme specified → defaults to dark
     expect(g2.theme).toBeDefined();
-    expect(g2.theme.axis.x.label.fill).toBe('#E5E5E5');
+    expect(g2.theme.axis.labelFill).toBe('#E5E5E5');
   });
 
   it('should apply frame temporal mode — data pre-filtered, no transform on children', () => {
@@ -238,7 +241,7 @@ describe('buildG2Options', () => {
     expect(g2.children[0].transform).toBeUndefined();
 
     // Theme should be light
-    expect(g2.theme.axis.x.label.fill).toBe('#000000');
+    expect(g2.theme.axis.labelFill).toBe('#000000');
   });
 });
 

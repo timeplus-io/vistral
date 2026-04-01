@@ -35,7 +35,7 @@ import {
 } from './grammar-examples';
 import { Playground } from './Playground';
 import { GrammarPlayground } from './GrammarPlayground';
-import { exampleSources } from './example-sources';
+import { LiveSplitView } from './LiveSplitView';
 
 // Theme context
 export const ThemeContext = createContext<{
@@ -94,8 +94,6 @@ const examples: ExampleItem[] = [
 export default function App() {
   const [selectedExample, setSelectedExample] = useState<number | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
-  const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
-
   const isDark = theme === 'dark';
 
   // Timeplus design guide color tokens
@@ -130,8 +128,6 @@ export default function App() {
   const currentExample = selectedExample !== null ? examples[selectedExample] : null;
   const CurrentExample = currentExample?.component;
   const isPlayground = currentExample?.isPlayground ?? false;
-  const sourceCode = currentExample ? (exampleSources[currentExample.name] || '// Source code not available') : '';
-
   // Separate playgrounds from other examples
   const playgroundExamples = examples.filter(e => e.isPlayground);
   const chartExamples = examples.filter(e => !e.isPlayground && e.category === 'examples');
@@ -140,7 +136,7 @@ export default function App() {
   const renderNavButton = (example: ExampleItem, index: number) => (
     <li key={index} style={{ marginBottom: '4px' }}>
       <button
-        onClick={() => { setSelectedExample(index); setActiveTab('preview'); }}
+        onClick={() => setSelectedExample(index)}
         style={{
           width: '100%',
           textAlign: 'left',
@@ -373,7 +369,7 @@ export default function App() {
                       return (
                         <div
                           key={idx}
-                          onClick={() => { setSelectedExample(idx); setActiveTab('preview'); }}
+                          onClick={() => setSelectedExample(idx)}
                           style={{
                             backgroundColor: colors.containerBg,
                             border: `1px solid ${colors.border}`,
@@ -421,113 +417,29 @@ export default function App() {
             </div>
           ) : (
             <>
-              {/* Header with title and tabs */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '16px',
-              }}>
-                <h2
-                  style={{
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    margin: 0,
-                    color: colors.heading,
-                    lineHeight: '1.4',
-                  }}
-                >
+              {/* Header: title only */}
+              <div style={{ marginBottom: '12px', flexShrink: 0 }}>
+                <h2 style={{
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  margin: 0,
+                  color: colors.heading,
+                  lineHeight: '1.4',
+                }}>
                   {currentExample!.name}
                 </h2>
-
-                {/* Tab buttons */}
-                <div style={{
-                  display: 'flex',
-                  gap: '4px',
-                  padding: '4px',
-                  backgroundColor: isDark ? colors.muted : colors.hoverBg,
-                  borderRadius: '4px',
-                }}>
-                  <button
-                    onClick={() => setActiveTab('preview')}
-                    style={{
-                      padding: '6px 16px',
-                      height: '32px',
-                      backgroundColor: activeTab === 'preview'
-                        ? colors.containerBg
-                        : 'transparent',
-                      color: activeTab === 'preview'
-                        ? colors.heading
-                        : colors.label,
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    Preview
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('code')}
-                    style={{
-                      padding: '6px 16px',
-                      height: '32px',
-                      backgroundColor: activeTab === 'code'
-                        ? colors.containerBg
-                        : 'transparent',
-                      color: activeTab === 'code'
-                        ? colors.heading
-                        : colors.label,
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    Code
-                  </button>
-                </div>
               </div>
 
-              {/* Content area */}
-              <div
-                style={{
-                  flex: 1,
-                  backgroundColor: colors.containerBg,
-                  borderRadius: '4px',
-                  padding: activeTab === 'code' ? '0' : '24px',
-                  border: `1px solid ${colors.border}`,
-                  transition: 'all 0.3s',
-                  overflow: 'auto',
-                  minHeight: 0,
-                }}
-              >
-                {activeTab === 'preview' ? (
-                  CurrentExample && <CurrentExample />
-                ) : (
-                  <pre
-                    style={{
-                      margin: 0,
-                      padding: '24px',
-                      fontSize: '14px',
-                      lineHeight: '1.5',
-                      fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
-                      color: colors.text,
-                      backgroundColor: colors.codeBg,
-                      borderRadius: '4px',
-                      overflow: 'auto',
-                      height: '100%',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    <code>{sourceCode}</code>
-                  </pre>
-                )}
+              {/* Live split view: chart left, editor right */}
+              <div style={{
+                flex: 1,
+                minHeight: 0,
+                border: `1px solid ${colors.border}`,
+                borderRadius: '4px',
+                overflow: 'hidden',
+                backgroundColor: colors.containerBg,
+              }}>
+                <LiveSplitView name={currentExample!.name} />
               </div>
             </>
           )}

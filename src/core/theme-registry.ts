@@ -44,47 +44,63 @@ export function resolveTheme(theme: string | VistralTheme | undefined): VistralT
 /**
  * Convert a resolved VistralTheme into the G2 theme object shape.
  * Replaces both applySpecTheme() and applyChartTheme().
+ *
+ * IMPORTANT: G2 5.x uses *flat* keys in its theme (e.g. `axis.labelFill`,
+ * `axis.labelOpacity`) — NOT the nested `axis.x.label.fill` format.
+ * The default G2 light theme sets `axis.labelOpacity: 0.45` which makes labels
+ * appear gray.  We must override the flat keys to take effect.
  */
 export function buildG2ThemeObject(theme: VistralTheme): Record<string, unknown> {
   const fontSize   = theme.font?.size   ?? 11;
   const fontFamily = theme.font?.family ?? 'Inter, system-ui, sans-serif';
+  const labelColor = theme.axis?.label?.color;
+  const titleColor = theme.axis?.title?.color;
+  const legendLabelColor = theme.legend?.label?.color;
+  const legendTitleColor = theme.legend?.title?.color;
 
-  const buildAxisConfig = () => ({
-    label: {
-      fill:        theme.axis?.label?.color,
-      fontSize:    theme.axis?.label?.size ?? fontSize,
-      fillOpacity: 1,
-      fontFamily,
-    },
-    title: {
-      fill:        theme.axis?.title?.color,
-      fontSize:    theme.axis?.title?.size ?? 12,
-      fontWeight:  theme.axis?.title?.fontWeight ?? 500,
-      fillOpacity: 1,
-      fontFamily,
-    },
-    grid: {
-      stroke:   theme.axis?.grid?.color,
-      lineDash: theme.axis?.grid?.dash,
-    },
-    line: { stroke: theme.axis?.line?.color, strokeOpacity: 1 },
-    tick: { stroke: theme.axis?.tick?.color, strokeOpacity: 1 },
-  });
+  // G2's axis theme uses flat keys.  Setting labelOpacity / titleOpacity to 1
+  // is critical — G2's built-in light theme defaults to alpha45 (0.45) for
+  // labels, which makes them appear gray even when labelFill is black.
+  const axisConfig: Record<string, unknown> = {
+    labelFill:        labelColor,
+    labelOpacity:     1,
+    labelFontSize:    theme.axis?.label?.size ?? fontSize,
+    labelFontFamily:  fontFamily,
+    titleFill:        titleColor,
+    titleOpacity:     1,
+    titleFontSize:    theme.axis?.title?.size ?? 12,
+    titleFontWeight:  theme.axis?.title?.fontWeight ?? 500,
+    gridStroke:       theme.axis?.grid?.color,
+    gridLineDash:     theme.axis?.grid?.dash,
+    lineStroke:       theme.axis?.line?.color,
+    lineStrokeOpacity: 1,
+    tickStroke:       theme.axis?.tick?.color,
+    tickOpacity:      1,
+  };
 
   const g2Theme: Record<string, unknown> = {
     view:  { viewFill: theme.background },
-    label: { fill: theme.axis?.label?.color, fontSize, fillOpacity: 1, fontFamily },
-    axis:  { x: buildAxisConfig(), y: buildAxisConfig() },
+    label: { fill: labelColor, fontSize, fillOpacity: 1, fontFamily },
+    // Flat axis config applies to all axes (x and y).
+    axis:  axisConfig,
+    // Mark-level legend() API uses nested keys; keep for backward compatibility.
     legend: {
-      label:     { fill: theme.legend?.label?.color, fontSize: theme.legend?.label?.size ?? fontSize, fillOpacity: 1 },
-      title:     { fill: theme.legend?.title?.color, fontSize: theme.legend?.title?.size ?? fontSize, fillOpacity: 1 },
-      itemLabel: { fill: theme.legend?.label?.color, fontSize: theme.legend?.label?.size ?? fontSize, fillOpacity: 1 },
-      itemName:  { fill: theme.legend?.label?.color, fontSize: theme.legend?.label?.size ?? fontSize, fillOpacity: 1 },
-      itemValue: { fill: theme.legend?.label?.color, fontSize: theme.legend?.label?.size ?? fontSize, fillOpacity: 1 },
+      label:     { fill: legendLabelColor, fontSize: theme.legend?.label?.size ?? fontSize, fillOpacity: 1 },
+      title:     { fill: legendTitleColor, fontSize: theme.legend?.title?.size ?? fontSize, fillOpacity: 1 },
+      itemLabel: { fill: legendLabelColor, fontSize: theme.legend?.label?.size ?? fontSize, fillOpacity: 1 },
+      itemName:  { fill: legendLabelColor, fontSize: theme.legend?.label?.size ?? fontSize, fillOpacity: 1 },
+      itemValue: { fill: legendLabelColor, fontSize: theme.legend?.label?.size ?? fontSize, fillOpacity: 1 },
     },
+    // legendCategory uses flat keys in G2's theme system.
     legendCategory: {
-      itemLabel: { fill: theme.legend?.label?.color, fillOpacity: 1 },
-      itemName:  { fill: theme.legend?.label?.color, fillOpacity: 1 },
+      itemLabelFill:        legendLabelColor,
+      itemLabelFillOpacity: 1,
+      itemLabelFontSize:    theme.legend?.label?.size ?? fontSize,
+      itemValueFill:        legendLabelColor,
+      itemValueFillOpacity: 1,
+      titleFill:            legendTitleColor,
+      titleFillOpacity:     1,
+      titleFontSize:        theme.legend?.title?.size ?? fontSize,
     },
   };
 

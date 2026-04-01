@@ -71,18 +71,29 @@ describe('buildG2ThemeObject', () => {
 
   it('produces axis label fill from theme', () => {
     const g2 = buildG2ThemeObject(DARK_THEME);
-    expect((g2.axis as any).x.label.fill).toBe('#E5E5E5');
-    expect((g2.axis as any).y.label.fill).toBe('#E5E5E5');
+    // G2 uses flat keys: labelFill / labelOpacity (not nested axis.x.label.fill)
+    expect((g2.axis as any).labelFill).toBe('#E5E5E5');
+    expect((g2.axis as any).labelOpacity).toBe(1);
+  });
+
+  it('produces axis title fill from theme', () => {
+    const g2 = buildG2ThemeObject(DARK_THEME);
+    expect((g2.axis as any).titleFill).toBe('#E5E5E5');
+    expect((g2.axis as any).titleOpacity).toBe(1);
   });
 
   it('produces axis grid stroke from theme', () => {
     const g2 = buildG2ThemeObject(DARK_THEME);
-    expect((g2.axis as any).x.grid.stroke).toBe('#374151');
+    expect((g2.axis as any).gridStroke).toBe('#374151');
   });
 
   it('produces legend label fill from theme', () => {
     const g2 = buildG2ThemeObject(DARK_THEME);
+    // Mark-level legend API uses nested keys
     expect((g2.legend as any).label.fill).toBe('#E5E5E5');
+    // legendCategory uses flat keys (G2 theme system)
+    expect((g2.legendCategory as any).itemLabelFill).toBe('#E5E5E5');
+    expect((g2.legendCategory as any).itemLabelFillOpacity).toBe(1);
   });
 
   it('applies font family to label', () => {
@@ -98,7 +109,7 @@ describe('buildG2ThemeObject', () => {
       axis: { ...DARK_THEME.axis, grid: { color: '#444', dash: [4, 4] } },
     };
     const g2 = buildG2ThemeObject(theme);
-    expect((g2.axis as any).x.grid.lineDash).toEqual([4, 4]);
+    expect((g2.axis as any).gridLineDash).toEqual([4, 4]);
   });
 
   it('g2ThemeOverrides win over compiled values', () => {

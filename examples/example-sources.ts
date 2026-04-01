@@ -922,7 +922,7 @@ function GrammarMultiMark() {
       y: { title: 'Count / sec', grid: true },
     },
     legend: { position: 'bottom', interactive: true },
-    theme: theme as 'dark' |
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -977,7 +977,7 @@ function GrammarBarChart() {
       y: { title: 'Value', grid: true },
     },
     legend: false,
-    theme: theme as 'dark' |
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -1029,7 +1029,7 @@ function GrammarStackedArea() {
       y: { title: 'Count', grid: true },
     },
     legend: { position: 'bottom', interactive: true },
-    theme: theme as 'dark' |
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -1135,7 +1135,7 @@ function GrammarRoseChart() {
       y: { title: false, grid: true },
     },
     legend: { position: 'bottom' },
-    theme: theme as 'dark' |
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -1182,7 +1182,7 @@ function GrammarDonutChart() {
     },
     streaming: { maxItems: 500 },
     legend: { position: 'bottom' },
-    theme: theme as 'dark' |
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -1246,7 +1246,7 @@ function GrammarRadarChart() {
       y: { title: false, grid: true },
     },
     legend: { position: 'bottom', interactive: true },
-    theme: theme as 'dark' |
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -1300,7 +1300,7 @@ function GrammarRadialBar() {
       y: { title: false, grid: true },
     },
     legend: false,
-    theme: theme as 'dark' |
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -1357,7 +1357,7 @@ function GrammarScatterChart() {
       y: { title: 'Throughput (req/s)', grid: true },
     },
     legend: { position: 'bottom', interactive: true },
-    theme: theme as 'dark' |
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -1410,7 +1410,7 @@ function GrammarHeatmap() {
       y: { title: false, grid: false },
     },
     legend: { position: 'bottom' },
-    theme: theme as 'dark' |
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -1481,7 +1481,7 @@ function GrammarTimeSeriesBar() {
       y: { title: 'Requests / sec', grid: true },
     },
     legend: false,
-    theme: theme as 'dark' |
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -1577,7 +1577,7 @@ function GrammarCandlestickChart() {
       y: { title: 'Price ($)', grid: true },
     },
     legend: false,
-    theme: theme as 'dark' |
+    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
