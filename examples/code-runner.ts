@@ -60,28 +60,31 @@ export function buildComponent(
   code: string,
   scope: Record<string, unknown>
 ): React.ComponentType {
-  // Step 1: Babel transform (JSX → React.createElement, strip TS types)
-  const transformed = Babel.transform(code, {
-    presets: ['react', 'typescript'],
-    filename: 'example.tsx',
-  }).code!;
-
-  // Step 2: Strip import statements
-  const noImports = stripImports(transformed);
-
-  // Step 3: Strip export keywords (export function Foo → function Foo)
+  // Step 1: Strip import statements and export keywords BEFORE Babel.
+  // This lets Babel run in script mode (sourceType: 'script'), which prevents
+  // it from emitting any ES module syntax (export/import) that would be a
+  // SyntaxError inside new Function.
+  const noImports = stripImports(code);
   const noExports = noImports.replace(/\bexport\s+(default\s+)?/g, '');
 
-  // Step 4: Find the last component name
-  const componentName = findLastComponentName(noExports);
+  // Step 2: Babel transform (JSX → React.createElement, strip TS types).
+  // sourceType: 'script' ensures clean output with no module-related tokens.
+  const transformed = Babel.transform(noExports, {
+    presets: ['react', 'typescript'],
+    filename: 'example.tsx',
+    sourceType: 'script',
+  }).code!;
+
+  // Step 3: Find the last component name
+  const componentName = findLastComponentName(transformed);
   if (!componentName) {
     throw new Error('No component found in code');
   }
 
-  // Step 5: Execute via new Function with injected scope
+  // Step 4: Execute via new Function with injected scope
   const keys = Object.keys(scope);
   const values = Object.values(scope);
-  const fn = new Function(...keys, `${noExports}\nreturn ${componentName};`);
+  const fn = new Function(...keys, `${transformed}\nreturn ${componentName};`);
 
   return fn(...values) as React.ComponentType;
 }
