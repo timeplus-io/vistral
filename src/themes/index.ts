@@ -9,105 +9,116 @@ export const singleColorPalettes: ColorPalette[] = [
   {
     label: 'red',
     keyColor: 5,
-    keyColorValue: '#FF3B65',
+    keyColorValue: '#FF465F',
     values: [
       '#FFD2D9',
       '#FFB0BF',
       '#FF90A2',
       '#FF6780',
-      '#FF3B65',
-      '#D12D50',
-      '#A31E3B',
-      '#751025',
-      '#470110',
-      '#35010E',
+      '#FF465F',
+      '#D13049',
+      '#A32035',
+      '#751020',
+      '#47010D',
+      '#35010A',
     ],
   },
   {
     label: 'pink',
     keyColor: 5,
-    keyColorValue: '#D53C97',
+    keyColorValue: '#FF73B6',
     values: [
-      '#F5D2E3',
-      '#EDB0CF',
-      '#E590BD',
-      '#D967A4',
-      '#D53C97',
-      '#B52D7F',
-      '#961F68',
-      '#761050',
-      '#560238',
-      '#330124',
+      '#FFE0F0',
+      '#FFC2E0',
+      '#FFA3CF',
+      '#FF8CC2',
+      '#FF73B6',
+      '#D95A97',
+      '#B34278',
+      '#8C2A59',
+      '#66123A',
+      '#400025',
     ],
   },
   {
     label: 'purple',
     keyColor: 5,
-    keyColorValue: '#AC1BB5',
+    keyColorValue: '#B275FF',
     values: [
-      '#EACAEA',
-      '#DAA6DA',
-      '#CB81CC',
-      '#B553BA',
-      '#AC1BB5',
-      '#911698',
-      '#75127C',
-      '#5A0E5F',
-      '#3E0942',
-      '#250528',
+      '#EDD9FF',
+      '#DBBFFF',
+      '#C9A3FF',
+      '#BF8CFF',
+      '#B275FF',
+      '#8F5AD4',
+      '#6C40A9',
+      '#4A277E',
+      '#280E53',
+      '#170538',
     ],
   },
   {
-    label: 'blue',
+    label: 'indigo',
     keyColor: 5,
-    keyColorValue: '#664CFC',
+    keyColorValue: '#8890FF',
     values: [
-      '#D9D3FC',
-      '#BEB4F9',
-      '#A395F8',
-      '#806DF4',
-      '#664CFC',
-      '#523DCE',
-      '#3F2F9F',
-      '#2B2171',
-      '#171242',
-      '#0E0E35',
+      '#D9DBFF',
+      '#BBBFFF',
+      '#9DA3FF',
+      '#9299FF',
+      '#8890FF',
+      '#6068D4',
+      '#3840A9',
+      '#10187E',
+      '#000053',
+      '#000038',
     ],
   },
   {
     label: 'green',
     keyColor: 5,
-    keyColorValue: '#52FFDB',
+    keyColorValue: '#27CCA8',
     values: [
-      '#D5FFF6',
-      '#B8FFF0',
-      '#99FEE9',
-      '#73FEE0',
-      '#52FFDB',
-      '#43D2B4',
-      '#34A68D',
-      '#23AD8F',
-      '#1F8D77',
-      '#113027',
+      '#C5F5EC',
+      '#9DEED9',
+      '#75E7C6',
+      '#4EDDB7',
+      '#27CCA8',
+      '#1FA888',
+      '#178468',
+      '#0F5F48',
+      '#073B28',
+      '#032718',
+    ],
+  },
+  {
+    label: 'teal',
+    keyColor: 5,
+    keyColorValue: '#0BC5EA',
+    values: [
+      '#C5F3FB',
+      '#9DEAF7',
+      '#75DFF3',
+      '#4DD5EF',
+      '#0BC5EA',
+      '#09A0BE',
+      '#077B91',
+      '#055665',
+      '#033038',
+      '#021D22',
     ],
   },
   {
     label: 'orange',
     keyColor: 2,
-    keyColorValue: '#F97316',
-    values: ['#FDBA74', '#FB923C', '#F97316'],
+    keyColorValue: '#FF7C27',
+    values: ['#FFBA8C', '#FF9855', '#FF7C27'],
   },
   {
     label: 'yellow',
     keyColor: 2,
-    keyColorValue: '#EAB308',
-    values: ['#FDE047', '#FACC15', '#EAB308'],
-  },
-  {
-    label: 'cyan',
-    keyColor: 2,
-    keyColorValue: '#06B6D4',
-    values: ['#67E8F9', '#22D3EE', '#06B6D4'],
+    keyColorValue: '#FFBF00',
+    values: ['#FFE380', '#FFD040', '#FFBF00'],
   },
   {
     label: 'gray',
@@ -119,6 +130,21 @@ export const singleColorPalettes: ColorPalette[] = [
 
 // Multi-color palettes for categorical data
 export const multiColorPalettes: ColorPalette[] = [
+  {
+    label: 'Timeplus',
+    keyColor: 0,
+    keyColorValue: '#FF73B6',
+    values: [
+      '#FF73B6', // pink
+      '#8890FF', // indigo
+      '#27CCA8', // green
+      '#FF465F', // red
+      '#0BC5EA', // teal
+      '#B275FF', // purple
+      '#FF7C27', // orange
+      '#FFBF00', // yellow
+    ],
+  },
   {
     label: 'Dawn',
     keyColor: 0,
@@ -256,6 +282,7 @@ export function getSeriesColors(palette: ColorPalette, count: number): string[] 
 }
 
 // Chart Theme Configuration
+/** @deprecated Use VistralTheme and registerTheme from the main package instead. */
 export interface ChartTheme {
   backgroundColor: string;
   textColor: string;
@@ -266,6 +293,7 @@ export interface ChartTheme {
   fontFamily: string;
 }
 
+/** @deprecated Use VistralTheme and registerTheme from the main package instead. */
 export const darkTheme: ChartTheme = {
   backgroundColor: 'transparent',
   textColor: '#E5E5E5',
@@ -276,6 +304,7 @@ export const darkTheme: ChartTheme = {
   fontFamily: 'Inter, system-ui, sans-serif',
 };
 
+/** @deprecated Use VistralTheme and registerTheme from the main package instead. */
 export const lightTheme: ChartTheme = {
   backgroundColor: 'transparent',
   textColor: '#1F2937',
@@ -286,8 +315,10 @@ export const lightTheme: ChartTheme = {
   fontFamily: 'Inter, system-ui, sans-serif',
 };
 
+/** @deprecated Use VistralTheme and registerTheme from the main package instead. */
 export type ThemeName = 'dark' | 'light';
 
+/** @deprecated Use VistralTheme and registerTheme from the main package instead. */
 export function getTheme(name: ThemeName): ChartTheme {
   return name === 'dark' ? darkTheme : lightTheme;
 }

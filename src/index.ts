@@ -151,5 +151,10 @@ export {
   compileBarColumnConfig,
 } from './core';
 
+// Custom theme API
+export { registerTheme, resolveTheme, isDarkTheme } from './core/theme-registry';
+export type { VistralTheme, AxisStyleSpec } from './types/theme';
+export { DARK_THEME, LIGHT_THEME } from './types/theme';
+
 // Default export
 export { StreamChart as default } from './charts';

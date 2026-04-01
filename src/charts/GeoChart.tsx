@@ -5,9 +5,11 @@
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import type { GeoChartConfig, StreamDataSource, ColumnDefinition } from '../types';
+import type { VistralTheme } from '../types/theme';
 import { DEFAULT_MAX_ITEMS } from '../types/spec';
 import { findColumnIndex, rowToArray, applyTemporalFilter } from '../utils';
 import { multiColorPalettes } from '../themes';
+import { isDarkTheme } from '../core/theme-registry';
 
 export interface GeoChartProps {
   /** Chart configuration */
@@ -15,7 +17,7 @@ export interface GeoChartProps {
   /** Data source */
   data: StreamDataSource;
   /** Theme */
-  theme?: 'dark' | 'light';
+  theme?: string | VistralTheme;
   /** Container className */
   className?: string;
   /** Container style */
@@ -423,7 +425,7 @@ export const GeoChart: React.FC<GeoChartProps> = ({
     canvas.height = height;
 
     // Clear canvas with background color
-    ctx.fillStyle = theme === 'dark' ? '#1a1a2e' : '#F3F4F6';
+    ctx.fillStyle = isDarkTheme(theme) ? '#1a1a2e' : '#F3F4F6';
     ctx.fillRect(0, 0, width, height);
 
     const tileSize = 256;
@@ -442,7 +444,7 @@ export const GeoChart: React.FC<GeoChartProps> = ({
     const startTileY = Math.floor(centerTile.y - tilesY / 2);
 
     // Get tile provider
-    const provider = config.tileProvider || (theme === 'dark' ? 'cartodb-dark' : 'cartodb-light');
+    const provider = config.tileProvider || (isDarkTheme(theme) ? 'cartodb-dark' : 'cartodb-light');
 
     // Load and draw tiles
     const tilePromises: Promise<void>[] = [];
@@ -478,7 +480,7 @@ export const GeoChart: React.FC<GeoChartProps> = ({
           })
           .catch(() => {
             // Draw placeholder for failed tiles
-            ctx.fillStyle = theme === 'dark' ? '#2d2d44' : '#E5E7EB';
+            ctx.fillStyle = isDarkTheme(theme) ? '#2d2d44' : '#E5E7EB';
             ctx.fillRect(pixelX, pixelY, tileSize * scale, tileSize * scale);
           });
 
@@ -513,7 +515,7 @@ export const GeoChart: React.FC<GeoChartProps> = ({
         ctx.fill();
 
         // Draw border
-        ctx.strokeStyle = theme === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)';
+        ctx.strokeStyle = isDarkTheme(theme) ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)';
         ctx.lineWidth = 1.5;
         ctx.stroke();
       });
@@ -581,9 +583,9 @@ export const GeoChart: React.FC<GeoChartProps> = ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme === 'dark' ? '#374151' : '#FFFFFF',
-    color: theme === 'dark' ? '#F3F4F6' : '#1F2937',
-    border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
+    backgroundColor: isDarkTheme(theme) ? '#374151' : '#FFFFFF',
+    color: isDarkTheme(theme) ? '#F3F4F6' : '#1F2937',
+    border: `1px solid ${isDarkTheme(theme) ? '#4B5563' : '#E5E7EB'}`,
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '18px',
@@ -599,7 +601,7 @@ export const GeoChart: React.FC<GeoChartProps> = ({
         height: '100%',
         position: 'relative',
         overflow: 'hidden',
-        backgroundColor: theme === 'dark' ? '#1F2937' : '#F3F4F6',
+        backgroundColor: isDarkTheme(theme) ? '#1F2937' : '#F3F4F6',
         ...style,
       }}
       data-testid="geo-chart"
@@ -647,8 +649,8 @@ export const GeoChart: React.FC<GeoChartProps> = ({
             bottom: '10px',
             left: '10px',
             padding: '4px 8px',
-            backgroundColor: theme === 'dark' ? 'rgba(55, 65, 81, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-            color: theme === 'dark' ? '#F3F4F6' : '#1F2937',
+            backgroundColor: isDarkTheme(theme) ? 'rgba(55, 65, 81, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+            color: isDarkTheme(theme) ? '#F3F4F6' : '#1F2937',
             borderRadius: '4px',
             fontSize: '12px',
             fontFamily: 'monospace',
@@ -665,8 +667,8 @@ export const GeoChart: React.FC<GeoChartProps> = ({
           bottom: '10px',
           right: '10px',
           padding: '4px 8px',
-          backgroundColor: theme === 'dark' ? 'rgba(55, 65, 81, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-          color: theme === 'dark' ? '#9CA3AF' : '#6B7280',
+          backgroundColor: isDarkTheme(theme) ? 'rgba(55, 65, 81, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+          color: isDarkTheme(theme) ? '#9CA3AF' : '#6B7280',
           borderRadius: '4px',
           fontSize: '12px',
         }}
@@ -686,7 +688,7 @@ export const GeoChart: React.FC<GeoChartProps> = ({
             flexDirection: 'column',
             alignItems: 'center',
             gap: '8px',
-            color: theme === 'dark' ? '#9CA3AF' : '#6B7280',
+            color: isDarkTheme(theme) ? '#9CA3AF' : '#6B7280',
           }}
         >
           <svg

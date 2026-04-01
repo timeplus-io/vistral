@@ -5,9 +5,11 @@
 
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import type { TableConfig, StreamDataSource, ColumnDefinition } from '../types';
+import type { VistralTheme } from '../types/theme';
 import { DEFAULT_MAX_ITEMS } from '../types/spec';
 import { useChart } from '../hooks';
 import { isNumericColumn, rowToArray, applyTemporalFilter } from '../utils';
+import { isDarkTheme } from '../core/theme-registry';
 
 // Type alias for table cell color config
 type TableCellColorConfig = {
@@ -26,7 +28,7 @@ export interface DataTableProps {
   /** Data source */
   data: StreamDataSource;
   /** Theme */
-  theme?: 'dark' | 'light';
+  theme?: string | VistralTheme;
   /** Container className */
   className?: string;
   /** Container style */
@@ -272,7 +274,7 @@ const TableHeaderCell: React.FC<{
   displayName?: string;
   width: number;
   onResize: (width: number) => void;
-  theme: 'dark' | 'light';
+  theme: string | VistralTheme;
 }> = ({ column, displayName, width, onResize, theme }) => {
   const resizeRef = useRef<HTMLDivElement>(null);
   const [isResizing, setIsResizing] = useState(false);
@@ -324,12 +326,12 @@ const TableHeaderCell: React.FC<{
           bottom: 0,
           width: '8px',
           cursor: 'col-resize',
-          backgroundColor: isResizing ? (theme === 'dark' ? '#3B82F6' : '#2563EB') : 'transparent',
+          backgroundColor: isResizing ? (isDarkTheme(theme) ? '#3B82F6' : '#2563EB') : 'transparent',
           transition: 'background-color 0.2s',
         }}
         onMouseEnter={(e) => {
           if (!isResizing) {
-            e.currentTarget.style.backgroundColor = theme === 'dark' ? '#4B5563' : '#D1D5DB';
+            e.currentTarget.style.backgroundColor = isDarkTheme(theme) ? '#4B5563' : '#D1D5DB';
           }
         }}
         onMouseLeave={(e) => {
@@ -479,7 +481,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`${className || ''} vistral-data-table ${theme === 'dark' ? 'theme-dark' : 'theme-light'}`}
+      className={`${className || ''} vistral-data-table ${isDarkTheme(theme) ? 'theme-dark' : 'theme-light'}`}
       style={{
         width: '100%',
         height: '100%',

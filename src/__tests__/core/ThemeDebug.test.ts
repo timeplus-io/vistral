@@ -1,7 +1,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { getChartThemeColors } from '../../core/chart-utils';
-import { applySpecTheme } from '../../core/spec-engine';
+import { resolveTheme, buildG2ThemeObject } from '../../core/theme-registry';
 
 describe('Theme Color Debug', () => {
     it('should return correct colors for dark theme', () => {
@@ -15,11 +15,11 @@ describe('Theme Color Debug', () => {
     });
 
     it('should produce correct G2 theme spec', () => {
-        const themeSpec = applySpecTheme('dark');
+        const themeSpec = buildG2ThemeObject(resolveTheme('dark'));
         console.log('G2 Theme Spec:', JSON.stringify(themeSpec, null, 2));
 
         // deeply check axis line stroke
-        expect(themeSpec.axis.x.line.stroke).toBeDefined();
-        console.log('Axis X Line Stroke:', themeSpec.axis.x.line.stroke);
+        expect((themeSpec.axis as any).x.line.stroke).toBeDefined();
+        console.log('Axis X Line Stroke:', (themeSpec.axis as any).x.line.stroke);
     });
 });

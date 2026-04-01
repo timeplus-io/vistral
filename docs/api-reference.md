@@ -43,7 +43,7 @@ const spec: VistralSpec = {
 | `tooltip` | `TooltipSpec \| false` | Tooltip configuration or false to hide |
 | `annotations` | `AnnotationSpec[]` | Reference lines, ranges, text annotations |
 | `interactions` | `InteractionSpec[]` | Interactions (tooltip, brush, element highlight, etc.) |
-| `theme` | `'dark' \| 'light'` | Theme. Default: `'dark'` |
+| `theme` | `string \| VistralTheme` | Theme name, registered name, or `VistralTheme` object. Default: `'dark'`. Overridden by the `theme` prop on `VistralChart`. |
 | `animate` | `boolean` | Enable/disable animations. Default: `false` for streaming |
 | `g2Overrides` | `Record<string, unknown>` | Raw G2 options deep-merged on top of compiled output. Overrides always win. |
 
@@ -203,6 +203,7 @@ const ref = useRef<ChartHandle>(null);
 |------|------|-------------|
 | `spec` | `VistralSpec` | **Required.** The visualization specification |
 | `source` | `StreamDataSource` | Initial/declarative data source |
+| `theme` | `string \| VistralTheme` | Theme name, registered name, or `VistralTheme` object. Overrides `spec.theme`. Default: `'dark'`. |
 | `width` | `number` | Explicit width in pixels (defaults to 100% of container) |
 | `height` | `number` | Explicit height in pixels (defaults to 100% of container) |
 | `className` | `string` | CSS class for wrapper div |
@@ -217,6 +218,28 @@ const ref = useRef<ChartHandle>(null);
 | `replace(rows)` | Replace all data, re-render |
 | `clear()` | Empty data buffer, re-render |
 | `g2` | Direct access to G2 Chart instance |
+
+### StreamChart Component
+
+```tsx
+import { StreamChart } from '@timeplus/vistral';
+
+<StreamChart
+  config={config}
+  data={dataSource}
+  theme="dark"
+/>
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `config` | `ChartConfig` | required | Chart configuration (TimeSeriesConfig, BarColumnConfig, etc.) |
+| `data` | `StreamDataSource` | required | Data source with columns and data |
+| `theme` | `string \| VistralTheme` | `'dark'` | Theme name, registered name, or `VistralTheme` object |
+| `showTable` | `boolean` | `false` | Render a data table instead of the chart |
+| `className` | `string` | - | CSS class for wrapper div |
+| `style` | `CSSProperties` | - | Inline styles for wrapper div |
+| `onConfigChange` | `(config: ChartConfig) => void` | - | Called when config changes |
 
 ### Config Compilers
 
@@ -545,12 +568,126 @@ const index = findColumnIndex(columns, 'timestamp');
 
 ## Themes
 
+Themes control the non-data ink of a chart: background, fonts, axis lines, grid, legend, tooltip, and data color palette. They do not change how data is mapped (marks, scales, encodings).
+
 ### Built-in Themes
 
-```tsx
-import { darkTheme, lightTheme, getTheme } from '@timeplus/vistral';
+Two built-in themes are available: `'dark'` (default) and `'light'`. Pass them by name anywhere a theme is accepted.
 
-const theme = getTheme('dark'); // or 'light'
+```tsx
+<VistralChart spec={spec} theme="dark" />
+<VistralChart spec={spec} theme="light" />
+<StreamChart config={config} data={data} theme="light" />
+```
+
+### VistralTheme Interface
+
+```tsx
+import type { VistralTheme, AxisStyleSpec } from '@timeplus/vistral';
+
+interface AxisStyleSpec {
+  label?: { color?: string; size?: number };
+  title?: { color?: string; size?: number; fontWeight?: number };
+  grid?:  { color?: string; dash?: number[] };
+  line?:  { color?: string };
+  tick?:  { color?: string };
+}
+
+interface VistralTheme {
+  extends?: 'dark' | 'light';    // Base theme to inherit from. Default: 'dark'
+  palette?: string[];             // Data series color palette
+  background?: string;            // Chart background color
+  font?: {
+    family?: string;              // Font family string
+    size?: number;                // Base font size in px
+  };
+  axis?: AxisStyleSpec;           // Axis styling (applies to both x and y)
+  legend?: {
+    label?: { color?: string; size?: number };
+    title?: { color?: string; size?: number };
+    background?: string;
+  };
+  tooltip?: {
+    background?: string;
+    text?: { color?: string; size?: number };
+    border?: { color?: string };
+  };
+  g2ThemeOverrides?: Record<string, unknown>; // Raw G2 theme options, merged last
+}
+```
+
+Custom themes deep-merge onto their base (`'dark'` or `'light'`). Only specified fields override the base — unspecified fields inherit.
+
+### registerTheme
+
+Register a named custom theme for reuse across components.
+
+```tsx
+import { registerTheme, type VistralTheme } from '@timeplus/vistral';
+
+// Call once at app startup (module level)
+registerTheme('corporate', {
+  extends: 'light',
+  palette: ['#0066CC', '#FF6600', '#00AA44', '#9900CC'],
+  background: '#F8F9FA',
+  font: { family: 'Roboto, sans-serif', size: 12 },
+  axis: {
+    grid:  { color: '#E0E0E0', dash: [4, 4] },
+    label: { color: '#333333' },
+    line:  { color: '#CCCCCC' },
+    tick:  { color: '#CCCCCC' },
+  },
+  tooltip:  { background: '#FFFFFF', text: { color: '#111111' }, border: { color: '#E0E0E0' } },
+  legend:   { label: { color: '#333333' } },
+} satisfies VistralTheme);
+
+// Use by name
+<VistralChart spec={spec} theme="corporate" />
+<StreamChart config={config} data={data} theme="corporate" />
+```
+
+Built-in names `'dark'` and `'light'` cannot be overwritten.
+
+### Inline Theme Objects
+
+Pass a `VistralTheme` object directly without registering:
+
+```tsx
+const minimalDark: VistralTheme = {
+  palette: ['#FF73B6', '#8890FF', '#27CCA8'],
+  axis: { grid: { color: '#1A1A2E' } },
+};
+
+<VistralChart spec={spec} theme={minimalDark} />
+```
+
+### resolveTheme / isDarkTheme
+
+```tsx
+import { resolveTheme, isDarkTheme, DARK_THEME, LIGHT_THEME } from '@timeplus/vistral';
+
+// Resolve any theme input to a complete VistralTheme
+const resolved = resolveTheme('corporate'); // deep-merged onto its base
+const resolved2 = resolveTheme({ palette: ['#FF0000'] }); // merged onto DARK_THEME
+
+// Check if a theme resolves to dark mode
+isDarkTheme('dark');           // true
+isDarkTheme('light');          // false
+isDarkTheme({ extends: 'light', palette: [...] }); // false
+isDarkTheme(undefined);        // true (defaults to dark)
+
+// Built-in theme objects (Readonly)
+DARK_THEME;  // complete dark VistralTheme
+LIGHT_THEME; // complete light VistralTheme
+```
+
+### Theme Priority
+
+When both `spec.theme` and the component `theme` prop are set, the component prop wins:
+
+```tsx
+// spec.theme is ignored — component prop takes precedence
+<VistralChart spec={{ ...spec, theme: 'light' }} theme="corporate" />
 ```
 
 ### Color Palettes
@@ -558,9 +695,13 @@ const theme = getTheme('dark'); // or 'light'
 ```tsx
 import { multiColorPalettes, singleColorPalettes, findPaletteByLabel } from '@timeplus/vistral';
 
-// Multi-color: 'Dawn', 'Morning', 'Midnight', 'Ocean', 'Sunset'
-// Single-color: 'red', 'pink', 'purple', 'blue', 'green', 'orange', 'yellow', 'cyan', 'gray'
+// Multi-color: 'Timeplus', 'Dawn', 'Morning', 'Midnight', 'Ocean', 'Sunset'
+// Single-color: 'pink', 'red', 'orange', 'yellow', 'green', 'teal', 'indigo', 'purple', 'gray'
 
-const palette = findPaletteByLabel('Ocean');
-// { label: 'Ocean', values: [...], keyColor: 0, keyColorValue: '...' }
+const palette = findPaletteByLabel('Timeplus');
+// { label: 'Timeplus', values: [...], keyColor: 0, keyColorValue: '...' }
 ```
+
+> **Note:** `VistralTheme.palette` sets the data series colors directly and takes precedence over the config-level `colors` field. Use `palette` in a theme when you want the color sequence to be part of a reusable theme definition.
+
+> **Deprecated:** `darkTheme`, `lightTheme`, `getTheme`, and `ChartTheme` from `@timeplus/vistral` are deprecated. Use `DARK_THEME`, `LIGHT_THEME`, `resolveTheme`, and `VistralTheme` instead.
