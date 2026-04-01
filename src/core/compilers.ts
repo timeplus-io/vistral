@@ -65,6 +65,7 @@ export function compileTimeSeriesConfig(
   theme: string | VistralTheme = 'dark'
 ): VistralSpec {
   const { chartType, xAxis, yAxis, color } = config;
+  const digits = config.fractionDigits;
 
   // -- Primary mark ----------------------------------------------------------
   const mark: MarkSpec = {
@@ -88,13 +89,22 @@ export function compileTimeSeriesConfig(
   // Labels
   if (config.dataLabel) {
     const label: LabelSpec = {
-      text: yAxis,
+      text: digits !== undefined
+        ? (datum: Record<string, unknown>) => Number(datum[yAxis]).toFixed(digits)
+        : yAxis,
       overlapHide: true,
     };
     if (config.showAll === false) {
       label.selector = 'last';
     }
     mark.labels = [label];
+  }
+
+  // Tooltip — mark-level so G2's extractTooltip applies valueFormatter per datum
+  if (digits !== undefined) {
+    mark.tooltip = {
+      items: [{ field: yAxis, valueFormatter: (v: unknown) => Number(v).toFixed(digits) }],
+    } as any;
   }
 
   // -- Marks array -----------------------------------------------------------
@@ -159,7 +169,11 @@ export function compileTimeSeriesConfig(
     streaming: { maxItems: config.maxItems ?? DEFAULT_MAX_ITEMS },
     axes: {
       x: { title: config.xTitle || false, grid: false },
-      y: { title: config.yTitle || false, grid: gridY },
+      y: {
+        title: config.yTitle || false,
+        grid: gridY,
+        ...(digits !== undefined ? { labels: { format: (v: unknown) => Number(v).toFixed(digits) } } : {}),
+      },
     },
     legend,
     theme: theme,
@@ -190,6 +204,7 @@ export function compileBarColumnConfig(
 ): VistralSpec {
   const { xAxis, yAxis, color, chartType } = config;
   const isBar = chartType === 'bar';
+  const digits = config.fractionDigits;
 
   // Standard Mapping:
   // xAxis -> Independent Variable (Category) -> x channel (Band scale)
@@ -211,10 +226,19 @@ export function compileBarColumnConfig(
   if (config.dataLabel) {
     mark.labels = [
       {
-        text: yAxis,
+        text: digits !== undefined
+          ? (datum: Record<string, unknown>) => Number(datum[yAxis]).toFixed(digits)
+          : yAxis,
         overlapHide: true,
       },
     ];
+  }
+
+  // Tooltip — mark-level so G2's extractTooltip applies valueFormatter per datum
+  if (digits !== undefined) {
+    mark.tooltip = {
+      items: [{ field: yAxis, valueFormatter: (v: unknown) => Number(v).toFixed(digits) }],
+    } as any;
   }
 
   // -- Transforms ------------------------------------------------------------
@@ -261,7 +285,11 @@ export function compileBarColumnConfig(
     streaming: { maxItems: config.maxItems ?? DEFAULT_MAX_ITEMS },
     axes: {
       x: { title: config.xTitle || false, grid: false },
-      y: { title: config.yTitle || false, grid: gridY },
+      y: {
+        title: config.yTitle || false,
+        grid: gridY,
+        ...(digits !== undefined ? { labels: { format: (v: unknown) => Number(v).toFixed(digits) } } : {}),
+      },
     },
     legend,
     theme: theme,

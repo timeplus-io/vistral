@@ -147,6 +147,39 @@ describe('compileTimeSeriesConfig', () => {
     expect(spec.marks[0].labels![0].selector).toBeUndefined();
   });
 
+  it('should use formatter function for data label when fractionDigits is set', () => {
+    const spec = compileTimeSeriesConfig({ ...baseConfig, dataLabel: true, fractionDigits: 2 });
+    const labelText = spec.marks[0].labels![0].text;
+    expect(typeof labelText).toBe('function');
+    expect((labelText as (d: Record<string, unknown>) => string)({ value: 3.14159 })).toBe('3.14');
+  });
+
+  it('should add y-axis label formatter when fractionDigits is set', () => {
+    const spec = compileTimeSeriesConfig({ ...baseConfig, fractionDigits: 1 });
+    const yAxis = spec.axes?.y as { labels?: { format?: (v: unknown) => string } };
+    expect(typeof yAxis.labels?.format).toBe('function');
+    expect(yAxis.labels!.format!(42.567)).toBe('42.6');
+  });
+
+  it('should not add y-axis label formatter when fractionDigits is not set', () => {
+    const spec = compileTimeSeriesConfig(baseConfig);
+    const yAxis = spec.axes?.y as { labels?: unknown };
+    expect(yAxis.labels).toBeUndefined();
+  });
+
+  it('should add mark-level tooltip valueFormatter when fractionDigits is set', () => {
+    const spec = compileTimeSeriesConfig({ ...baseConfig, fractionDigits: 2 });
+    const items = (spec.marks[0].tooltip as any)?.items;
+    expect(items).toHaveLength(1);
+    expect(items[0].field).toBe('value');
+    expect(items[0].valueFormatter(3.14159)).toBe('3.14');
+  });
+
+  it('should not add mark tooltip when fractionDigits is not set', () => {
+    const spec = compileTimeSeriesConfig(baseConfig);
+    expect(spec.marks[0].tooltip).toBeUndefined();
+  });
+
   it('should always set animate to false', () => {
     const spec = compileTimeSeriesConfig(baseConfig);
     expect(spec.animate).toBe(false);
@@ -267,6 +300,39 @@ describe('compileBarColumnConfig', () => {
     const spec = compileBarColumnConfig(baseConfig);
     expect(spec.scales?.y?.type).toBe('linear');
     expect(spec.scales?.y?.nice).toBe(true);
+  });
+
+  it('should use formatter function for data label when fractionDigits is set', () => {
+    const spec = compileBarColumnConfig({ ...baseConfig, dataLabel: true, fractionDigits: 3 });
+    const labelText = spec.marks[0].labels![0].text;
+    expect(typeof labelText).toBe('function');
+    expect((labelText as (d: Record<string, unknown>) => string)({ value: 1.23456 })).toBe('1.235');
+  });
+
+  it('should add y-axis label formatter when fractionDigits is set', () => {
+    const spec = compileBarColumnConfig({ ...baseConfig, fractionDigits: 0 });
+    const yAxis = spec.axes?.y as { labels?: { format?: (v: unknown) => string } };
+    expect(typeof yAxis.labels?.format).toBe('function');
+    expect(yAxis.labels!.format!(99.9)).toBe('100');
+  });
+
+  it('should not add y-axis label formatter when fractionDigits is not set', () => {
+    const spec = compileBarColumnConfig(baseConfig);
+    const yAxis = spec.axes?.y as { labels?: unknown };
+    expect(yAxis.labels).toBeUndefined();
+  });
+
+  it('should add mark-level tooltip valueFormatter when fractionDigits is set', () => {
+    const spec = compileBarColumnConfig({ ...baseConfig, fractionDigits: 1 });
+    const items = (spec.marks[0].tooltip as any)?.items;
+    expect(items).toHaveLength(1);
+    expect(items[0].field).toBe('value');
+    expect(items[0].valueFormatter(9.99)).toBe('10.0');
+  });
+
+  it('should not add mark tooltip when fractionDigits is not set', () => {
+    const spec = compileBarColumnConfig(baseConfig);
+    expect(spec.marks[0].tooltip).toBeUndefined();
   });
 
   it('should always set animate to false', () => {
