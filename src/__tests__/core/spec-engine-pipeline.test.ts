@@ -1,38 +1,71 @@
 import { describe, it, expect } from 'vitest';
-import { applySpecTheme, buildG2Options, filterDataByTemporal } from '../../core/spec-engine';
+import { buildG2Options, filterDataByTemporal } from '../../core/spec-engine';
+import { registerTheme } from '../../core/theme-registry';
 import type { VistralSpec } from '../../types/spec';
+import type { VistralTheme } from '../../types/theme';
 
-describe('applySpecTheme', () => {
-  it('should return dark theme colors when theme is "dark"', () => {
-    const theme = applySpecTheme('dark');
+describe('buildG2Options — theme integration', () => {
+  const baseSpec: VistralSpec = {
+    marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+  };
 
-    expect(theme.view.viewFill).toBe('transparent');
-    expect(theme.axis.x.label.fill).toBe('#E5E5E5');
-    expect(theme.axis.y.label.fill).toBe('#E5E5E5');
-    expect(theme.axis.x.grid.stroke).toBe('#374151');
-    expect(theme.legend.label.fill).toBe('#E5E5E5');
-    expect(theme.legend.itemValue.fill).toBe('#9CA3AF');
-    expect(theme.label.fill).toBe('#E5E5E5');
-    expect(theme.label.fontSize).toBe(11);
+  it('uses dark theme colors by default', () => {
+    const g2 = buildG2Options(baseSpec, []);
+    expect((g2.theme as any).axis.x.label.fill).toBe('#E5E5E5');
   });
 
-  it('should return light theme colors when theme is "light"', () => {
-    const theme = applySpecTheme('light');
-
-    expect(theme.view.viewFill).toBe('transparent');
-    expect(theme.axis.x.label.fill).toBe('#000000');
-    expect(theme.axis.y.label.fill).toBe('#000000');
-    expect(theme.axis.x.grid.stroke).toBe('#9CA3AF');
-    expect(theme.legend.label.fill).toBe('#000000');
-    expect(theme.legend.itemValue.fill).toBe('#374151');
+  it('uses light theme colors when spec.theme is "light"', () => {
+    const spec: VistralSpec = { ...baseSpec, theme: 'light' };
+    const g2 = buildG2Options(spec, []);
+    expect((g2.theme as any).axis.x.label.fill).toBe('#000000');
   });
 
-  it('should default to dark theme when theme is undefined', () => {
-    const theme = applySpecTheme(undefined);
+  it('applies a custom VistralTheme object passed via spec.theme', () => {
+    const customTheme: VistralTheme = { axis: { label: { color: '#AABBCC' } } };
+    const spec: VistralSpec = { ...baseSpec, theme: customTheme };
+    const g2 = buildG2Options(spec, []);
+    expect((g2.theme as any).axis.x.label.fill).toBe('#AABBCC');
+  });
 
-    expect(theme.view.viewFill).toBe('transparent');
-    expect(theme.axis.x.label.fill).toBe('#E5E5E5');
-    expect(theme.legend.label.fill).toBe('#E5E5E5');
+  it('applies a registered custom theme by name', () => {
+    registerTheme('test-corporate', {
+      extends: 'light',
+      axis: { grid: { color: '#FEDCBA' } },
+    });
+    const spec: VistralSpec = { ...baseSpec, theme: 'test-corporate' };
+    const g2 = buildG2Options(spec, []);
+    expect((g2.theme as any).axis.x.grid.stroke).toBe('#FEDCBA');
+    // Light base preserved for label
+    expect((g2.theme as any).axis.x.label.fill).toBe('#000000');
+  });
+
+  it('injects tooltip CSS into interaction config', () => {
+    const spec: VistralSpec = { ...baseSpec, theme: 'dark' };
+    const g2 = buildG2Options(spec, []);
+    const tooltipCss = (g2.interaction as any)?.tooltip?.css?.['.g2-tooltip'];
+    expect(tooltipCss).toBeDefined();
+    expect(tooltipCss['background-color']).toBe('rgba(0,0,0,0.8)');
+    expect(tooltipCss['color']).toBe('#FFFFFF');
+  });
+
+  it('tooltip CSS uses custom theme colors', () => {
+    const spec: VistralSpec = {
+      ...baseSpec,
+      theme: { tooltip: { background: '#FF0000', text: { color: '#00FF00' } } },
+    };
+    const g2 = buildG2Options(spec, []);
+    const tooltipCss = (g2.interaction as any)?.tooltip?.css?.['.g2-tooltip'];
+    expect(tooltipCss['background-color']).toBe('#FF0000');
+    expect(tooltipCss['color']).toBe('#00FF00');
+  });
+
+  it('spec.g2Overrides still wins over theme', () => {
+    const spec: VistralSpec = {
+      ...baseSpec,
+      g2Overrides: { type: 'cell' },
+    };
+    const g2 = buildG2Options(spec, []);
+    expect(g2.type).toBe('cell');
   });
 });
 

@@ -20,7 +20,8 @@ import type {
   TooltipSpec,
 } from '../types/spec';
 import { parseDateTime, getTimeMask } from '../utils';
-import { getChartThemeColors } from './chart-utils';
+import { resolveTheme, buildG2ThemeObject, buildTooltipCss } from './theme-registry';
+import type { VistralTheme } from '../types/theme';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -284,10 +285,14 @@ export function deepMerge(
  */
 function translateAxes(
   axes: AxesSpec,
-  theme: 'dark' | 'light' = 'dark'
+  theme: VistralTheme
 ): Record<string, any> {
   const result: Record<string, any> = {};
-  const colors = getChartThemeColors(theme);
+  const colors = {
+    text:     theme.axis?.label?.color ?? '#E5E5E5',
+    gridline: theme.axis?.grid?.color  ?? '#374151',
+    line:     theme.axis?.line?.color  ?? '#6B7280',
+  };
 
   for (const channel of ['x', 'y'] as const) {
     const value = axes[channel];
@@ -432,7 +437,8 @@ function translateMark(
  * It produces a plain object that can be handed to `chart.options(result)`.
  */
 export function translateToG2Spec(
-  spec: VistralSpec
+  spec: VistralSpec,
+  resolvedTheme?: VistralTheme
 ): Record<string, any> {
   const g2: Record<string, any> = {
     type: 'view',
@@ -475,7 +481,7 @@ export function translateToG2Spec(
     const effectiveAxes = shouldSwapAxes
       ? { ...spec.axes, x: spec.axes.y, y: spec.axes.x }
       : spec.axes;
-    g2.axis = translateAxes(effectiveAxes, spec.theme);
+    g2.axis = translateAxes(effectiveAxes, resolvedTheme ?? resolveTheme(spec.theme));
   }
 
   // Legend
@@ -483,7 +489,10 @@ export function translateToG2Spec(
     if (spec.legend === false) {
       g2.legend = false;
     } else {
-      const colors = getChartThemeColors(spec.theme ?? 'dark');
+      const thm = resolvedTheme ?? resolveTheme(spec.theme);
+      const colors = {
+        text: thm.legend?.label?.color ?? thm.axis?.label?.color ?? '#E5E5E5',
+      };
       g2.legend = {
         color: {
           position: spec.legend.position,
@@ -578,52 +587,6 @@ export function translateToG2Spec(
   g2.children = children;
 
   return g2;
-}
-
-// ---------------------------------------------------------------------------
-// Theme
-// ---------------------------------------------------------------------------
-
-/**
- * Build a G2 theme configuration object from a Vistral theme name.
- * Defaults to 'dark' when the theme argument is undefined.
- */
-export function applySpecTheme(
-  theme: 'dark' | 'light' | undefined
-): Record<string, any> {
-  const colors = getChartThemeColors(theme ?? 'dark');
-
-  return {
-    view: { viewFill: colors.background },
-    label: { fill: colors.text, fontSize: 11, fillOpacity: 1 },
-    axis: {
-      x: {
-        line: { stroke: colors.line, strokeOpacity: 1 },
-        tick: { stroke: colors.line, strokeOpacity: 1 },
-        label: { fill: colors.text, fontSize: 11, fillOpacity: 1 },
-        title: { fill: colors.text, fontSize: 12, fontWeight: 500, fillOpacity: 1 },
-        grid: { stroke: colors.gridline },
-      },
-      y: {
-        line: { stroke: colors.line, strokeOpacity: 1 },
-        tick: { stroke: colors.line, strokeOpacity: 1 },
-        label: { fill: colors.text, fontSize: 11, fillOpacity: 1 },
-        title: { fill: colors.text, fontSize: 12, fontWeight: 500, fillOpacity: 1 },
-        grid: { stroke: colors.gridline },
-      },
-    },
-    legend: {
-      label: { fill: colors.text, fontSize: 12, fillOpacity: 1 },
-      title: { fill: colors.text, fontSize: 12, fillOpacity: 1 },
-      itemLabel: { fill: colors.text, fontSize: 12, fillOpacity: 1 },
-      itemName: { fill: colors.text, fontSize: 12, fillOpacity: 1 },
-      itemValue: { fill: colors.textSecondary, fontSize: 12, fillOpacity: 1 },
-    },
-    legendCategory: {
-      itemLabel: { fill: colors.text, fillOpacity: 1 },
-      itemName: { fill: colors.text, fillOpacity: 1 },
-    },
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -869,8 +832,20 @@ export function buildG2Options(
   }
 
   // Translate spec to G2 (only visual transforms like stackY/dodgeX reach G2)
-  const g2Spec = translateToG2Spec(spec);
-  g2Spec.theme = applySpecTheme(spec.theme);
+  const resolvedTheme = resolveTheme(spec.theme);
+  const g2Spec = translateToG2Spec(spec, resolvedTheme);
+  g2Spec.theme = buildG2ThemeObject(resolvedTheme);
+
+  // Inject tooltip CSS into interaction config
+  const tooltipCss = buildTooltipCss(resolvedTheme);
+  const existingInteraction = (g2Spec.interaction as Record<string, unknown>) ?? {};
+  g2Spec.interaction = {
+    ...existingInteraction,
+    tooltip: {
+      mount: typeof document !== 'undefined' ? document.body : undefined,
+      css: { '.g2-tooltip': tooltipCss },
+    },
+  };
 
   // Attach filtered data at the view level.  Child marks inherit from the
   // view; annotations that already carry their own `data` (set by

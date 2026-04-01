@@ -233,6 +233,8 @@ export interface InteractionSpec {
 // Top-level spec
 // ---------------------------------------------------------------------------
 
+import type { VistralTheme } from './theme';
+
 /**
  * VistralSpec — the top-level declarative specification for a streaming
  * visualization. This is the single object a user hands to the library.
@@ -256,8 +258,8 @@ export interface VistralSpec {
   legend?: LegendSpec | false;
   /** Tooltip configuration, or false to disable. */
   tooltip?: TooltipSpec | false;
-  /** Theme name. */
-  theme?: 'dark' | 'light';
+  /** Theme — built-in name ('dark'|'light'), registered custom name, or a VistralTheme object. */
+  theme?: string | VistralTheme;
   /** Annotations overlaid on the chart. */
   annotations?: AnnotationSpec[];
   /** Interaction behaviours. */
