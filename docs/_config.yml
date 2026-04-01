@@ -1,18 +1,14 @@
 # Jekyll configuration for GitHub Pages
-# Code examples in plan/spec docs use JSX/TS syntax with {{ }} which conflicts
-# with Liquid template processing.  Setting error_mode to 'warn' prevents these
-# from crashing the build, and render_with_liquid: false skips Liquid entirely
-# for files in the plans and superpowers directories.
+# Claude-generated docs (plans, specs) live under claude/ and contain
+# JSX/TS code with {{ }} syntax that conflicts with Liquid templates.
+# render_with_liquid: false suppresses this for the claude/ subtree.
+# error_mode: warn prevents other Liquid issues from failing the build.
 
 liquid:
   error_mode: warn
 
 defaults:
   - scope:
-      path: "plans"
-    values:
-      render_with_liquid: false
-  - scope:
-      path: "superpowers"
+      path: "claude"
     values:
       render_with_liquid: false
