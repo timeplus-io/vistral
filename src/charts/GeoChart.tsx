@@ -5,6 +5,7 @@
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import type { GeoChartConfig, StreamDataSource, ColumnDefinition } from '../types';
+import type { VistralTheme } from '../types/theme';
 import { DEFAULT_MAX_ITEMS } from '../types/spec';
 import { findColumnIndex, rowToArray, applyTemporalFilter } from '../utils';
 import { multiColorPalettes } from '../themes';
@@ -15,7 +16,7 @@ export interface GeoChartProps {
   /** Data source */
   data: StreamDataSource;
   /** Theme */
-  theme?: 'dark' | 'light';
+  theme?: string | VistralTheme;
   /** Container className */
   className?: string;
   /** Container style */

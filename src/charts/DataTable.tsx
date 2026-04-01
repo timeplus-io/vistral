@@ -5,6 +5,7 @@
 
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import type { TableConfig, StreamDataSource, ColumnDefinition } from '../types';
+import type { VistralTheme } from '../types/theme';
 import { DEFAULT_MAX_ITEMS } from '../types/spec';
 import { useChart } from '../hooks';
 import { isNumericColumn, rowToArray, applyTemporalFilter } from '../utils';
@@ -26,7 +27,7 @@ export interface DataTableProps {
   /** Data source */
   data: StreamDataSource;
   /** Theme */
-  theme?: 'dark' | 'light';
+  theme?: string | VistralTheme;
   /** Container className */
   className?: string;
   /** Container style */
@@ -272,7 +273,7 @@ const TableHeaderCell: React.FC<{
   displayName?: string;
   width: number;
   onResize: (width: number) => void;
-  theme: 'dark' | 'light';
+  theme: string | VistralTheme;
 }> = ({ column, displayName, width, onResize, theme }) => {
   const resizeRef = useRef<HTMLDivElement>(null);
   const [isResizing, setIsResizing] = useState(false);

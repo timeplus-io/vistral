@@ -14,6 +14,7 @@ import type {
   TableConfig,
   GeoChartConfig,
 } from '../types';
+import type { VistralTheme } from '../types/theme';
 import { SingleValueChart } from './SingleValueChart';
 import { MultipleValueChart } from './MultipleValueChart';
 import { DataTable } from './DataTable';
@@ -27,7 +28,7 @@ export interface StreamChartProps {
   /** Data source with columns and data */
   data: StreamDataSource;
   /** Color theme */
-  theme?: 'dark' | 'light';
+  theme?: string | VistralTheme;
   /** Show data table instead of chart */
   showTable?: boolean;
   /** Container className */
@@ -84,10 +85,10 @@ function isGeoConfig(config: ChartConfig): config is GeoChartConfig {
  * Error Boundary for chart rendering errors
  */
 class ChartErrorBoundary extends React.Component<
-  { children: React.ReactNode; theme: 'dark' | 'light' },
+  { children: React.ReactNode; theme: string | VistralTheme },
   { hasError: boolean; error: Error | null }
 > {
-  constructor(props: { children: React.ReactNode; theme: 'dark' | 'light' }) {
+  constructor(props: { children: React.ReactNode; theme: string | VistralTheme }) {
     super(props);
     this.state = { hasError: false, error: null };
   }
@@ -150,7 +151,7 @@ class ChartErrorBoundary extends React.Component<
 /**
  * Placeholder for unsupported chart types
  */
-const UnsupportedChart: React.FC<{ chartType: string; theme: 'dark' | 'light' }> = ({
+const UnsupportedChart: React.FC<{ chartType: string; theme: string | VistralTheme }> = ({
   chartType,
   theme,
 }) => (

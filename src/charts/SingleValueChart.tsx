@@ -5,6 +5,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { SingleValueConfig, StreamDataSource } from '../types';
+import type { VistralTheme } from '../types/theme';
 import { singleColorPalettes } from '../themes';
 import { useDataSource, useSparklineData, useChart } from '../hooks';
 import { clamp } from '../utils';
@@ -15,7 +16,7 @@ export interface SingleValueChartProps {
   /** Data source */
   data: StreamDataSource;
   /** Theme */
-  theme?: 'dark' | 'light';
+  theme?: string | VistralTheme;
   /** Container className */
   className?: string;
   /** Container style */
