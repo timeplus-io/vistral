@@ -8,6 +8,7 @@ import type { MultipleValueConfig, StreamDataSource } from '../types';
 import type { VistralTheme } from '../types/theme';
 import { singleColorPalettes } from '../themes';
 import { useChart } from '../hooks';
+import { isDarkTheme } from '../core/theme-registry';
 import { clamp } from '../utils';
 
 export interface MultipleValueChartProps {
@@ -271,7 +272,7 @@ export const MultipleValueChart: React.FC<MultipleValueChartProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: theme === 'dark' ? '#9CA3AF' : '#6B7280',
+                    color: isDarkTheme(theme) ? '#9CA3AF' : '#6B7280',
                     ...style,
                 }}
                 data-testid="multiple-value-chart"
@@ -341,7 +342,7 @@ export const MultipleValueChart: React.FC<MultipleValueChartProps> = ({
                     <div key={k} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0 16px' }}>
                         {/* Title / Key */}
                         <div style={{
-                            color: theme === 'dark' ? '#D1D5DB' : '#4B5563',
+                            color: isDarkTheme(theme) ? '#D1D5DB' : '#4B5563',
                             fontSize: `${Math.max(12, fontSize / 4)}px`,
                             fontWeight: 600,
                             marginBottom: '8px',
@@ -379,7 +380,7 @@ export const MultipleValueChart: React.FC<MultipleValueChartProps> = ({
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         gap: '4px',
-                                        color: state.displayedDelta > 0 ? increaseColor : state.displayedDelta < 0 ? decreaseColor : theme === 'dark' ? '#6B7280' : '#9CA3AF',
+                                        color: state.displayedDelta > 0 ? increaseColor : state.displayedDelta < 0 ? decreaseColor : isDarkTheme(theme) ? '#6B7280' : '#9CA3AF',
                                         marginTop: '8px',
                                         minHeight: `${Math.ceil(fontSize / 3) + 4}px`,
                                     }}
@@ -391,7 +392,7 @@ export const MultipleValueChart: React.FC<MultipleValueChartProps> = ({
                                             borderStyle: 'solid',
                                             borderWidth: state.displayedDelta >= 0 ? '0 4px 8px 4px' : '8px 4px 0 4px',
                                             borderColor: state.displayedDelta >= 0
-                                                ? `transparent transparent ${state.displayedDelta > 0 ? increaseColor : (theme === 'dark' ? '#6B7280' : '#9CA3AF')} transparent`
+                                                ? `transparent transparent ${state.displayedDelta > 0 ? increaseColor : (isDarkTheme(theme) ? '#6B7280' : '#9CA3AF')} transparent`
                                                 : `${decreaseColor} transparent transparent transparent`,
                                         }}
                                     />

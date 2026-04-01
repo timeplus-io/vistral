@@ -21,6 +21,7 @@ import { DataTable } from './DataTable';
 import { GeoChart } from './GeoChart';
 import { VistralChart } from './VistralChart';
 import { compileTimeSeriesConfig, compileBarColumnConfig } from '../core/compilers';
+import { isDarkTheme } from '../core/theme-registry';
 
 export interface StreamChartProps {
   /** Chart configuration */
@@ -111,8 +112,8 @@ class ChartErrorBoundary extends React.Component<
             justifyContent: 'center',
             padding: '24px',
             textAlign: 'center',
-            color: theme === 'dark' ? '#F87171' : '#DC2626',
-            backgroundColor: theme === 'dark' ? 'rgba(127, 29, 29, 0.1)' : 'rgba(254, 226, 226, 0.5)',
+            color: isDarkTheme(theme) ? '#F87171' : '#DC2626',
+            backgroundColor: isDarkTheme(theme) ? 'rgba(127, 29, 29, 0.1)' : 'rgba(254, 226, 226, 0.5)',
             borderRadius: '8px',
           }}
         >
@@ -135,7 +136,7 @@ class ChartErrorBoundary extends React.Component<
             style={{
               marginTop: '8px',
               fontSize: '12px',
-              color: theme === 'dark' ? '#FCA5A5' : '#F87171',
+              color: isDarkTheme(theme) ? '#FCA5A5' : '#F87171',
             }}
           >
             {this.state.error?.message || 'Unknown error'}
@@ -165,8 +166,8 @@ const UnsupportedChart: React.FC<{ chartType: string; theme: string | VistralThe
       justifyContent: 'center',
       padding: '24px',
       textAlign: 'center',
-      color: theme === 'dark' ? '#FCD34D' : '#D97706',
-      backgroundColor: theme === 'dark' ? 'rgba(120, 53, 15, 0.1)' : 'rgba(254, 243, 199, 0.5)',
+      color: isDarkTheme(theme) ? '#FCD34D' : '#D97706',
+      backgroundColor: isDarkTheme(theme) ? 'rgba(120, 53, 15, 0.1)' : 'rgba(254, 243, 199, 0.5)',
       borderRadius: '8px',
     }}
   >
@@ -191,7 +192,7 @@ const UnsupportedChart: React.FC<{ chartType: string; theme: string | VistralThe
       style={{
         marginTop: '8px',
         fontSize: '12px',
-        color: theme === 'dark' ? '#FDE68A' : '#F59E0B',
+        color: isDarkTheme(theme) ? '#FDE68A' : '#F59E0B',
       }}
     >
       Supported types: line, area, bar, column, singleValue, table, geo

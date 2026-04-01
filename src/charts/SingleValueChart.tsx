@@ -8,6 +8,7 @@ import type { SingleValueConfig, StreamDataSource } from '../types';
 import type { VistralTheme } from '../types/theme';
 import { singleColorPalettes } from '../themes';
 import { useDataSource, useSparklineData, useChart } from '../hooks';
+import { isDarkTheme } from '../core/theme-registry';
 import { clamp } from '../utils';
 
 export interface SingleValueChartProps {
@@ -227,7 +228,7 @@ export const SingleValueChart: React.FC<SingleValueChartProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: theme === 'dark' ? '#9CA3AF' : '#6B7280',
+          color: isDarkTheme(theme) ? '#9CA3AF' : '#6B7280',
           ...style,
         }}
         data-testid="single-value-chart"
@@ -314,7 +315,7 @@ export const SingleValueChart: React.FC<SingleValueChartProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             gap: '4px',
-            color: displayedDelta > 0 ? increaseColor : displayedDelta < 0 ? decreaseColor : theme === 'dark' ? '#6B7280' : '#9CA3AF',
+            color: displayedDelta > 0 ? increaseColor : displayedDelta < 0 ? decreaseColor : isDarkTheme(theme) ? '#6B7280' : '#9CA3AF',
             marginTop: '8px',
             minHeight: `${Math.ceil(fontSize / 3) + 4}px`,
           }}
@@ -326,7 +327,7 @@ export const SingleValueChart: React.FC<SingleValueChartProps> = ({
               borderStyle: 'solid',
               borderWidth: displayedDelta >= 0 ? '0 4px 8px 4px' : '8px 4px 0 4px',
               borderColor: displayedDelta >= 0
-                ? `transparent transparent ${displayedDelta > 0 ? increaseColor : (theme === 'dark' ? '#6B7280' : '#9CA3AF')} transparent`
+                ? `transparent transparent ${displayedDelta > 0 ? increaseColor : (isDarkTheme(theme) ? '#6B7280' : '#9CA3AF')} transparent`
                 : `${decreaseColor} transparent transparent transparent`,
             }}
           />

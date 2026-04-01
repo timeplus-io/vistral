@@ -95,6 +95,25 @@ export function buildG2ThemeObject(theme: VistralTheme): Record<string, unknown>
 }
 
 /**
+ * Returns true if the theme resolves to dark mode.
+ * - undefined or string 'dark' → true
+ * - string 'light' → false
+ * - other string → resolves via registry, checks extends field (defaults to 'dark')
+ * - VistralTheme object → checks extends field (defaults to 'dark')
+ */
+export function isDarkTheme(theme: string | VistralTheme | undefined): boolean {
+  if (theme === undefined || theme === 'dark') return true;
+  if (theme === 'light') return false;
+  if (typeof theme === 'string') {
+    // For registered named themes, resolve and check extends
+    const resolved = resolveTheme(theme);
+    return (resolved.extends ?? 'dark') !== 'light';
+  }
+  // VistralTheme object — check extends field
+  return (theme.extends ?? 'dark') !== 'light';
+}
+
+/**
  * Build the tooltip CSS object from a resolved theme, for injection into
  * G2's interaction config.
  */

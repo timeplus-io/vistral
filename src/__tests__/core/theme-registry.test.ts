@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { registerTheme, resolveTheme, buildG2ThemeObject, buildTooltipCss } from '../../core/theme-registry';
+import { registerTheme, resolveTheme, buildG2ThemeObject, buildTooltipCss, isDarkTheme } from '../../core/theme-registry';
 import { DARK_THEME, LIGHT_THEME } from '../../types/theme';
 import type { VistralTheme } from '../../types/theme';
 
@@ -115,6 +115,36 @@ describe('buildG2ThemeObject', () => {
     const before = JSON.stringify(theme);
     buildG2ThemeObject(theme);
     expect(JSON.stringify(theme)).toBe(before);
+  });
+});
+
+describe('isDarkTheme', () => {
+  it('returns true for undefined', () => {
+    expect(isDarkTheme(undefined)).toBe(true);
+  });
+
+  it('returns true for "dark"', () => {
+    expect(isDarkTheme('dark')).toBe(true);
+  });
+
+  it('returns false for "light"', () => {
+    expect(isDarkTheme('light')).toBe(false);
+  });
+
+  it('returns false for VistralTheme object with extends: "light"', () => {
+    expect(isDarkTheme({ extends: 'light' })).toBe(false);
+  });
+
+  it('returns true for VistralTheme object with extends: "dark"', () => {
+    expect(isDarkTheme({ extends: 'dark' })).toBe(true);
+  });
+
+  it('returns true for VistralTheme object with no extends (defaults to dark)', () => {
+    expect(isDarkTheme({})).toBe(true);
+  });
+
+  it('returns true for VistralTheme object with other fields but no extends', () => {
+    expect(isDarkTheme({ palette: ['red'] })).toBe(true);
   });
 });
 
