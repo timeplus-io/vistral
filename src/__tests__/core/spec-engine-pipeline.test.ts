@@ -208,3 +208,71 @@ describe('buildG2Options', () => {
     expect(g2.theme.axis.x.label.fill).toBe('#000000');
   });
 });
+
+describe('buildG2Options — g2Overrides', () => {
+  it('should deep-merge g2Overrides on top of compiled G2 spec (override wins at leaf)', () => {
+    const spec: VistralSpec = {
+      marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+      axes: { y: { grid: true } },
+      g2Overrides: {
+        axis: { y: { tickCount: 5 } },
+      },
+    };
+
+    const g2 = buildG2Options(spec, []);
+
+    // Compiled axis.y props still present
+    expect(g2.axis.y.grid).toBe(true);
+    // g2Overrides value merged in
+    expect(g2.axis.y.tickCount).toBe(5);
+  });
+
+  it('should replace arrays in g2Overrides rather than merging them', () => {
+    const spec: VistralSpec = {
+      marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+      g2Overrides: {
+        customArray: [10, 20, 30],
+      },
+    };
+
+    const g2 = buildG2Options(spec, []);
+
+    expect(g2.customArray).toEqual([10, 20, 30]);
+  });
+
+  it('should let g2Overrides override a scalar value set by compilation', () => {
+    const spec: VistralSpec = {
+      marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+      g2Overrides: {
+        type: 'cell', // overrides the compiled 'view'
+      },
+    };
+
+    const g2 = buildG2Options(spec, []);
+
+    expect(g2.type).toBe('cell');
+  });
+
+  it('should not mutate the spec.g2Overrides object', () => {
+    const overrides = { axis: { y: { tickCount: 5 } } };
+    const spec: VistralSpec = {
+      marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+      g2Overrides: overrides,
+    };
+
+    buildG2Options(spec, []);
+
+    expect(overrides).toEqual({ axis: { y: { tickCount: 5 } } });
+  });
+
+  it('should return unchanged output when g2Overrides is undefined', () => {
+    const spec: VistralSpec = {
+      marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+    };
+
+    const g2 = buildG2Options(spec, []);
+
+    expect(g2.type).toBe('view');
+    expect(g2.children).toHaveLength(1);
+  });
+});

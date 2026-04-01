@@ -243,6 +243,43 @@ function translateTooltip(
 }
 
 /**
+ * Recursively merge `overrides` on top of `target`.
+ * - Plain objects: keys are merged recursively (overrides win at leaf).
+ * - Arrays: the overrides array replaces the target array entirely.
+ * - Primitives / functions: the overrides value replaces the target value.
+ * The target is never mutated; a new object is returned.
+ */
+function deepMerge(
+  target: Record<string, any>,
+  overrides: Record<string, unknown>
+): Record<string, any> {
+  const result: Record<string, any> = { ...target };
+
+  for (const key of Object.keys(overrides)) {
+    const overrideVal = overrides[key];
+    const targetVal = result[key];
+
+    if (
+      overrideVal !== null &&
+      typeof overrideVal === 'object' &&
+      !Array.isArray(overrideVal) &&
+      targetVal !== null &&
+      typeof targetVal === 'object' &&
+      !Array.isArray(targetVal)
+    ) {
+      result[key] = deepMerge(
+        targetVal as Record<string, any>,
+        overrideVal as Record<string, unknown>
+      );
+    } else {
+      result[key] = overrideVal;
+    }
+  }
+
+  return result;
+}
+
+/**
  * Translate AxesSpec to G2 axis format.
  */
 function translateAxes(
@@ -917,6 +954,10 @@ export function buildG2Options(
         }
       }
     }
+  }
+
+  if (spec.g2Overrides) {
+    return deepMerge(g2Spec, spec.g2Overrides);
   }
 
   return g2Spec;

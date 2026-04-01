@@ -264,4 +264,27 @@ export interface VistralSpec {
   interactions?: InteractionSpec[];
   /** Enable/disable animation globally. */
   animate?: boolean;
+  /**
+   * Raw G2 options deep-merged on top of the compiled output. Values in
+   * g2Overrides always win. Arrays replace rather than merge.
+   *
+   * Use this to access any G2 option that VistralSpec does not model directly.
+   *
+   * @example
+   * // Control axis tick count
+   * g2Overrides: { axis: { y: { tickCount: 5 } } }
+   *
+   * @example
+   * // Custom tooltip value formatter (issue #39)
+   * g2Overrides: {
+   *   tooltip: {
+   *     items: [{ channel: 'y', name: 'Throughput', valueFormatter: (v) => formatBps(Number(v)) }]
+   *   }
+   * }
+   *
+   * @example
+   * // View padding
+   * g2Overrides: { paddingLeft: 60 }
+   */
+  g2Overrides?: Record<string, unknown>;
 }
