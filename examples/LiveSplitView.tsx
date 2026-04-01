@@ -123,6 +123,10 @@ export function LiveSplitView({ name }: LiveSplitViewProps) {
   const isDragging = useRef(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
 
+  useEffect(() => {
+    return () => clearTimeout(debounceTimer.current);
+  }, []);
+
   // Reset code when navigating to a different example
   useEffect(() => {
     const initial = exampleSources[name] ?? '// Source not available';
