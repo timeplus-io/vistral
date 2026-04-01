@@ -167,17 +167,17 @@ describe('compileTimeSeriesConfig', () => {
     expect(yAxis.labels).toBeUndefined();
   });
 
-  it('should add tooltip formatter when fractionDigits is set', () => {
+  it('should add mark-level tooltip valueFormatter when fractionDigits is set', () => {
     const spec = compileTimeSeriesConfig({ ...baseConfig, fractionDigits: 2 });
-    const items = (spec.tooltip as any)?.items;
+    const items = (spec.marks[0].tooltip as any)?.items;
     expect(items).toHaveLength(1);
     expect(items[0].field).toBe('value');
-    expect(items[0].format(3.14159)).toBe('3.14');
+    expect(items[0].valueFormatter(3.14159)).toBe('3.14');
   });
 
-  it('should not add tooltip when fractionDigits is not set', () => {
+  it('should not add mark tooltip when fractionDigits is not set', () => {
     const spec = compileTimeSeriesConfig(baseConfig);
-    expect(spec.tooltip).toBeUndefined();
+    expect(spec.marks[0].tooltip).toBeUndefined();
   });
 
   it('should always set animate to false', () => {
@@ -322,17 +322,17 @@ describe('compileBarColumnConfig', () => {
     expect(yAxis.labels).toBeUndefined();
   });
 
-  it('should add tooltip formatter when fractionDigits is set', () => {
+  it('should add mark-level tooltip valueFormatter when fractionDigits is set', () => {
     const spec = compileBarColumnConfig({ ...baseConfig, fractionDigits: 1 });
-    const items = (spec.tooltip as any)?.items;
+    const items = (spec.marks[0].tooltip as any)?.items;
     expect(items).toHaveLength(1);
     expect(items[0].field).toBe('value');
-    expect(items[0].format(9.99)).toBe('10.0');
+    expect(items[0].valueFormatter(9.99)).toBe('10.0');
   });
 
-  it('should not add tooltip when fractionDigits is not set', () => {
+  it('should not add mark tooltip when fractionDigits is not set', () => {
     const spec = compileBarColumnConfig(baseConfig);
-    expect(spec.tooltip).toBeUndefined();
+    expect(spec.marks[0].tooltip).toBeUndefined();
   });
 
   it('should always set animate to false', () => {

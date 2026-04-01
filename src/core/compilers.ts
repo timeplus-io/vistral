@@ -100,6 +100,13 @@ export function compileTimeSeriesConfig(
     mark.labels = [label];
   }
 
+  // Tooltip — mark-level so G2's extractTooltip applies valueFormatter per datum
+  if (digits !== undefined) {
+    mark.tooltip = {
+      items: [{ field: yAxis, valueFormatter: (v: unknown) => Number(v).toFixed(digits) }],
+    } as any;
+  }
+
   // -- Marks array -----------------------------------------------------------
   const marks: MarkSpec[] = [mark];
 
@@ -150,11 +157,6 @@ export function compileTimeSeriesConfig(
       ? (false as const)
       : { position: 'bottom' as const, interactive: true };
 
-  // -- Tooltip ---------------------------------------------------------------
-  const tooltip = digits !== undefined
-    ? { items: [{ field: yAxis, format: (v: unknown) => Number(v).toFixed(digits) }] }
-    : undefined;
-
   // -- Assemble spec ---------------------------------------------------------
   const spec: VistralSpec = {
     marks,
@@ -173,7 +175,6 @@ export function compileTimeSeriesConfig(
         ...(digits !== undefined ? { labels: { format: (v: unknown) => Number(v).toFixed(digits) } } : {}),
       },
     },
-    ...(tooltip ? { tooltip } : {}),
     legend,
     theme: theme,
     animate: false,
@@ -233,6 +234,13 @@ export function compileBarColumnConfig(
     ];
   }
 
+  // Tooltip — mark-level so G2's extractTooltip applies valueFormatter per datum
+  if (digits !== undefined) {
+    mark.tooltip = {
+      items: [{ field: yAxis, valueFormatter: (v: unknown) => Number(v).toFixed(digits) }],
+    } as any;
+  }
+
   // -- Transforms ------------------------------------------------------------
   const transforms: TransformSpec[] = [];
   if (color) {
@@ -267,11 +275,6 @@ export function compileBarColumnConfig(
       ? (false as const)
       : { position: 'bottom' as const, interactive: true };
 
-  // -- Tooltip ---------------------------------------------------------------
-  const tooltip = digits !== undefined
-    ? { items: [{ field: yAxis, format: (v: unknown) => Number(v).toFixed(digits) }] }
-    : undefined;
-
   // -- Assemble spec ---------------------------------------------------------
   const spec: VistralSpec = {
     marks: [mark],
@@ -288,7 +291,6 @@ export function compileBarColumnConfig(
         ...(digits !== undefined ? { labels: { format: (v: unknown) => Number(v).toFixed(digits) } } : {}),
       },
     },
-    ...(tooltip ? { tooltip } : {}),
     legend,
     theme: theme,
     animate: false,
