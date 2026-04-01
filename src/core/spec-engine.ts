@@ -18,7 +18,6 @@ import type {
   AxesSpec,
   AxisChannelSpec,
   TooltipSpec,
-  LegendSpec,
 } from '../types/spec';
 import { parseDateTime, getTimeMask } from '../utils';
 import { getChartThemeColors } from './chart-utils';
