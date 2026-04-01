@@ -1,4 +1,4 @@
-import * as Babel from '@babel/standalone';
+import { transform } from 'sucrase';
 
 /**
  * Strips all import statements from code (handles single and multi-line).
@@ -67,13 +67,12 @@ export function buildComponent(
   const noImports = stripImports(code);
   const noExports = noImports.replace(/\bexport\s+(default\s+)?/g, '');
 
-  // Step 2: Babel transform (JSX → React.createElement, strip TS types).
-  // sourceType: 'script' ensures clean output with no module-related tokens.
-  const transformed = Babel.transform(noExports, {
-    presets: ['react', 'typescript'],
-    filename: 'example.tsx',
-    sourceType: 'script',
-  }).code!;
+  // Step 2: Sucrase transform (JSX → React.createElement, strip TS types).
+  // Sucrase is lightweight and works reliably in Vite without bundling issues.
+  // 'jsx' uses the classic runtime (React.createElement), 'typescript' strips types.
+  const { code: transformed } = transform(noExports, {
+    transforms: ['typescript', 'jsx'],
+  });
 
   // Step 3: Find the last component name
   const componentName = findLastComponentName(transformed);
