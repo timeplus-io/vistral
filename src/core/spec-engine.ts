@@ -249,7 +249,7 @@ function translateTooltip(
  * - Primitives / functions: the overrides value replaces the target value.
  * The target is never mutated; a new object is returned.
  */
-function deepMerge(
+export function deepMerge(
   target: Record<string, any>,
   overrides: Record<string, unknown>
 ): Record<string, any> {
