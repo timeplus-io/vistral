@@ -26,6 +26,12 @@ describe('stripImports', () => {
     const code = `function MyComp() { return null; }`;
     expect(stripImports(code)).toContain('function MyComp');
   });
+
+  it('removes side-effect imports', () => {
+    const code = `import './styles.css';\nconst x = 1;`;
+    expect(stripImports(code)).not.toContain('import');
+    expect(stripImports(code)).toContain('const x = 1;');
+  });
 });
 
 describe('findLastComponentName', () => {
@@ -49,6 +55,11 @@ describe('findLastComponentName', () => {
 
   it('returns null when no component found', () => {
     expect(findLastComponentName('const x = 5;')).toBeNull();
+  });
+
+  it('does not confuse uppercase constants for components', () => {
+    const code = `function MyChart() {}\nconst MAX_POINTS = 500;`;
+    expect(findLastComponentName(code)).toBe('MyChart');
   });
 });
 

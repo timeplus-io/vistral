@@ -9,7 +9,7 @@ export function stripImports(code: string): string {
   let inImport = false;
 
   for (const line of lines) {
-    if (!inImport && line.trimStart().startsWith('import ')) {
+    if (!inImport && /^\s*import[\s{*'"]/.test(line)) {
       inImport = true;
       // Single-line import ends with from '...' or is a side-effect import
       if (/from\s+['"][^'"]+['"]|^import\s+['"]/.test(line)) {
@@ -34,9 +34,13 @@ export function stripImports(code: string): string {
  * in the given code string. Returns null if none found.
  */
 export function findLastComponentName(code: string): string | null {
-  const matches = [...code.matchAll(/(?:export\s+)?(?:function|const|var|let)\s+([A-Z][A-Za-z0-9_]*)/g)];
+  const matches = [...code.matchAll(
+    /(?:export\s+)?function\s+([A-Z][A-Za-z0-9_]*)\s*\(|(?:export\s+)?(?:const|var|let)\s+([A-Z][A-Za-z0-9_]*)\s*=\s*(?:React\.|function\s*\(|\([^)]*\)\s*=>|\(\s*\{)/g
+  )];
   if (matches.length === 0) return null;
-  return matches[matches.length - 1][1];
+  // Each match has either group 1 (function decl) or group 2 (const/arrow)
+  const lastMatch = matches[matches.length - 1];
+  return lastMatch[1] ?? lastMatch[2];
 }
 
 /**
