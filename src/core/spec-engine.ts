@@ -440,6 +440,8 @@ export function translateToG2Spec(
   spec: VistralSpec,
   resolvedTheme?: VistralTheme
 ): Record<string, any> {
+  // resolvedTheme should always be provided by buildG2Options (which resolves once).
+  // The fallback resolveTheme(spec.theme) below is a safety net for direct callers only.
   const g2: Record<string, any> = {
     type: 'view',
   };

@@ -88,6 +88,10 @@ export function buildG2ThemeObject(theme: VistralTheme): Record<string, unknown>
     },
   };
 
+  if (theme.palette && theme.palette.length > 0) {
+    g2Theme.color = theme.palette;
+  }
+
   if (theme.g2ThemeOverrides) {
     return deepMerge(g2Theme, theme.g2ThemeOverrides);
   }
@@ -105,9 +109,10 @@ export function isDarkTheme(theme: string | VistralTheme | undefined): boolean {
   if (theme === undefined || theme === 'dark') return true;
   if (theme === 'light') return false;
   if (typeof theme === 'string') {
-    // For registered named themes, resolve and check extends
-    const resolved = resolveTheme(theme);
-    return (resolved.extends ?? 'dark') !== 'light';
+    // Access registry directly to check the raw theme's extends field,
+    // avoiding the risk of resolveTheme stripping extends from the merged result.
+    const raw = registry.get(theme);
+    return (raw?.extends ?? 'dark') !== 'light';
   }
   // VistralTheme object — check extends field
   return (theme.extends ?? 'dark') !== 'light';

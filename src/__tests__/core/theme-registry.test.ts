@@ -116,6 +116,17 @@ describe('buildG2ThemeObject', () => {
     buildG2ThemeObject(theme);
     expect(JSON.stringify(theme)).toBe(before);
   });
+
+  it('should include palette as color array when specified', () => {
+    const theme: VistralTheme = { ...DARK_THEME, palette: ['#FF0000', '#00FF00'] };
+    const result = buildG2ThemeObject(theme);
+    expect(result.color).toEqual(['#FF0000', '#00FF00']);
+  });
+
+  it('should not include color key when palette is not specified', () => {
+    const result = buildG2ThemeObject(DARK_THEME);
+    expect(result.color).toBeUndefined();
+  });
 });
 
 describe('isDarkTheme', () => {
