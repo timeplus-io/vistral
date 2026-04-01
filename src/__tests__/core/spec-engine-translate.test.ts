@@ -296,3 +296,29 @@ describe('translateToG2Spec — tooltip', () => {
     expect(g2.tooltip).toBeUndefined();
   });
 });
+
+describe('translateToG2Spec — legend.interactive', () => {
+  it('should set interactive: true on legend.color when legend.interactive is true', () => {
+    const spec: VistralSpec = {
+      marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+      legend: { interactive: true },
+    };
+
+    const g2 = translateToG2Spec(spec);
+
+    expect(g2.legend).toBeDefined();
+    expect(g2.legend.color).toBeDefined();
+    expect(g2.legend.color.interactive).toBe(true);
+  });
+
+  it('should not set interactive on legend.color when legend.interactive is false', () => {
+    const spec: VistralSpec = {
+      marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+      legend: { interactive: false },
+    };
+
+    const g2 = translateToG2Spec(spec);
+
+    expect(g2.legend?.color?.interactive).toBeUndefined();
+  });
+});

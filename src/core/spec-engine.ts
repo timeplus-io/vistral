@@ -18,6 +18,7 @@ import type {
   AxesSpec,
   AxisChannelSpec,
   TooltipSpec,
+  LegendSpec,
 } from '../types/spec';
 import { parseDateTime, getTimeMask } from '../utils';
 import { getChartThemeColors } from './chart-utils';
@@ -450,6 +451,7 @@ export function translateToG2Spec(
       g2.legend = {
         color: {
           position: spec.legend.position,
+          interactive: (spec.legend as LegendSpec).interactive === true ? true : undefined,
           // Explicitly inject colors to override G2 defaults/dimming
           itemLabelFill: colors.text,
           itemLabelFillOpacity: 1,
