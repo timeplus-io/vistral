@@ -17,6 +17,7 @@ import type {
   TemporalSpec,
   LabelSpec,
 } from '../types/spec';
+import type { VistralTheme } from '../types/theme';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -61,7 +62,7 @@ function mapTemporal(
  */
 export function compileTimeSeriesConfig(
   config: TimeSeriesConfig,
-  theme: 'dark' | 'light' = 'dark'
+  theme: string | VistralTheme = 'dark'
 ): VistralSpec {
   const { chartType, xAxis, yAxis, color } = config;
 
@@ -185,7 +186,7 @@ export function compileTimeSeriesConfig(
  */
 export function compileBarColumnConfig(
   config: BarColumnConfig,
-  theme: 'dark' | 'light' = 'dark'
+  theme: string | VistralTheme = 'dark'
 ): VistralSpec {
   const { xAxis, yAxis, color, chartType } = config;
   const isBar = chartType === 'bar';

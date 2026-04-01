@@ -24,6 +24,7 @@ import { Chart } from '@antv/g2';
 import { DEFAULT_MAX_ITEMS } from '../types/spec';
 import type { VistralSpec } from '../types/spec';
 import type { StreamDataSource, ColumnDefinition } from '../types';
+import type { VistralTheme } from '../types/theme';
 import { buildG2Options } from '../core/spec-engine';
 
 // ---------------------------------------------------------------------------
@@ -58,6 +59,12 @@ export interface VistralChartProps {
   style?: React.CSSProperties;
   /** Called once the chart is ready with its imperative handle. */
   onReady?: (handle: ChartHandle) => void;
+  /**
+   * Theme override — a registered theme name (e.g. `'dark'`, `'light'`) or an
+   * inline `VistralTheme` object.  When provided, this takes precedence over
+   * `spec.theme`.
+   */
+  theme?: string | VistralTheme;
 }
 
 // ---------------------------------------------------------------------------
@@ -135,7 +142,7 @@ function normaliseRows(
  */
 export const VistralChart = forwardRef<ChartHandle, VistralChartProps>(
   function VistralChart(props, ref) {
-    const { spec, source, width, height, className, style, onReady } = props;
+    const { spec, source, width, height, className, style, onReady, theme } = props;
 
     // DOM container
     const containerRef = useRef<HTMLDivElement>(null);
@@ -168,7 +175,9 @@ export const VistralChart = forwardRef<ChartHandle, VistralChartProps>(
       // broken empty state that prevents subsequent renders from showing.
       if (data.length === 0) return;
 
-      const g2Options = buildG2Options(spec, data);
+      // Prop-level theme takes precedence over spec.theme
+      const effectiveSpec = theme !== undefined ? { ...spec, theme } : spec;
+      const g2Options = buildG2Options(effectiveSpec, data);
 
       // Apply explicit dimensions if provided
       if (width !== undefined) g2Options.width = width;
@@ -176,7 +185,7 @@ export const VistralChart = forwardRef<ChartHandle, VistralChartProps>(
 
       chart.options(g2Options);
       chart.render();
-    }, [spec, width, height]);
+    }, [spec, theme, width, height]);
 
     /**
      * Schedule a render, respecting the optional throttle interval.

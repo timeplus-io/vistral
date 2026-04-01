@@ -5,6 +5,8 @@
  * down to AntV G2 options (or other backends in the future).
  */
 
+import type { VistralTheme } from './theme';
+
 // ---------------------------------------------------------------------------
 // Accessor
 // ---------------------------------------------------------------------------
@@ -256,8 +258,8 @@ export interface VistralSpec {
   legend?: LegendSpec | false;
   /** Tooltip configuration, or false to disable. */
   tooltip?: TooltipSpec | false;
-  /** Theme name. */
-  theme?: 'dark' | 'light';
+  /** Theme — built-in name ('dark'|'light'), registered custom name, or a VistralTheme object. */
+  theme?: string | VistralTheme;
   /** Annotations overlaid on the chart. */
   annotations?: AnnotationSpec[];
   /** Interaction behaviours. */

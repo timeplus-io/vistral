@@ -25,7 +25,7 @@ interface VistralSpec {
     temporal?: TemporalSpec;
     axes?: AxesSpec;
     legend?: LegendSpec | false;
-    theme?: 'dark' | 'light';
+    theme?: string;
     animate?: boolean;
 }
 
