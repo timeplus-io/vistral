@@ -282,6 +282,7 @@ export function getSeriesColors(palette: ColorPalette, count: number): string[] 
 }
 
 // Chart Theme Configuration
+/** @deprecated Use VistralTheme and registerTheme from the main package instead. */
 export interface ChartTheme {
   backgroundColor: string;
   textColor: string;
@@ -292,6 +293,7 @@ export interface ChartTheme {
   fontFamily: string;
 }
 
+/** @deprecated Use VistralTheme and registerTheme from the main package instead. */
 export const darkTheme: ChartTheme = {
   backgroundColor: 'transparent',
   textColor: '#E5E5E5',
@@ -302,6 +304,7 @@ export const darkTheme: ChartTheme = {
   fontFamily: 'Inter, system-ui, sans-serif',
 };
 
+/** @deprecated Use VistralTheme and registerTheme from the main package instead. */
 export const lightTheme: ChartTheme = {
   backgroundColor: 'transparent',
   textColor: '#1F2937',
@@ -312,8 +315,10 @@ export const lightTheme: ChartTheme = {
   fontFamily: 'Inter, system-ui, sans-serif',
 };
 
+/** @deprecated Use VistralTheme and registerTheme from the main package instead. */
 export type ThemeName = 'dark' | 'light';
 
+/** @deprecated Use VistralTheme and registerTheme from the main package instead. */
 export function getTheme(name: ThemeName): ChartTheme {
   return name === 'dark' ? darkTheme : lightTheme;
 }
