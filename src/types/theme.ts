@@ -43,12 +43,14 @@ export interface VistralTheme {
   /** Axis styling — applies to both x and y axes uniformly. */
   axis?: AxisStyleSpec;
 
+  /** Legend styling. */
   legend?: {
     label?: { color?: string; size?: number };
     title?: { color?: string; size?: number };
     background?: string;
   };
 
+  /** Tooltip styling. */
   tooltip?: {
     background?: string;
     text?: { color?: string; size?: number };
@@ -66,7 +68,7 @@ export interface VistralTheme {
 // Built-in themes
 // ---------------------------------------------------------------------------
 
-export const DARK_THEME: VistralTheme = {
+export const DARK_THEME: Readonly<VistralTheme> = {
   background: 'transparent',
   font: { family: 'Inter, system-ui, sans-serif', size: 11 },
   axis: {
@@ -87,7 +89,7 @@ export const DARK_THEME: VistralTheme = {
   },
 };
 
-export const LIGHT_THEME: VistralTheme = {
+export const LIGHT_THEME: Readonly<VistralTheme> = {
   background: 'transparent',
   font: { family: 'Inter, system-ui, sans-serif', size: 11 },
   axis: {
