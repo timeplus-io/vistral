@@ -136,9 +136,12 @@ describe('buildG2ThemeObject', () => {
     expect(result.category20).toEqual(['#FF0000', '#00FF00']);
   });
 
-  it('should not include color key when palette is not specified', () => {
+  it('should fall back to DEFAULT_PALETTE when no palette is specified', () => {
     const result = buildG2ThemeObject(DARK_THEME);
-    expect(result.color).toBeUndefined();
+    // Falls back to Vistral's DEFAULT_PALETTE (Timeplus palette, first color is #FF73B6)
+    expect(result.color).toBe('#FF73B6');
+    expect(Array.isArray(result.category10)).toBe(true);
+    expect(Array.isArray(result.category20)).toBe(true);
   });
 });
 

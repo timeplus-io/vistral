@@ -1,6 +1,6 @@
 import React, { useState, createContext, useContext } from 'react';
 import logo from './assets/timeplus-vistral_logo_pink.svg';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Code2 } from 'lucide-react';
 import {
   BasicLineChart,
   MultiSeriesAreaChart,
@@ -93,6 +93,7 @@ const grammarExamples = examples.filter(e => e.category === 'grammar');
 export default function App() {
   const [section, setSection] = useState<Section>('examples');
   const [selectedExample, setSelectedExample] = useState<number | null>(null);
+  const [showCode, setShowCode] = useState(true);
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
   const isDark = theme === 'dark';
 
@@ -416,16 +417,41 @@ export default function App() {
                   </div>
                 ) : (
                   <>
-                    <div style={{ marginBottom: '12px', flexShrink: 0 }}>
+                    <div style={{ marginBottom: '12px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <h2 style={{
                         fontSize: '16px',
                         fontWeight: 600,
                         margin: 0,
                         color: colors.heading,
                         lineHeight: '1.4',
+                        flex: 1,
                       }}>
                         {currentExample!.name}
                       </h2>
+                      <button
+                        onClick={() => setShowCode(v => !v)}
+                        title={showCode ? 'Hide code' : 'Show code'}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '5px 10px',
+                          borderRadius: '6px',
+                          border: `1px solid ${showCode ? colors.accent : colors.border}`,
+                          backgroundColor: showCode ? colors.accent : 'transparent',
+                          color: showCode ? '#FFFFFF' : colors.label,
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          flexShrink: 0,
+                          transition: 'background-color 0.2s, border-color 0.2s, color 0.2s',
+                        }}
+                        onMouseEnter={e => { if (!showCode) e.currentTarget.style.borderColor = colors.accent; }}
+                        onMouseLeave={e => { if (!showCode) e.currentTarget.style.borderColor = colors.border; }}
+                      >
+                        <Code2 size={13} />
+                        Code
+                      </button>
                     </div>
                     <div style={{
                       flex: 1,
@@ -435,7 +461,7 @@ export default function App() {
                       overflow: 'hidden',
                       backgroundColor: colors.containerBg,
                     }}>
-                      <LiveSplitView name={currentExample!.name} />
+                      <LiveSplitView name={currentExample!.name} showCode={showCode} />
                     </div>
                   </>
                 )}
