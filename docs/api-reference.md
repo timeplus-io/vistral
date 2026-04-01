@@ -1,3 +1,6 @@
+---
+render_with_liquid: false
+---
 # API Reference
 
 Vistral provides two API levels:
