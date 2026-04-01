@@ -128,10 +128,12 @@ describe('buildG2ThemeObject', () => {
     expect(JSON.stringify(theme)).toBe(before);
   });
 
-  it('should include palette as color array when specified', () => {
+  it('should set color to first palette entry and category10/20 to full palette', () => {
     const theme: VistralTheme = { ...DARK_THEME, palette: ['#FF0000', '#00FF00'] };
     const result = buildG2ThemeObject(theme);
-    expect(result.color).toEqual(['#FF0000', '#00FF00']);
+    expect(result.color).toBe('#FF0000');
+    expect(result.category10).toEqual(['#FF0000', '#00FF00']);
+    expect(result.category20).toEqual(['#FF0000', '#00FF00']);
   });
 
   it('should not include color key when palette is not specified', () => {

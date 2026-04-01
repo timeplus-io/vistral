@@ -105,7 +105,11 @@ export function buildG2ThemeObject(theme: VistralTheme): Record<string, unknown>
   };
 
   if (theme.palette && theme.palette.length > 0) {
-    g2Theme.color = theme.palette;
+    // color: single default stroke for marks with no color encode (single series)
+    g2Theme.color = theme.palette[0];
+    // category10/20: palette used by G2's categorical color scale (multi-series)
+    g2Theme.category10 = theme.palette;
+    g2Theme.category20 = theme.palette;
   }
 
   if (theme.g2ThemeOverrides) {
