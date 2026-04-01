@@ -146,6 +146,11 @@ describe('isDarkTheme', () => {
   it('returns true for VistralTheme object with other fields but no extends', () => {
     expect(isDarkTheme({ palette: ['red'] })).toBe(true);
   });
+
+  it('should return false for a registered named theme that extends light', () => {
+    registerTheme('test-light-named', { extends: 'light', palette: ['#000'] });
+    expect(isDarkTheme('test-light-named')).toBe(false);
+  });
 });
 
 describe('buildTooltipCss', () => {
