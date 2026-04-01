@@ -1,0 +1,18 @@
+# Jekyll configuration for GitHub Pages
+# Code examples in plan/spec docs use JSX/TS syntax with {{ }} which conflicts
+# with Liquid template processing.  Setting error_mode to 'warn' prevents these
+# from crashing the build, and render_with_liquid: false skips Liquid entirely
+# for files in the plans and superpowers directories.
+
+liquid:
+  error_mode: warn
+
+defaults:
+  - scope:
+      path: "plans"
+    values:
+      render_with_liquid: false
+  - scope:
+      path: "superpowers"
+    values:
+      render_with_liquid: false
