@@ -321,4 +321,15 @@ describe('translateToG2Spec — legend.interactive', () => {
 
     expect(g2.legend?.color?.interactive).toBeUndefined();
   });
+
+  it('should not set interactive on legend.color when legend.interactive is omitted', () => {
+    const spec: VistralSpec = {
+      marks: [{ type: 'line', encode: { x: 'time', y: 'value' } }],
+      legend: {},
+    };
+
+    const g2 = translateToG2Spec(spec);
+
+    expect(g2.legend?.color?.interactive).toBeUndefined();
+  });
 });
