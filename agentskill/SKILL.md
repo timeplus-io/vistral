@@ -38,7 +38,7 @@ const ref = useRef<ChartHandle>(null);
   spec={spec}
   source={dataSource}   // optional: declarative initial data
   height={400}
-  theme="dark"          // 'dark' | 'light' — prop on VistralChart
+  theme="dark"          // string | VistralTheme — 'dark', 'light', registered name, or VistralTheme object
   onReady={(handle) => {
     handle.append(rows);   // add rows, re-render
     handle.replace(rows);  // replace all data, re-render
@@ -63,7 +63,7 @@ const ref = useRef<ChartHandle>(null);
 | `coordinate` | `CoordinateSpec` | `polar`, `theta`, `transpose`, etc. |
 | `annotations` | `AnnotationSpec[]` | Reference lines, ranges, text overlays |
 | `interactions` | `InteractionSpec[]` | `{ type: 'tooltip' \| 'brush' \| ... }` |
-| `theme` | `'dark' \| 'light'` | Spec-level theme (overridden by component prop) |
+| `theme` | `string \| VistralTheme` | Spec-level theme — overridden by component `theme` prop. Prefer setting theme on the component. |
 | `animate` | `boolean` | Disable for streaming: `animate: false` |
 | `g2Overrides` | `Record<string, unknown>` | Raw G2 options deep-merged last — override anything |
 
@@ -110,6 +110,33 @@ g2Overrides: {
   }
 }
 ```
+
+---
+
+## Custom Themes
+
+```tsx
+import { registerTheme, type VistralTheme } from '@timeplus/vistral';
+
+// Register once at app startup (module level)
+registerTheme('corporate', {
+  extends: 'light',              // inherit from 'dark' (default) or 'light'
+  palette: ['#0066CC', '#FF6600', '#00AA44'],
+  font:    { family: 'Roboto, sans-serif', size: 12 },
+  axis:    { grid: { color: '#E0E0E0', dash: [4, 4] }, label: { color: '#333' } },
+  tooltip: { background: '#FFF', text: { color: '#111' }, border: { color: '#E0E0E0' } },
+  legend:  { label: { color: '#333' } },
+} satisfies VistralTheme);
+
+// Use by name
+<VistralChart spec={spec} theme="corporate" />
+<StreamChart config={config} data={data} theme="corporate" />
+
+// Or pass a VistralTheme object directly (no registration needed)
+<VistralChart spec={spec} theme={{ palette: ['#FF73B6', '#8890FF'], axis: { grid: { color: '#1A1A2E' } } }} />
+```
+
+Built-in themes: `'dark'` (default) and `'light'`. Custom themes deep-merge onto the base.
 
 ---
 

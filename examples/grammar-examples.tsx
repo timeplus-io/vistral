@@ -12,9 +12,11 @@ import React, { useEffect, useRef, useContext } from 'react';
 import {
   VistralChart,
   compileTimeSeriesConfig,
+  registerTheme,
   type VistralSpec,
   type ChartHandle,
   type TimeSeriesConfig,
+  type VistralTheme,
 } from '@timeplus/vistral';
 import { ThemeContext } from './App';
 import { dataGenerators } from './data-utils';
@@ -25,12 +27,28 @@ function useTheme() {
   return context?.theme || 'dark';
 }
 
+// Register a custom theme once at module load.
+// Custom themes deep-merge onto a base ('dark' or 'light').
+registerTheme('timeplus', {
+  extends: 'dark',
+  palette: ['#FF73B6', '#8890FF', '#27CCA8', '#0BC5EA', '#FF7C27', '#FFBF00', '#B275FF', '#FF465F'],
+  font: { family: 'Inter, system-ui, sans-serif', size: 11 },
+  axis: {
+    grid: { color: '#2D2438', dash: [4, 4] },
+    label: { color: '#B5B4B8' },
+    line: { color: '#3A3741' },
+    tick: { color: '#3A3741' },
+  },
+  tooltip: { background: 'rgba(35,31,43,0.95)', text: { color: '#F7F6F6' }, border: { color: '#3A3741' } },
+  legend: { label: { color: '#B5B4B8' } },
+} satisfies VistralTheme);
+
 // =============================================================================
 // Example 1: GrammarLineChart - Streaming line chart using VistralSpec directly
+// Demonstrates: passing a registered custom theme name via the VistralChart prop
 // =============================================================================
 
 export function GrammarLineChart() {
-  const theme = useTheme();
   const handleRef = useRef<ChartHandle | null>(null);
   const loadedRef = useRef(false);
 
@@ -59,7 +77,6 @@ export function GrammarLineChart() {
       y: { title: 'CPU Usage (%)', grid: true },
     },
     legend: false,
-    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -76,8 +93,10 @@ export function GrammarLineChart() {
 
   return (
     <div style={{ height: 400 }}>
+      {/* Use registered custom theme by name */}
       <VistralChart
         spec={spec}
+        theme="timeplus"
         height={400}
         onReady={(handle) => {
           handleRef.current = handle;
@@ -131,7 +150,6 @@ export function GrammarMultiMark() {
       y: { title: 'Count / sec', grid: true },
     },
     legend: { position: 'bottom', interactive: true },
-    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -150,6 +168,7 @@ export function GrammarMultiMark() {
     <div style={{ height: 400 }}>
       <VistralChart
         spec={spec}
+        theme={theme}
         height={400}
         onReady={(handle) => {
           handleRef.current = handle;
@@ -192,7 +211,6 @@ export function GrammarBarChart() {
       y: { title: 'Value', grid: true },
     },
     legend: false,
-    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -208,6 +226,7 @@ export function GrammarBarChart() {
     <div style={{ height: 400 }}>
       <VistralChart
         spec={spec}
+        theme={theme}
         height={400}
         onReady={(handle) => {
           handleRef.current = handle;
@@ -252,7 +271,6 @@ export function GrammarStackedArea() {
       y: { title: 'Count', grid: true },
     },
     legend: { position: 'bottom', interactive: true },
-    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -271,6 +289,7 @@ export function GrammarStackedArea() {
     <div style={{ height: 400 }}>
       <VistralChart
         spec={spec}
+        theme={theme}
         height={400}
         onReady={(handle) => {
           handleRef.current = handle;
@@ -306,13 +325,7 @@ export function GrammarCompiledChart() {
   };
 
   // Compile it into a VistralSpec using the config compiler
-  const compiledSpec = compileTimeSeriesConfig(config);
-
-  // Override the theme to match the current context
-  const spec: VistralSpec = {
-    ...compiledSpec,
-    theme: theme as 'dark' | 'light',
-  };
+  const spec: VistralSpec = compileTimeSeriesConfig(config);
 
   useEffect(() => {
     if (!loadedRef.current && handleRef.current) {
@@ -332,6 +345,7 @@ export function GrammarCompiledChart() {
       </p>
       <VistralChart
         spec={spec}
+        theme={theme}
         height={360}
         onReady={(handle) => {
           handleRef.current = handle;
@@ -376,7 +390,6 @@ export function GrammarRoseChart() {
       y: { title: false, grid: true },
     },
     legend: { position: 'bottom' },
-    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -392,6 +405,7 @@ export function GrammarRoseChart() {
     <div style={{ height: 400 }}>
       <VistralChart
         spec={spec}
+        theme={theme}
         height={400}
         onReady={(handle) => { handleRef.current = handle; }}
       />
@@ -433,7 +447,6 @@ export function GrammarDonutChart() {
     },
     streaming: { maxItems: 500 },
     legend: { position: 'bottom' },
-    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -449,6 +462,7 @@ export function GrammarDonutChart() {
     <div style={{ height: 400 }}>
       <VistralChart
         spec={spec}
+        theme={theme}
         height={400}
         onReady={(handle) => { handleRef.current = handle; }}
       />
@@ -511,7 +525,6 @@ export function GrammarRadarChart() {
       y: { title: false, grid: true },
     },
     legend: { position: 'bottom', interactive: true },
-    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -527,6 +540,7 @@ export function GrammarRadarChart() {
     <div style={{ height: 400 }}>
       <VistralChart
         spec={spec}
+        theme={theme}
         height={400}
         onReady={(handle) => { handleRef.current = handle; }}
       />
@@ -570,7 +584,6 @@ export function GrammarRadialBar() {
       y: { title: false, grid: true },
     },
     legend: false,
-    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -586,6 +599,7 @@ export function GrammarRadialBar() {
     <div style={{ height: 400 }}>
       <VistralChart
         spec={spec}
+        theme={theme}
         height={400}
         onReady={(handle) => { handleRef.current = handle; }}
       />
@@ -627,7 +641,6 @@ export function GrammarScatterChart() {
       y: { title: 'Throughput (req/s)', grid: true },
     },
     legend: { position: 'bottom', interactive: true },
-    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -643,6 +656,7 @@ export function GrammarScatterChart() {
     <div style={{ height: 400 }}>
       <VistralChart
         spec={spec}
+        theme={theme}
         height={400}
         onReady={(handle) => { handleRef.current = handle; }}
       />
@@ -681,7 +695,6 @@ export function GrammarHeatmap() {
       y: { title: false, grid: false },
     },
     legend: { position: 'bottom' },
-    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -697,6 +710,7 @@ export function GrammarHeatmap() {
     <div style={{ height: 400 }}>
       <VistralChart
         spec={spec}
+        theme={theme}
         height={400}
         onReady={(handle) => { handleRef.current = handle; }}
       />
@@ -749,7 +763,6 @@ export function GrammarTimeSeriesBar() {
       y: { title: 'Requests / sec', grid: true },
     },
     legend: false,
-    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -768,6 +781,7 @@ export function GrammarTimeSeriesBar() {
     <div style={{ height: 400 }}>
       <VistralChart
         spec={spec}
+        theme={theme}
         height={400}
         onReady={(handle) => { handleRef.current = handle; }}
       />
@@ -850,7 +864,6 @@ export function GrammarCandlestickChart() {
       y: { title: 'Price ($)', grid: true },
     },
     legend: false,
-    theme: theme as 'dark' | 'light',
     animate: false,
   };
 
@@ -871,6 +884,7 @@ export function GrammarCandlestickChart() {
     <div style={{ height: 400 }}>
       <VistralChart
         spec={spec}
+        theme={theme}
         height={400}
         onReady={(handle) => { handleRef.current = handle; }}
       />
