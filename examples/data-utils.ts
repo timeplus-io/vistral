@@ -36,7 +36,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
         ],
         generate: (historyCount?: number) => {
             const servers = ['server-01', 'server-02', 'server-03', 'server-04'];
-            const INTERVAL_MS = 1000; // must equal this generator's interval property
+            const INTERVAL_MS = 500; // must equal this generator's interval property
 
             const generateFrame = (ts: string): Record<string, unknown>[] => {
                 return servers.map(server => {
@@ -67,7 +67,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
 
             return generateFrame(new Date().toISOString());
         },
-        interval: 1000,
+        interval: 500,
     },
     stocks: {
         name: 'Stock Prices',
@@ -81,7 +81,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
         ],
         generate: (historyCount?: number) => {
             const symbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN'];
-            const INTERVAL_MS = 1500; // must equal this generator's interval property
+            const INTERVAL_MS = 750; // must equal this generator's interval property
 
             const generateFrame = (ts: string): Record<string, unknown>[] => {
                 return symbols.map(symbol => {
@@ -116,7 +116,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
 
             return generateFrame(new Date().toISOString());
         },
-        interval: 1500,
+        interval: 750,
     },
     sensors: {
         name: 'IoT Sensors',
@@ -130,7 +130,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
         ],
         generate: (historyCount?: number) => {
             const locations = ['Warehouse A', 'Warehouse B', 'Office', 'Lab'];
-            const INTERVAL_MS = 2000; // must equal this generator's interval property
+            const INTERVAL_MS = 1000; // must equal this generator's interval property
 
             const generateFrame = (ts: string): Record<string, unknown>[] => {
                 return locations.map(location => {
@@ -161,7 +161,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
 
             return generateFrame(new Date().toISOString());
         },
-        interval: 2000,
+        interval: 1000,
     },
     vehicles: {
         name: 'Vehicle Tracking',
@@ -177,7 +177,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
         generate: (historyCount?: number) => {
             const vehicles = ['car-01', 'car-02', 'car-03', 'car-04', 'car-05', 'car-06', 'car-07', 'car-08', 'car-09', 'car-10'];
             const statuses = ['moving', 'moving', 'moving', 'stopped', 'loading'];
-            const INTERVAL_MS = 500;
+            const INTERVAL_MS = 250;
 
             const generateFrame = (ts: string): Record<string, unknown>[] => {
                 return vehicles.map(vehicle => {
@@ -209,7 +209,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
 
             return generateFrame(new Date().toISOString());
         },
-        interval: 500,
+        interval: 250,
     },
     logs: {
         name: 'Application Logs',
@@ -234,7 +234,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
                 'Rate limit exceeded',
                 'Memory usage high',
             ];
-            const INTERVAL_MS = 500; // must equal this generator's interval property
+            const INTERVAL_MS = 250; // must equal this generator's interval property
 
             const generateFrame = (ts: string): Record<string, unknown>[] => {
                 return [{
@@ -258,7 +258,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
 
             return generateFrame(new Date().toISOString());
         },
-        interval: 500,
+        interval: 250,
     },
     revenue: {
         name: 'Quarterly Revenue',
@@ -303,7 +303,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
 
             return results;
         },
-        interval: 1500,
+        interval: 750,
     },
     sales: {
         name: 'Yearly Sales',
@@ -354,7 +354,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
 
             return results;
         },
-        interval: 1200,
+        interval: 600,
     },
     cpuLoad: {
         name: 'CPU Load',
@@ -364,7 +364,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             { name: 'value', type: 'float64' },
         ],
         generate: (historyCount?: number) => {
-            const INTERVAL_MS = 1000; // must equal this generator's interval property
+            const INTERVAL_MS = 500; // must equal this generator's interval property
             if (historyCount && historyCount > 0) {
                 const frames: Record<string, unknown>[] = [];
                 const now = Date.now();
@@ -377,7 +377,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             currentValues['cpuLoad'] = generateNextValue(currentValues['cpuLoad'] ?? 50, 10, 90, 0.15);
             return [{ time: new Date().toISOString(), value: currentValues['cpuLoad'] }];
         },
-        interval: 1000,
+        interval: 500,
     },
     apiTraffic: {
         name: 'API Traffic',
@@ -388,7 +388,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             { name: 'value', type: 'float64' },
         ],
         generate: (historyCount?: number) => {
-            const INTERVAL_MS = 2000; // must equal this generator's interval property
+            const INTERVAL_MS = 1000; // must equal this generator's interval property
             const metrics = ['requests', 'errors', 'timeouts'];
             const defaults: Record<string, number> = { requests: 120, errors: 5, timeouts: 2 };
             const bounds: Record<string, [number, number]> = { requests: [50, 300], errors: [0, 30], timeouts: [0, 15] };
@@ -408,7 +408,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             }
             return generateFrame(new Date().toISOString());
         },
-        interval: 2000,
+        interval: 1000,
     },
     globalEvents: {
         name: 'Global Events',
@@ -433,7 +433,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             }
             return rows;
         },
-        interval: 2000,
+        interval: 1000,
     },
     productInventory: {
         name: 'Product Inventory',
@@ -457,7 +457,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
                 return { timestamp: now, product: p, sales: currentValues[key] };
             });
         },
-        interval: 2000,
+        interval: 1000,
     },
     serviceLoad: {
         name: 'Service Load',
@@ -476,7 +476,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
                 return { service: s, requests: currentValues[key] };
             });
         },
-        interval: 1500,
+        interval: 750,
     },
     httpResponses: {
         name: 'HTTP Responses',
@@ -500,7 +500,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
                 return { status: s.code, count: currentValues[key] };
             });
         },
-        interval: 1500,
+        interval: 750,
     },
     cloudRegions: {
         name: 'Cloud Regions',
@@ -534,7 +534,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
                 };
             });
         },
-        interval: 1500,
+        interval: 750,
     },
     serverProfile: {
         name: 'Server Profile',
@@ -558,7 +558,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             });
             return rows;
         },
-        interval: 2000,
+        interval: 1000,
     },
     datacenterLoad: {
         name: 'Datacenter Load',
@@ -584,7 +584,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             });
             return rows;
         },
-        interval: 3000,
+        interval: 1500,
     },
     stockCandles: {
         name: 'Stock Candles',
@@ -597,7 +597,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             { name: 'close', type: 'float64' },
         ],
         generate: (historyCount?: number) => {
-            const INTERVAL_MS = 2000; // must equal this generator's interval property
+            const INTERVAL_MS = 1000; // must equal this generator's interval property
             const generateCandle = (prevClose: number, ts: string): Record<string, unknown> => {
                 const open = prevClose;
                 const move = (Math.random() - 0.5) * 6;
@@ -623,7 +623,7 @@ export const dataGenerators: Record<string, DataGenerator> = {
             currentValues['candle_close'] = candle.close as number;
             return [candle];
         },
-        interval: 2000,
+        interval: 1000,
     },
     activeUsers: {
         name: 'Active Users',
@@ -636,6 +636,6 @@ export const dataGenerators: Record<string, DataGenerator> = {
             currentValues['activeUsers'] = generateNextValue(currentValues['activeUsers'] ?? 1234, 800, 1800, 0.1);
             return [{ activeUsers: Math.floor(currentValues['activeUsers']) }];
         },
-        interval: 1000,
+        interval: 500,
     },
 };
