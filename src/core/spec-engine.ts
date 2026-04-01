@@ -17,6 +17,7 @@ import type {
   CoordinateSpec,
   AxesSpec,
   AxisChannelSpec,
+  TooltipSpec,
 } from '../types/spec';
 import { parseDateTime, getTimeMask } from '../utils';
 import { getChartThemeColors } from './chart-utils';
@@ -209,6 +210,69 @@ function translateAxisChannel(
     }
     if (axis.labels.rotate !== undefined) {
       result.labelTransform = [{ type: 'rotate', angle: axis.labels.rotate }];
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Translate a TooltipSpec to G2 tooltip format.
+ * Renames `items[].format` to `items[].valueFormatter` to match G2's API.
+ */
+function translateTooltip(
+  tooltip: TooltipSpec
+): Record<string, any> {
+  const result: Record<string, any> = {};
+
+  if (tooltip.title !== undefined) {
+    result.title = tooltip.title;
+  }
+
+  if (tooltip.items) {
+    result.items = tooltip.items.map(({ format, ...rest }) => {
+      const item: Record<string, any> = { ...rest };
+      if (format !== undefined) {
+        item.valueFormatter = format;
+      }
+      return item;
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Recursively merge `overrides` on top of `target`.
+ * - Plain objects: keys are merged recursively (overrides win at leaf).
+ * - Arrays: the overrides array replaces the target array entirely.
+ * - Primitives / functions: the overrides value replaces the target value.
+ * The target is never mutated; a new object is returned.
+ */
+function deepMerge(
+  target: Record<string, any>,
+  overrides: Record<string, unknown>
+): Record<string, any> {
+  const result: Record<string, any> = { ...target };
+
+  for (const key of Object.keys(overrides)) {
+    const overrideVal = overrides[key];
+    const targetVal = result[key];
+
+    if (
+      overrideVal !== null &&
+      typeof overrideVal === 'object' &&
+      !Array.isArray(overrideVal) &&
+      targetVal !== null &&
+      typeof targetVal === 'object' &&
+      !Array.isArray(targetVal)
+    ) {
+      result[key] = deepMerge(
+        targetVal as Record<string, any>,
+        overrideVal as Record<string, unknown>
+      );
+    } else {
+      result[key] = overrideVal;
     }
   }
 
@@ -423,6 +487,7 @@ export function translateToG2Spec(
       g2.legend = {
         color: {
           position: spec.legend.position,
+          interactive: spec.legend.interactive === true ? true : undefined,
           // Explicitly inject colors to override G2 defaults/dimming
           itemLabelFill: colors.text,
           itemLabelFillOpacity: 1,
@@ -453,6 +518,11 @@ export function translateToG2Spec(
       interaction[type] = options;
     }
     g2.interaction = interaction;
+  }
+
+  // Tooltip
+  if (spec.tooltip !== undefined) {
+    g2.tooltip = spec.tooltip === false ? false : translateTooltip(spec.tooltip);
   }
 
   // Children: marks + annotations
@@ -884,6 +954,10 @@ export function buildG2Options(
         }
       }
     }
+  }
+
+  if (spec.g2Overrides) {
+    return deepMerge(g2Spec, spec.g2Overrides);
   }
 
   return g2Spec;

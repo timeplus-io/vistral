@@ -45,6 +45,7 @@ const spec: VistralSpec = {
 | `interactions` | `InteractionSpec[]` | Interactions (tooltip, brush, element highlight, etc.) |
 | `theme` | `'dark' \| 'light'` | Theme. Default: `'dark'` |
 | `animate` | `boolean` | Enable/disable animations. Default: `false` for streaming |
+| `g2Overrides` | `Record<string, unknown>` | Raw G2 options deep-merged on top of compiled output. Overrides always win. |
 
 ### MarkSpec
 
@@ -58,7 +59,7 @@ A mark is an atomic visual element — what to draw.
   transforms: [{ type: 'stackY' }],    // Per-mark transforms
   style: { shape: 'smooth', opacity: 0.8 },
   labels: [{ text: 'value', overlapHide: true }],
-  tooltip: { title: 'time', items: [{ field: 'value' }] },
+  tooltip: { title: 'time', items: [{ field: 'value', name: 'Value', format: (v) => `${v}` }] },
   animate: false,
 }
 ```
@@ -74,6 +75,78 @@ Controls how streaming data is managed.
 | `maxItems` | `number` | `1000` | Maximum data rows retained in memory |
 | `mode` | `'append' \| 'replace'` | `'append'` | How new data is incorporated |
 | `throttle` | `number` | `0` | Minimum ms between render updates |
+
+### LegendSpec
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `position` | `'top' \| 'bottom' \| 'left' \| 'right'` | - | Legend position |
+| `interactive` | `boolean` | `false` | Enable click-to-toggle series on legend items |
+
+Pass `false` instead of a `LegendSpec` to hide the legend entirely.
+
+### TooltipSpec
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `title` | `string \| ((datum) => string)` | Tooltip header — field name or accessor function |
+| `items` | `TooltipItemSpec[]` | List of value rows shown in the tooltip |
+
+Pass `false` instead of a `TooltipSpec` to disable the tooltip entirely.
+
+**TooltipItemSpec**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `field` | `string` | Data field to display |
+| `name` | `string` | Label shown next to the value |
+| `format` | `(value: unknown) => string` | Value formatter function. Translated to G2's `valueFormatter` internally. |
+
+```tsx
+// Format network throughput in the tooltip
+tooltip: {
+  title: (d) => String(d.time),
+  items: [
+    {
+      field: 'value',
+      name: 'Throughput',
+      format: (v) => {
+        const n = Number(v);
+        if (n >= 1e9) return `${(n / 1e9).toFixed(1)} Gbps`;
+        if (n >= 1e6) return `${(n / 1e6).toFixed(1)} Mbps`;
+        if (n >= 1e3) return `${(n / 1e3).toFixed(1)} Kbps`;
+        return `${n.toFixed(1)} bps`;
+      },
+    },
+  ],
+}
+```
+
+### g2Overrides
+
+A raw escape hatch for any G2 option that `VistralSpec` does not model directly. The value is deep-merged on top of the compiled G2 options as the **last** step — overrides always win, including over theme and temporal domain settings.
+
+**Merge rules:**
+- Plain objects are merged recursively (override wins at each leaf)
+- Arrays replace entirely (no element-wise merging)
+- Primitives and functions replace
+
+```tsx
+// Control axis tick count (not modeled by VistralSpec)
+g2Overrides: { axis: { y: { tickCount: 5 } } }
+
+// View padding
+g2Overrides: { paddingLeft: 60, paddingTop: 8 }
+
+// Advanced tooltip using G2's native API
+g2Overrides: {
+  tooltip: {
+    items: [{ channel: 'y', name: 'Value', valueFormatter: (v) => `${v} bps` }],
+  },
+}
+```
+
+> **Tip:** Most tooltip formatting needs are covered by `spec.tooltip.items[].format` (the typed path). Use `g2Overrides.tooltip` only when you need G2-specific tooltip features not exposed by `TooltipSpec`.
 
 ### TemporalSpec
 
