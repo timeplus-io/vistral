@@ -4,7 +4,9 @@
 
 import { Chart, MarkNode } from '@antv/g2';
 import type { ColorPalette, ProcessedDataSource } from '../types';
+import type { VistralTheme } from '../types/theme';
 import { DEFAULT_PALETTE } from '../themes';
+import { resolveTheme, buildG2ThemeObject, buildTooltipCss } from './theme-registry';
 
 // Chart axis configuration constants
 export const AXIS_HEIGHT_WITH_TITLE = 70;
@@ -186,19 +188,16 @@ export function truncateLabel(value: string, maxChar: number | null): string {
 /**
  * Render chart with standard interactions
  */
-export async function renderChart(chart: Chart, theme: 'dark' | 'light' = 'dark'): Promise<void> {
-  const themeColors = getChartThemeColors(theme);
+export async function renderChart(chart: Chart, theme: string | VistralTheme = 'dark'): Promise<void> {
+  const resolved = resolveTheme(theme);
+  const legendTextColor = resolved.legend?.label?.color ?? '#E5E5E5';
 
   chart.interaction('tooltip', {
     mount: document.body,
     css: {
       '.g2-tooltip': {
         'z-index': '10000',
-        'background-color': 'rgba(0, 0, 0, 0.8)',
-        color: '#fff',
-        'border-radius': '4px',
-        padding: '8px 12px',
-        'font-size': '12px',
+        ...buildTooltipCss(resolved),
       },
     },
   });
@@ -226,7 +225,7 @@ export async function renderChart(chart: Chart, theme: 'dark' | 'light' = 'dark'
         const elements = container.querySelectorAll(selector);
         elements.forEach((el) => {
           if (el instanceof SVGElement) {
-            el.setAttribute('fill', themeColors.text);
+            el.setAttribute('fill', legendTextColor);
           }
         });
       } catch {
@@ -247,7 +246,7 @@ export async function renderChart(chart: Chart, theme: 'dark' | 'light' = 'dark'
       g[bindChange] text,
       [class*="legend"] text,
       [class*="Legend"] text {
-        fill: ${themeColors.text} !important;
+        fill: ${legendTextColor} !important;
       }
     `;
   }
@@ -378,55 +377,8 @@ export function getChartThemeColors(theme: 'dark' | 'light') {
  */
 export function applyChartTheme(
   chart: Chart,
-  theme: 'dark' | 'light' = 'dark'
+  theme: string | VistralTheme = 'dark'
 ): void {
-  const colors = getChartThemeColors(theme);
-
-  const themeConfig = {
-    view: { viewFill: colors.background },
-    // Data labels on points/bars
-    label: {
-      fill: colors.text,
-      fontSize: 11,
-    },
-    // Axis configuration
-    axis: {
-      x: {
-        line: { stroke: colors.line },
-        tick: { stroke: colors.line },
-        label: { fill: colors.text, fontSize: 11 },
-        title: { fill: colors.text, fontSize: 12, fontWeight: 500 },
-        grid: { stroke: colors.gridline },
-      },
-      y: {
-        line: { stroke: colors.line },
-        tick: { stroke: colors.line },
-        label: { fill: colors.text, fontSize: 11 },
-        title: { fill: colors.text, fontSize: 12, fontWeight: 500 },
-        grid: { stroke: colors.gridline },
-      },
-    },
-    // Legend configuration
-    legend: {
-      label: { fill: colors.text, fontSize: 12 },
-      title: { fill: colors.text, fontSize: 12 },
-      marker: { size: 8 },
-      itemLabel: { fill: colors.text, fontSize: 12 },
-      itemName: { fill: colors.text, fontSize: 12 },
-      itemValue: { fill: colors.textSecondary, fontSize: 12 },
-    },
-    // Legend category specific
-    legendCategory: {
-      itemLabel: { fill: colors.text },
-      itemName: { fill: colors.text },
-    },
-    // Title configuration
-    title: {
-      fill: colors.text,
-      fontSize: 14,
-      fontWeight: 600,
-    },
-  };
-
-  chart.theme(themeConfig);
+  const resolved = resolveTheme(theme);
+  chart.theme(buildG2ThemeObject(resolved));
 }
