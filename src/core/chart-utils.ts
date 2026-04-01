@@ -98,13 +98,14 @@ export function applyLegend(
   enabled: boolean,
   onItemClick?: (index: number) => void,
   values?: string[],
-  theme: 'dark' | 'light' = 'dark'
+  theme: string | VistralTheme = 'dark'
 ): MarkNode {
   if (!enabled || !values || values.length > MAX_LEGEND_ITEMS) {
     return node.legend(false);
   }
 
-  const themeColors = getChartThemeColors(theme);
+  const resolved = resolveTheme(theme);
+  const labelColor = resolved.legend?.label?.color ?? '#E5E5E5';
 
   return node.legend('color', {
     position: 'bottom',
@@ -112,23 +113,23 @@ export function applyLegend(
       justifyContent: 'flex-start',
       alignItems: 'center',
     },
-    itemLabelFill: themeColors.text,
-    itemValueFill: themeColors.text,
-    titleFill: themeColors.text,
+    itemLabelFill: labelColor,
+    itemValueFill: labelColor,
+    titleFill: labelColor,
     // Additional label styling for G2 5.x
     label: {
-      fill: themeColors.text,
+      fill: labelColor,
       fontSize: 12,
     },
     itemLabel: {
       style: {
-        fill: themeColors.text,
+        fill: labelColor,
         fontSize: 12,
       },
     },
     itemName: {
       style: {
-        fill: themeColors.text,
+        fill: labelColor,
       },
     },
     click: onItemClick
@@ -353,6 +354,7 @@ export function createDefaultConfig(
 
 /**
  * Get theme colors for charts
+ * @deprecated Use resolveTheme from theme-registry instead.
  */
 export function getChartThemeColors(theme: 'dark' | 'light') {
   return theme === 'dark'
