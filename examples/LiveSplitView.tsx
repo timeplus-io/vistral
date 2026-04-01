@@ -9,6 +9,14 @@ import { dataGenerators } from './data-utils';
 // ─── Scope ────────────────────────────────────────────────────────────────────
 
 function buildScope(theme: 'dark' | 'light'): Record<string, unknown> {
+  // Filter out 'default' and any non-identifier keys from the vistral namespace.
+  // ES module namespace objects always include a 'default' key when the module has
+  // a default export, and 'default' is a reserved keyword — passing it as a
+  // new Function() parameter name causes a SyntaxError.
+  const vistralExports = Object.fromEntries(
+    Object.entries(vistral as unknown as Record<string, unknown>)
+      .filter(([key]) => key !== 'default' && /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key))
+  );
   return {
     React,
     useState,
@@ -17,7 +25,7 @@ function buildScope(theme: 'dark' | 'light'): Record<string, unknown> {
     useCallback,
     useMemo: React.useMemo,
     useContext: React.useContext,
-    ...(vistral as unknown as Record<string, unknown>),
+    ...vistralExports,
     dataGenerators,
     theme,
     useTheme: () => theme,
@@ -112,7 +120,7 @@ interface LiveSplitViewProps {
 }
 
 export function LiveSplitView({ name }: LiveSplitViewProps) {
-  const appTheme = useTheme();
+  const { theme: appTheme } = useTheme();
   const isDark = appTheme === 'dark';
 
   const [splitRatio, setSplitRatio] = useState(0.6);
@@ -205,6 +213,16 @@ export function LiveSplitView({ name }: LiveSplitViewProps) {
           theme={isDark ? 'vs-dark' : 'light'}
           value={code}
           onChange={handleCodeChange}
+          beforeMount={(monaco) => {
+            // Disable semantic and suggestion diagnostics so Monaco doesn't
+            // show "Cannot find module" errors for injected scope symbols.
+            // Syntax highlighting and basic editing still work normally.
+            monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+              noSemanticValidation: true,
+              noSyntaxValidation: true,
+              noSuggestionDiagnostics: true,
+            });
+          }}
           options={{
             fontSize: 13,
             minimap: { enabled: false },

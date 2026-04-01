@@ -18,8 +18,8 @@ describe('Theme Color Debug', () => {
         const themeSpec = buildG2ThemeObject(resolveTheme('dark'));
         console.log('G2 Theme Spec:', JSON.stringify(themeSpec, null, 2));
 
-        // deeply check axis line stroke
-        expect((themeSpec.axis as any).x.line.stroke).toBeDefined();
-        console.log('Axis X Line Stroke:', (themeSpec.axis as any).x.line.stroke);
+        // G2 uses flat keys in its theme: lineStroke, not axis.x.line.stroke
+        expect((themeSpec.axis as any).lineStroke).toBeDefined();
+        console.log('Axis Line Stroke:', (themeSpec.axis as any).lineStroke);
     });
 });
