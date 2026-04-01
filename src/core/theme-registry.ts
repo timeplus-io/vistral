@@ -49,7 +49,7 @@ export function buildG2ThemeObject(theme: VistralTheme): Record<string, unknown>
   const fontSize   = theme.font?.size   ?? 11;
   const fontFamily = theme.font?.family ?? 'Inter, system-ui, sans-serif';
 
-  const axisConfig = {
+  const buildAxisConfig = () => ({
     label: {
       fill:        theme.axis?.label?.color,
       fontSize:    theme.axis?.label?.size ?? fontSize,
@@ -69,12 +69,12 @@ export function buildG2ThemeObject(theme: VistralTheme): Record<string, unknown>
     },
     line: { stroke: theme.axis?.line?.color, strokeOpacity: 1 },
     tick: { stroke: theme.axis?.tick?.color, strokeOpacity: 1 },
-  };
+  });
 
   const g2Theme: Record<string, unknown> = {
     view:  { viewFill: theme.background },
     label: { fill: theme.axis?.label?.color, fontSize, fillOpacity: 1, fontFamily },
-    axis:  { x: axisConfig, y: axisConfig },
+    axis:  { x: buildAxisConfig(), y: buildAxisConfig() },
     legend: {
       label:     { fill: theme.legend?.label?.color, fontSize: theme.legend?.label?.size ?? fontSize, fillOpacity: 1 },
       title:     { fill: theme.legend?.title?.color, fontSize: theme.legend?.title?.size ?? fontSize, fillOpacity: 1 },
@@ -102,7 +102,7 @@ export function buildTooltipCss(theme: VistralTheme): Record<string, string> {
   const borderColor = theme.tooltip?.border?.color;
   return {
     'background-color': theme.tooltip?.background ?? 'rgba(0,0,0,0.8)',
-    color:              theme.tooltip?.text?.color ?? '#fff',
+    color:              theme.tooltip?.text?.color ?? '#FFFFFF',
     'font-size':        `${theme.tooltip?.text?.size ?? 12}px`,
     'border-radius':    '4px',
     padding:            '8px 12px',
