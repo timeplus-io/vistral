@@ -203,6 +203,7 @@ const ref = useRef<ChartHandle>(null);
 |------|------|-------------|
 | `spec` | `VistralSpec` | **Required.** The visualization specification |
 | `source` | `StreamDataSource` | Initial/declarative data source |
+| `theme` | `'dark' \| 'light'` | Color theme. Default: `'dark'` |
 | `width` | `number` | Explicit width in pixels (defaults to 100% of container) |
 | `height` | `number` | Explicit height in pixels (defaults to 100% of container) |
 | `className` | `string` | CSS class for wrapper div |
@@ -217,6 +218,28 @@ const ref = useRef<ChartHandle>(null);
 | `replace(rows)` | Replace all data, re-render |
 | `clear()` | Empty data buffer, re-render |
 | `g2` | Direct access to G2 Chart instance |
+
+### StreamChart Component
+
+```tsx
+import { StreamChart } from '@timeplus/vistral';
+
+<StreamChart
+  config={config}
+  data={dataSource}
+  theme="dark"
+/>
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `config` | `ChartConfig` | required | Chart configuration (TimeSeriesConfig, BarColumnConfig, etc.) |
+| `data` | `StreamDataSource` | required | Data source with columns and data |
+| `theme` | `'dark' \| 'light'` | `'dark'` | Color theme |
+| `showTable` | `boolean` | `false` | Render a data table instead of the chart |
+| `className` | `string` | - | CSS class for wrapper div |
+| `style` | `CSSProperties` | - | Inline styles for wrapper div |
+| `onConfigChange` | `(config: ChartConfig) => void` | - | Called when config changes |
 
 ### Config Compilers
 
