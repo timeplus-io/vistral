@@ -841,11 +841,13 @@ export function buildG2Options(
   // Inject tooltip CSS into interaction config
   const tooltipCss = buildTooltipCss(resolvedTheme);
   const existingInteraction = (g2Spec.interaction as Record<string, unknown>) ?? {};
+  const existingTooltip = (existingInteraction.tooltip as Record<string, unknown>) ?? {};
   g2Spec.interaction = {
     ...existingInteraction,
     tooltip: {
+      ...existingTooltip,
       mount: typeof document !== 'undefined' ? document.body : undefined,
-      css: { '.g2-tooltip': tooltipCss },
+      css: { ...(existingTooltip.css as Record<string, unknown> | undefined), '.g2-tooltip': tooltipCss },
     },
   };
 

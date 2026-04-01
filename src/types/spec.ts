@@ -5,6 +5,8 @@
  * down to AntV G2 options (or other backends in the future).
  */
 
+import type { VistralTheme } from './theme';
+
 // ---------------------------------------------------------------------------
 // Accessor
 // ---------------------------------------------------------------------------
@@ -232,8 +234,6 @@ export interface InteractionSpec {
 // ---------------------------------------------------------------------------
 // Top-level spec
 // ---------------------------------------------------------------------------
-
-import type { VistralTheme } from './theme';
 
 /**
  * VistralSpec — the top-level declarative specification for a streaming
