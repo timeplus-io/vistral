@@ -50,6 +50,12 @@ describe('evaluateCondition', () => {
     expect(evaluateCondition(undefined, 'lt', 100)).toBe(false);
     expect(evaluateCondition(null, 'lte', 0)).toBe(false);
   });
+
+  it('string operators return false for null/undefined cell values', () => {
+    expect(evaluateCondition(null, 'contains', 'anything')).toBe(false);
+    expect(evaluateCondition(undefined, '!contains', 'anything')).toBe(false);
+    expect(evaluateCondition(null, 'eq', 'null')).toBe(false);
+  });
 });
 
 describe('formatCellValue', () => {

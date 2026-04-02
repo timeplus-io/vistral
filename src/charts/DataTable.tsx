@@ -41,12 +41,14 @@ export interface DataTableProps {
   maxRows?: number;
 }
 
-/** Evaluate a single condition operator against a cell value. */
+// Exported for unit testing. These are internal helpers and not part of the
+// package's public API surface (not re-exported from src/index.ts).
 export function evaluateCondition(
   cellValue: unknown,
   operator: 'gt' | 'lt' | 'eq' | 'gte' | 'lte' | 'contains' | '!contains',
   conditionValue: string | number
 ): boolean {
+  if (cellValue === null || cellValue === undefined) return false;
   if (operator === 'contains') {
     return String(cellValue).includes(String(conditionValue));
   }
@@ -56,7 +58,6 @@ export function evaluateCondition(
   if (operator === 'eq') {
     return String(cellValue) === String(conditionValue);
   }
-  if (cellValue === null || cellValue === undefined) return false;
   const num = Number(cellValue);
   if (isNaN(num)) return false;
   const condNum = Number(conditionValue);
