@@ -1,9 +1,13 @@
 /**
- * Geo Chart Component
- * Displays geographic points on a map with streaming support
+ * GeoChart — geographic point map with two rendering engines:
+ *   'l7'     (default) AntV L7 / MapLibre GL — WebGL-accelerated, smooth UX
+ *   'canvas'           built-in canvas tile renderer — zero extra dependencies
+ *
+ * Set `config.mapEngine` to choose. Default is `'l7'`.
  */
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { GeoChartL7 } from './GeoChartL7';
 import type { GeoChartConfig, StreamDataSource, ColumnDefinition } from '../types';
 import type { VistralTheme } from '../types/theme';
 import { DEFAULT_MAX_ITEMS } from '../types/spec';
@@ -231,9 +235,21 @@ function getCategoryColor(value: string, categories: string[], colors: string[])
 }
 
 /**
- * GeoChart Component
+ * GeoChart — routes to L7 or canvas engine based on config.mapEngine.
  */
-export const GeoChart: React.FC<GeoChartProps> = ({
+export const GeoChart: React.FC<GeoChartProps> = (props) => {
+  const engine = props.config.mapEngine ?? 'l7';
+  if (engine === 'l7') {
+    return <GeoChartL7 {...props} />;
+  }
+  return <GeoChartCanvas {...props} />;
+};
+
+/**
+ * GeoChartCanvas — original canvas-based tile renderer.
+ * Used when config.mapEngine === 'canvas'.
+ */
+const GeoChartCanvas: React.FC<GeoChartProps> = ({
   config: configRaw,
   data: dataSource,
   theme = 'dark',
@@ -714,3 +730,4 @@ export const GeoChart: React.FC<GeoChartProps> = ({
 };
 
 export default GeoChart;
+export { GeoChartL7 } from './GeoChartL7';

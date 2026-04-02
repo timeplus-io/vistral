@@ -491,20 +491,17 @@ function ChartWithTableToggle() {
   );
 }`,
 
-  'Geo Chart': `import { StreamChart, useStreamingData, type StreamDataSource, type GeoChartConfig } from '@timeplus/vistral';
+  'Geo Chart': `import { useState } from 'react';
+import { StreamChart, useStreamingData, type StreamDataSource, type GeoChartConfig } from '@timeplus/vistral';
 import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
 
 function StreamingGeoChart() {
   const theme = useTheme();
+  const [mapEngine, setMapEngine] = useState<'l7' | 'canvas'>('l7');
   const { data, append } = useStreamingData([], 300);
-  const loadedRef = useRef(false);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      loadedRef.current = true;
-      append(dataGenerators.globalEvents.generate(40));
-    }
     const id = setInterval(() => {
       append(dataGenerators.globalEvents.generate());
     }, dataGenerators.globalEvents.interval);
@@ -519,19 +516,30 @@ function StreamingGeoChart() {
 
   const config: GeoChartConfig = {
     chartType: 'geo',
+    mapEngine,
     latitude: 'latitude',
     longitude: 'longitude',
     color: 'category',
     size: { key: 'value', min: 4, max: 16 },
-    zoom: 2,
     showZoomControl: true,
     showCenterDisplay: true,
     pointOpacity: 0.7,
   };
 
+  const btnBase = { padding: '4px 12px', border: '1px solid #514e58', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' };
+  const active = { ...btnBase, backgroundColor: '#D53F8C', color: '#fff', borderColor: '#D53F8C' };
+  const inactive = { ...btnBase, backgroundColor: 'transparent', color: '#9CA3AF' };
+
   return (
-    <div style={{ width: '100%', height: '500px' }}>
-      <StreamChart config={config} data={source} theme={theme} />
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+        <span style={{ color: '#9CA3AF', fontSize: '13px' }}>Map engine:</span>
+        <button style={mapEngine === 'l7' ? active : inactive} onClick={() => setMapEngine('l7')}>L7 (WebGL)</button>
+        <button style={mapEngine === 'canvas' ? active : inactive} onClick={() => setMapEngine('canvas')}>Canvas</button>
+      </div>
+      <div style={{ width: '100%', height: '500px' }}>
+        <StreamChart config={config} data={source} theme={theme} />
+      </div>
     </div>
   );
 }`,
@@ -665,19 +673,21 @@ function KeyBoundTable() {
   );
 }`,
 
-  'Geo Chart (Key-Bound)': `import { StreamChart, useStreamingData, type StreamDataSource, type GeoChartConfig } from '@timeplus/vistral';
+  'Geo Chart (Key-Bound)': `import { useState } from 'react';
+import { StreamChart, useStreamingData, type StreamDataSource, type GeoChartConfig } from '@timeplus/vistral';
 import { dataGenerators } from './data-utils';
 import { useTheme } from './App';
 
 function KeyBoundGeoChart() {
   const theme = useTheme();
+  const [mapEngine, setMapEngine] = useState<'l7' | 'canvas'>('l7');
   const { data, append } = useStreamingData([], 500);
   const loadedRef = useRef(false);
 
   useEffect(() => {
     if (!loadedRef.current) {
       loadedRef.current = true;
-      append(dataGenerators.vehicles.generate(10));
+      append(dataGenerators.vehicles.generate(3));
     }
     const id = setInterval(() => {
       append(dataGenerators.vehicles.generate());
@@ -693,26 +703,29 @@ function KeyBoundGeoChart() {
 
   const config: GeoChartConfig = {
     chartType: 'geo',
+    mapEngine,
     latitude: 'latitude',
     longitude: 'longitude',
-    temporal: {
-      mode: 'key',
-      field: 'vehicle_id',
-    },
+    temporal: { mode: 'key', field: 'vehicle_id' },
     size: { key: 'speed', min: 6, max: 14 },
-    center: [40, -74],
-    zoom: 5,
+    autoFit: true,
     showZoomControl: true,
     showCenterDisplay: true,
     pointOpacity: 0.9,
     color: 'vehicle_id',
   };
 
+  const btnBase = { padding: '4px 12px', border: '1px solid #514e58', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' };
+  const active = { ...btnBase, backgroundColor: '#D53F8C', color: '#fff', borderColor: '#D53F8C' };
+  const inactive = { ...btnBase, backgroundColor: 'transparent', color: '#9CA3AF' };
+
   return (
     <div>
-      <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
-        Key-bound GeoChart: Shows latest position per vehicle (vehicles in NYC area)
-      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+        <span style={{ color: '#9CA3AF', fontSize: '13px' }}>Map engine:</span>
+        <button style={mapEngine === 'l7' ? active : inactive} onClick={() => setMapEngine('l7')}>L7 (WebGL)</button>
+        <button style={mapEngine === 'canvas' ? active : inactive} onClick={() => setMapEngine('canvas')}>Canvas</button>
+      </div>
       <div style={{ width: '100%', height: '500px' }}>
         <StreamChart config={config} data={source} theme={theme} />
       </div>

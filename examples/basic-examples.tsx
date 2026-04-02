@@ -550,13 +550,13 @@ export function ChartWithTableToggle() {
 }
 
 // =============================================================================
-// Example 9: Streaming Geo Chart
+// Example 9: Streaming Geo Chart (switchable map engine)
 // =============================================================================
 
 export function StreamingGeoChart() {
   const theme = useTheme();
+  const [mapEngine, setMapEngine] = useState<'l7' | 'canvas'>('l7');
   const { data, append } = useStreamingData<Record<string, unknown>[]>([], 300);
-  const loadedRef = React.useRef(false);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -573,22 +573,36 @@ export function StreamingGeoChart() {
 
   const config: GeoChartConfig = {
     chartType: 'geo',
+    mapEngine,
     latitude: 'latitude',
     longitude: 'longitude',
     color: 'category',
-    size: {
-      key: 'value',
-      min: 4,
-      max: 16,
-    },
+    size: { key: 'value', min: 4, max: 16 },
     showZoomControl: true,
     showCenterDisplay: true,
     pointOpacity: 0.7,
   };
 
+  const btnBase: React.CSSProperties = {
+    padding: '4px 12px',
+    border: '1px solid #514e58',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '13px',
+  };
+  const active: React.CSSProperties = { ...btnBase, backgroundColor: '#D53F8C', color: '#fff', borderColor: '#D53F8C' };
+  const inactive: React.CSSProperties = { ...btnBase, backgroundColor: 'transparent', color: '#9CA3AF' };
+
   return (
-    <div style={{ width: '100%', height: '500px' }}>
-      <StreamChart config={config} data={source} theme={theme} />
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+        <span style={{ color: '#9CA3AF', fontSize: '13px' }}>Map engine:</span>
+        <button style={mapEngine === 'l7' ? active : inactive} onClick={() => setMapEngine('l7')}>L7 (WebGL)</button>
+        <button style={mapEngine === 'canvas' ? active : inactive} onClick={() => setMapEngine('canvas')}>Canvas</button>
+      </div>
+      <div style={{ width: '100%', height: '500px' }}>
+        <StreamChart config={config} data={source} theme={theme} />
+      </div>
     </div>
   );
 }
@@ -747,6 +761,7 @@ export function KeyBoundTable() {
 
 export function KeyBoundGeoChart() {
   const theme = useTheme();
+  const [mapEngine, setMapEngine] = useState<'l7' | 'canvas'>('l7');
   const { data, append } = useStreamingData<Record<string, unknown>[]>([], 500);
   const loadedRef = React.useRef(false);
 
@@ -769,17 +784,14 @@ export function KeyBoundGeoChart() {
 
   const config: GeoChartConfig = {
     chartType: 'geo',
+    mapEngine,
     latitude: 'latitude',
     longitude: 'longitude',
     temporal: {
       mode: 'key',
       field: 'vehicle_id',
     },
-    size: {
-      key: 'speed',
-      min: 6,
-      max: 14,
-    },
+    size: { key: 'speed', min: 6, max: 14 },
     autoFit: true,
     showZoomControl: true,
     showCenterDisplay: true,
@@ -787,11 +799,23 @@ export function KeyBoundGeoChart() {
     color: 'vehicle_id',
   };
 
+  const btnBase: React.CSSProperties = {
+    padding: '4px 12px',
+    border: '1px solid #514e58',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '13px',
+  };
+  const active: React.CSSProperties = { ...btnBase, backgroundColor: '#D53F8C', color: '#fff', borderColor: '#D53F8C' };
+  const inactive: React.CSSProperties = { ...btnBase, backgroundColor: 'transparent', color: '#9CA3AF' };
+
   return (
     <div>
-      <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
-        Key-bound GeoChart: Shows latest position per vehicle (vehicles in NYC area)
-      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+        <span style={{ color: '#9CA3AF', fontSize: '13px' }}>Map engine:</span>
+        <button style={mapEngine === 'l7' ? active : inactive} onClick={() => setMapEngine('l7')}>L7 (WebGL)</button>
+        <button style={mapEngine === 'canvas' ? active : inactive} onClick={() => setMapEngine('canvas')}>Canvas</button>
+      </div>
       <div style={{ width: '100%', height: '500px' }}>
         <StreamChart config={config} data={source} theme={theme} />
       </div>
