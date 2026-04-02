@@ -263,6 +263,7 @@ const TableCell: React.FC<{
   barMaxValue?: number;
   color?: TableCellColorConfig;
   trend?: { sign: '+' | '-'; color: string } | null;
+  trendEnabled?: boolean;
   wrap?: boolean;
   isMonospace?: boolean;
   isDark?: boolean;
@@ -275,6 +276,7 @@ const TableCell: React.FC<{
   barMaxValue = 0,
   color,
   trend,
+  trendEnabled,
   wrap,
   isMonospace,
   isDark = true,
@@ -298,7 +300,7 @@ const TableCell: React.FC<{
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
-          justifyContent: isNumeric ? 'flex-end' : 'flex-start',
+          justifyContent: isNumeric && miniChart !== 'bar' ? 'flex-end' : 'flex-start',
         }}
       >
         {miniChart === 'sparkline' && sparklineData.length > 0 && (
@@ -308,7 +310,7 @@ const TableCell: React.FC<{
           <CellBar value={Number(value)} maxValue={barMaxValue} isDark={isDark ?? true} />
         )}
         <span>{displayValue}</span>
-        {trend && (
+        {trendEnabled && (
           <span
             style={{
               display: 'inline-block',
@@ -316,16 +318,21 @@ const TableCell: React.FC<{
               height: 0,
               marginLeft: '2px',
               borderStyle: 'solid',
-              ...(trend.sign === '+'
-                ? {
-                    borderWidth: '0 4px 7px 4px',
-                    borderColor: `transparent transparent ${trend.color} transparent`,
-                    marginBottom: '1px',
-                  }
+              ...(trend
+                ? trend.sign === '+'
+                  ? {
+                      borderWidth: '0 4px 7px 4px',
+                      borderColor: `transparent transparent ${trend.color} transparent`,
+                      marginBottom: '1px',
+                    }
+                  : {
+                      borderWidth: '7px 4px 0 4px',
+                      borderColor: `${trend.color} transparent transparent transparent`,
+                      marginTop: '1px',
+                    }
                 : {
-                    borderWidth: '7px 4px 0 4px',
-                    borderColor: `${trend.color} transparent transparent transparent`,
-                    marginTop: '1px',
+                    borderWidth: '0 4px 7px 4px',
+                    borderColor: 'transparent',
                   }),
             }}
           />
@@ -672,6 +679,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                       barMaxValue={barMaxValue}
                       color={colStyle?.color as TableCellColorConfig}
                       trend={trend}
+                      trendEnabled={!!colStyle?.trend}
                       wrap={config.tableWrap}
                       isMonospace={col.type === 'string'}
                       isDark={isDarkTheme(theme)}
