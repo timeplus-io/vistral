@@ -1,4 +1,6 @@
 /* Base table — following axion table.css pattern */
+/* Colors mapped from axion's tp.gray palette (packages/components/src/index.css) */
+
 .vistral-table {
   width: 100%;
   border-collapse: collapse;
@@ -34,7 +36,7 @@
   white-space: normal;
 }
 
-/* Column resizer handle — mirrors axion .resizer */
+/* Column resizer handle — mirrors axion resizeArea */
 .vistral-table .resizer {
   position: absolute;
   right: 0;
@@ -51,73 +53,115 @@
 
 .vistral-table .resizer.is-resizing {
   opacity: 1;
-  background: #3B82F6;
+  /* tp.gray[500] dark — axion resizeArea.background */
+  background: #7d7b82;
 }
 
 @media (hover: hover) {
   .vistral-table th:hover .resizer {
     opacity: 1;
-    background: #4B5563;
+    /* tp.gray[600] dark — axion resizeArea.guideLineColor */
+    background: #514e58;
   }
 }
 
-/* ── Dark theme ─────────────────────────────── */
+/* ── Dark theme ─────────────────────────────────────────────────────────────
+   Sourced from axion s2Theme (dark mode):
+     background:            tp.gray[700] = #3a3741
+     colCell.backgroundColor: tp.gray[600] = #514e58
+     colCell.text.fill:     tp.gray[200] = #ececed
+     dataCell.text.fill:    tp.gray[100] = #f7f6f6
+     dataCell.borderColor:  tp.gray[600] = #514e58  (single-pixel, axion uses 0-width)
+     hover:                 transparent (no highlight)
+     alternating rows:      none (axion crossBackgroundColor = backgroundColor)
+   ─────────────────────────────────────────────────────────────────────────── */
 .vistral-table.theme-dark {
-  color: #e5e7eb;
-  background-color: #111827;
+  /* tp.gray[100] dark */
+  color: #f7f6f6;
+  /* tp.gray[700] dark */
+  background-color: #3a3741;
 }
+
 .vistral-table.theme-dark th {
-  background-color: #374151;
-  border-bottom: 1px solid #4b5563;
-  color: #d1d5db;
+  /* tp.gray[600] dark — axion colCell.cell.backgroundColor */
+  background-color: #514e58;
+  /* subtle separator matching header bg */
+  border-bottom: 1px solid #514e58;
+  /* tp.gray[200] dark — axion colCell.text.fill */
+  color: #ececed;
 }
+
 .vistral-table.theme-dark td {
-  border-bottom: 1px solid #1f2937;
+  /* tp.gray[600] dark — axion dataCell.cell.horizontalBorderColor
+     (axion uses 0-width; we use 1px for HTML table readability) */
+  border-bottom: 1px solid #514e58;
 }
-.vistral-table.theme-dark tbody tr:nth-child(even) {
-  background-color: #1f2937;
-}
+
+/* No alternating rows — axion crossBackgroundColor == backgroundColor */
 .vistral-table.theme-dark tbody tr:hover {
-  background-color: #374151;
+  /* transparent — axion interactionState.hover.backgroundColor: 'transparent' */
+  background-color: rgba(255, 255, 255, 0.04);
 }
+
 .vistral-table.theme-dark td.monospace {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  color: #d1d5db;
+  /* tp.gray[200] dark */
+  color: #ececed;
 }
+
 .vistral-table.theme-dark .type-badge {
-  background-color: #374151;
-  color: #9ca3af;
+  /* tp.gray[600] dark */
+  background-color: #514e58;
+  /* tp.gray[400] dark */
+  color: #b5b4b8;
   font-size: 10px;
   padding: 2px 4px;
   border-radius: 4px;
 }
 
-/* ── Light theme ────────────────────────────── */
+/* ── Light theme ─────────────────────────────────────────────────────────────
+   Mirrors the same axion scale indices, applied to light mode values:
+     background:            tp.gray[700] light = #dad9db
+     colCell.backgroundColor: tp.gray[600] light = #b5b4b8
+     colCell.text.fill:     tp.gray[200] light = #231f2b
+     dataCell.text.fill:    tp.gray[100] light = #120f1a
+     dataCell.borderColor:  tp.gray[600] light = #b5b4b8
+   ─────────────────────────────────────────────────────────────────────────── */
 .vistral-table.theme-light {
-  color: #1a1c1d;
-  background-color: #ffffff;
+  /* tp.gray[100] light */
+  color: #120f1a;
+  background-color: transparent;
 }
+
 .vistral-table.theme-light th {
-  background-color: #e0e0e0;
-  border-bottom: 1px solid #c0c0c0;
-  color: #4a4a4a;
+  /* tp.gray[800] light — lighter header for light theme */
+  background-color: #ececed;
+  border-bottom: 1px solid #dad9db;
+  /* tp.gray[200] light — axion colCell.text.fill equivalent */
+  color: #231f2b;
 }
+
 .vistral-table.theme-light td {
-  border-bottom: 1px solid #f0f0f0;
+  /* tp.gray[600] light */
+  border-bottom: 1px solid #b5b4b8;
 }
-.vistral-table.theme-light tbody tr:nth-child(even) {
-  background-color: #fafafa;
-}
+
+/* No alternating rows — matches axion */
 .vistral-table.theme-light tbody tr:hover {
-  background-color: #f2f7ff;
+  background-color: rgba(0, 0, 0, 0.04);
 }
+
 .vistral-table.theme-light td.monospace {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  color: #333;
+  /* tp.gray[200] light */
+  color: #231f2b;
 }
+
 .vistral-table.theme-light .type-badge {
-  background-color: #e5e7eb;
-  color: #6b7280;
+  /* tp.gray[700] light */
+  background-color: #dad9db;
+  /* tp.gray[400] light */
+  color: #514e58;
   font-size: 10px;
   padding: 2px 4px;
   border-radius: 4px;
