@@ -13,12 +13,14 @@ import type {
   MultipleValueConfig,
   TableConfig,
   GeoChartConfig,
+  MarkdownConfig,
 } from '../types';
 import type { VistralTheme } from '../types/theme';
 import { SingleValueChart } from './SingleValueChart';
 import { MultipleValueChart } from './MultipleValueChart';
 import { DataTable } from './DataTable';
 import { GeoChart } from './GeoChart';
+import { MarkdownChart } from './MarkdownChart';
 import { VistralChart } from './VistralChart';
 import { compileTimeSeriesConfig, compileBarColumnConfig } from '../core/compilers';
 import { isDarkTheme } from '../core/theme-registry';
@@ -80,6 +82,10 @@ function isTableConfig(config: ChartConfig): config is TableConfig {
  */
 function isGeoConfig(config: ChartConfig): config is GeoChartConfig {
   return config.chartType === 'geo';
+}
+
+function isMarkdownConfig(config: ChartConfig): config is MarkdownConfig {
+  return config.chartType === 'markdown';
 }
 
 /**
@@ -337,6 +343,18 @@ export const StreamChart: React.FC<StreamChartProps> = ({
       );
     }
 
+    if (isMarkdownConfig(config)) {
+      return (
+        <MarkdownChart
+          config={config}
+          data={data}
+          theme={theme}
+          className={className}
+          style={style}
+        />
+      );
+    }
+
     // Unsupported chart type
     return <UnsupportedChart chartType={config.chartType} theme={theme} />;
   }, [config, data, theme, className, style, onConfigChange]);
@@ -351,3 +369,5 @@ export { SingleValueChart } from './SingleValueChart';
 export { MultipleValueChart } from './MultipleValueChart';
 export { DataTable } from './DataTable';
 export { GeoChart } from './GeoChart';
+export { MarkdownChart } from './MarkdownChart';
+export type { MarkdownChartProps } from './MarkdownChart';

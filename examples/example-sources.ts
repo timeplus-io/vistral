@@ -1699,6 +1699,189 @@ function TrendIndicatorTable() {
   );
 }`,
 
+  'Markdown (Latest Row)': `import { StreamChart, useStreamingData, type StreamDataSource, type MarkdownConfig } from '@timeplus/vistral';
+
+function MarkdownLatestRow() {
+  const theme = useTheme();
+  const { data, append } = useStreamingData<unknown[]>([], 200);
+
+  useEffect(() => {
+    const services = ['api-gateway', 'auth-service', 'db-primary', 'cache', 'queue'];
+    const statuses = ['healthy', 'degraded', 'healthy', 'healthy', 'healthy'];
+    let tick = 0;
+
+    const id = setInterval(() => {
+      tick++;
+      const idx = Math.floor(Math.random() * services.length);
+      const rps = Math.floor(Math.random() * 8000) + 2000;
+      const latency = (Math.random() * 80 + 10).toFixed(1);
+      const errors = Math.floor(Math.random() * 5);
+      statuses[idx] = errors > 3 ? 'degraded' : 'healthy';
+
+      append([[
+        new Date().toISOString(),
+        services[idx],
+        statuses[idx],
+        rps,
+        latency,
+        errors,
+        tick,
+      ]]);
+    }, 1200);
+    return () => clearInterval(id);
+  }, []);
+
+  const dataSource: StreamDataSource = {
+    columns: [
+      { name: 'time', type: 'datetime64' },
+      { name: 'service', type: 'string' },
+      { name: 'status', type: 'string' },
+      { name: 'rps', type: 'int64' },
+      { name: 'latency_ms', type: 'float64' },
+      { name: 'errors', type: 'int64' },
+      { name: 'tick', type: 'int64' },
+    ],
+    data,
+    isStreaming: true,
+  };
+
+  const config: MarkdownConfig = {
+    chartType: 'markdown',
+    content: \`## System Status
+
+**Last update:** {{time}}
+
+| Field | Value |
+|-------|-------|
+| Service | **{{service}}** |
+| Status | {{status}} |
+| Requests/s | {{rps}} |
+| Latency | {{latency_ms}} ms |
+| Errors | {{errors}} |
+
+> Values reflect the most recently received data row.\`,
+  };
+
+  return (
+    <div style={{ width: '100%', height: '340px' }}>
+      <StreamChart config={config} data={dataSource} theme={theme} />
+    </div>
+  );
+}`,
+
+  'Markdown (Frame-Bound)': `import { StreamChart, useStreamingData, type StreamDataSource, type MarkdownConfig } from '@timeplus/vistral';
+
+function MarkdownFrameBound() {
+  const theme = useTheme();
+  const { data, append } = useStreamingData<unknown[]>([], 200);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const cpu = (Math.random() * 60 + 20).toFixed(1);
+      const mem = (Math.random() * 40 + 40).toFixed(1);
+      const disk = (Math.random() * 20 + 60).toFixed(1);
+      const uptime = Math.floor(Date.now() / 1000) % 86400;
+      append([[new Date().toISOString(), cpu, mem, disk, uptime]]);
+    }, 1500);
+    return () => clearInterval(id);
+  }, []);
+
+  const dataSource: StreamDataSource = {
+    columns: [
+      { name: 'time', type: 'datetime64' },
+      { name: 'cpu_pct', type: 'float64' },
+      { name: 'mem_pct', type: 'float64' },
+      { name: 'disk_pct', type: 'float64' },
+      { name: 'uptime_s', type: 'int64' },
+    ],
+    data,
+    isStreaming: true,
+  };
+
+  const config: MarkdownConfig = {
+    chartType: 'markdown',
+    temporal: { mode: 'frame', field: 'time' },
+    content: \`## Host Snapshot
+
+- **CPU:** {{cpu_pct}}%
+- **Memory:** {{mem_pct}}%
+- **Disk:** {{disk_pct}}%
+- **Uptime:** {{uptime_s}} s
+
+_Snapshot updated on every new timestamp (frame mode)._\`,
+  };
+
+  return (
+    <div style={{ width: '100%', height: '260px' }}>
+      <StreamChart config={config} data={dataSource} theme={theme} />
+    </div>
+  );
+}`,
+
+  'Markdown (Key-Bound)': `import { StreamChart, useStreamingData, type StreamDataSource, type MarkdownConfig } from '@timeplus/vistral';
+
+function MarkdownKeyBound() {
+  const theme = useTheme();
+  const { data, append } = useStreamingData<unknown[]>([], 200);
+
+  useEffect(() => {
+    const regions: Record<string, { temp: number; humidity: number; wind: number }> = {
+      'New York': { temp: 18, humidity: 55, wind: 12 },
+      'London': { temp: 12, humidity: 70, wind: 18 },
+      'Tokyo': { temp: 22, humidity: 65, wind: 8 },
+    };
+
+    const id = setInterval(() => {
+      const name = Object.keys(regions)[Math.floor(Math.random() * 3)];
+      const r = regions[name];
+      r.temp += (Math.random() - 0.5) * 2;
+      r.humidity = Math.min(99, Math.max(10, r.humidity + (Math.random() - 0.5) * 3));
+      r.wind = Math.max(0, r.wind + (Math.random() - 0.5) * 4);
+
+      append([[
+        new Date().toISOString(),
+        name,
+        r.temp.toFixed(1),
+        r.humidity.toFixed(0),
+        r.wind.toFixed(1),
+      ]]);
+    }, 800);
+    return () => clearInterval(id);
+  }, []);
+
+  const dataSource: StreamDataSource = {
+    columns: [
+      { name: 'time', type: 'datetime64' },
+      { name: 'city', type: 'string' },
+      { name: 'temp_c', type: 'float64' },
+      { name: 'humidity', type: 'int64' },
+      { name: 'wind_kph', type: 'float64' },
+    ],
+    data,
+    isStreaming: true,
+  };
+
+  const config: MarkdownConfig = {
+    chartType: 'markdown',
+    temporal: { mode: 'key', field: 'city' },
+    content: \`## Weather Dashboard
+
+| City | Temp | Humidity | Wind |
+|------|------|----------|------|
+| New York | {{@New York::temp_c}} °C | {{@New York::humidity}}% | {{@New York::wind_kph}} kph |
+| London | {{@London::temp_c}} °C | {{@London::humidity}}% | {{@London::wind_kph}} kph |
+| Tokyo | {{@Tokyo::temp_c}} °C | {{@Tokyo::humidity}}% | {{@Tokyo::wind_kph}} kph |
+
+> Each city's values update independently as new data arrives (key mode).\`,
+  };
+
+  return (
+    <div style={{ width: '100%', height: '280px' }}>
+      <StreamChart config={config} data={dataSource} theme={theme} />
+    </div>
+  );
+}`,
+
   'Table (Mini Bar Charts)': `import { StreamChart, useStreamingData, type StreamDataSource, type TableConfig } from '@timeplus/vistral';
 
 function MiniBarTable() {

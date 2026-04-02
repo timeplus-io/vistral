@@ -11,6 +11,7 @@ export {
   SingleValueChart,
   DataTable,
   GeoChart,
+  MarkdownChart,
   VistralChart,
   getSingleValueDefaults,
   getTableDefaults,
@@ -23,6 +24,7 @@ export type {
   SingleValueChartProps,
   DataTableProps,
   GeoChartProps,
+  MarkdownChartProps,
   VistralChartProps,
   ChartHandle,
 } from './charts';
@@ -40,6 +42,7 @@ export type {
   TableConfig,
   OHLCConfig,
   GeoChartConfig,
+  MarkdownConfig,
   ChartConfig,
   ColorPalette,
   ColumnStatistics,
