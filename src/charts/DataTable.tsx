@@ -342,7 +342,6 @@ const TableHeaderCell: React.FC<{
   displayName?: string;
   width: number;
   onResize: (width: number) => void;
-  theme: string | VistralTheme;
 }> = ({ column, displayName, width, onResize }) => {
   const resizeRef = useRef<HTMLDivElement>(null);
   const [isResizing, setIsResizing] = useState(false);
@@ -567,6 +566,23 @@ export const DataTable: React.FC<DataTableProps> = ({
     [dataSource.columns, config.tableStyles]
   );
 
+  // Precompute max absolute value per bar-chart column (hoisted out of render loop)
+  const barMaxValues = useMemo(() => {
+    const map: Record<string, number> = {};
+    if (!config.tableStyles) return map;
+    visibleColumns.forEach((col) => {
+      const colStyle = config.tableStyles?.[col.name];
+      if (isNumericColumn(col.type) && colStyle?.miniChart === 'bar') {
+        const colIndex = dataSource.columns.findIndex((c) => c.name === col.name);
+        const values = displayData
+          .map((r) => Math.abs(Number(r[colIndex])))
+          .filter((v) => !isNaN(v));
+        map[col.name] = values.length > 0 ? Math.max(...values) : 0;
+      }
+    });
+    return map;
+  }, [displayData, visibleColumns, config.tableStyles, dataSource.columns]);
+
   return (
     <div
       ref={containerRef}
@@ -593,7 +609,6 @@ export const DataTable: React.FC<DataTableProps> = ({
                 displayName={config.tableStyles?.[col.name]?.name}
                 width={columnWidths[col.name] || 150}
                 onResize={(width) => handleColumnResize(col.name, width)}
-                theme={theme}
               />
             ))}
           </tr>
@@ -643,18 +658,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                     ? getTrend(value, prevValue, colStyle.increaseColor, colStyle.decreaseColor)
                     : null;
 
-                  // Bar max: max absolute value across all visible rows for this column
-                  const barMaxValue =
-                    numeric && colStyle?.miniChart === 'bar'
-                      ? Math.max(
-                          ...displayData
-                            .map((r) => {
-                              const idx = dataSource.columns.findIndex((c) => c.name === col.name);
-                              return Math.abs(Number(r[idx]));
-                            })
-                            .filter((v) => !isNaN(v))
-                        )
-                      : 0;
+                  const barMaxValue = barMaxValues[col.name] ?? 0;
 
                   return (
                     <TableCell
