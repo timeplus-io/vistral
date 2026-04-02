@@ -40,6 +40,63 @@ export interface DataTableProps {
   maxRows?: number;
 }
 
+/** Evaluate a single condition operator against a cell value. */
+export function evaluateCondition(
+  cellValue: unknown,
+  operator: 'gt' | 'lt' | 'eq' | 'gte' | 'lte' | 'contains' | '!contains',
+  conditionValue: string | number
+): boolean {
+  if (operator === 'contains') {
+    return String(cellValue).includes(String(conditionValue));
+  }
+  if (operator === '!contains') {
+    return !String(cellValue).includes(String(conditionValue));
+  }
+  if (operator === 'eq') {
+    return String(cellValue) === String(conditionValue);
+  }
+  const num = Number(cellValue);
+  if (isNaN(num)) return false;
+  const condNum = Number(conditionValue);
+  switch (operator) {
+    case 'gt':  return num > condNum;
+    case 'gte': return num >= condNum;
+    case 'lt':  return num < condNum;
+    case 'lte': return num <= condNum;
+    default:    return false;
+  }
+}
+
+/** Format a cell value for display, applying fractionDigits when column is numeric. */
+export function formatCellValue(
+  value: unknown,
+  isNumeric: boolean,
+  fractionDigits?: number
+): string {
+  if (value === null || value === undefined) return '';
+  if (isNumeric && fractionDigits !== undefined) {
+    const num = Number(value);
+    if (!isNaN(num)) {
+      return num.toLocaleString(undefined, { maximumFractionDigits: fractionDigits });
+    }
+  }
+  if (Array.isArray(value)) return JSON.stringify(value);
+  if (value !== null && typeof value === 'object') return JSON.stringify(value, null, 2);
+  return String(value);
+}
+
+/** Convert a hex color string to rgba() with the given alpha (0–1). Non-hex colors pass through unchanged. */
+export function hexToRgba(hex: string, alpha: number): string {
+  // Expand 3-digit hex: #rgb → #rrggbb
+  const normalized = hex.replace(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i, '#$1$1$2$2$3$3');
+  const match = /^#([0-9a-f]{6})$/i.exec(normalized);
+  if (!match) return hex;
+  const r = parseInt(match[1].slice(0, 2), 16);
+  const g = parseInt(match[1].slice(2, 4), 16);
+  const b = parseInt(match[1].slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 /**
  * Get default table configuration
  */
@@ -109,40 +166,19 @@ const CellSparkline: React.FC<{ data: number[]; width?: number; height?: number 
  */
 function getCellBackgroundColor(
   value: unknown,
-  colorConfig?: TableCellColorConfig
+  colorConfig?: TableCellColorConfig,
+  forHighlightRow = false
 ): string | undefined {
   if (!colorConfig || colorConfig.type === 'none') return undefined;
 
   if (colorConfig.type === 'condition' && colorConfig.conditions) {
-    const numValue = Number(value);
-    if (isNaN(numValue)) return undefined;
-
     for (const condition of colorConfig.conditions) {
-      let matches = false;
-      switch (condition.operator) {
-        case 'gt':
-          matches = numValue > (condition.value as number);
-          break;
-        case 'lt':
-          matches = numValue < (condition.value as number);
-          break;
-        case 'eq':
-          matches = numValue === condition.value || String(value) === String(condition.value);
-          break;
-        case 'gte':
-          matches = numValue >= (condition.value as number);
-          break;
-        case 'lte':
-          matches = numValue <= (condition.value as number);
-          break;
-        case 'contains':
-          matches = String(value ?? '').includes(String(condition.value));
-          break;
-        case '!contains':
-          matches = !String(value ?? '').includes(String(condition.value));
-          break;
+      // highlightRow conditions belong to row-level coloring, not cell-level
+      if (condition.highlightRow && !forHighlightRow) continue;
+      if (!condition.highlightRow && forHighlightRow) continue;
+      if (evaluateCondition(value, condition.operator, condition.value)) {
+        return condition.color;
       }
-      if (matches) return condition.color;
     }
   }
 
