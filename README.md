@@ -11,7 +11,7 @@
   <img src="examples/assets/timeplus-vistral_logo_pink.svg" width="200" alt="Vistral Logo" />
 </p>
 
-A powerful streaming data visualization library based on the Grammar of Graphics. Designed for real-time data visualization with support for time series, bar/column charts, single value metrics, and data tables.
+A powerful streaming data visualization library based on the Grammar of Graphics. Designed for real-time data visualization with support for time series, bar/column charts, single value metrics, data tables, geographic maps, and markdown templates.
 
 ![Gallery](./docs/images/gallery.gif "Gallery")
 
@@ -42,6 +42,7 @@ Design Principles [docs/design-principles.md](docs/design-principles.md)
   - [Single Value](#single-value)
   - [Multiple Value](#multiple-value)
   - [Data Table](#data-table)
+  - [Markdown](#markdown)
   - [Geo Chart](#geo-chart)
 - [Temporal Binding Modes](#temporal-binding-modes)
 - [Using Individual Chart Components](#using-individual-chart-components)
@@ -56,7 +57,7 @@ Design Principles [docs/design-principles.md](docs/design-principles.md)
 
 ## Features
 
-- 📊 **Multiple Chart Types**: Line, Area, Bar, Column, Single Value, Data Table, and Geo Map
+- 📊 **Multiple Chart Types**: Line, Area, Bar, Column, Single Value, Multiple Value, Data Table, Markdown, and Geo Map
 - 🔄 **Streaming Support**: Built for real-time data with efficient updates
 - ⏱️ **Temporal Binding**: Three modes for handling streaming data (axis-bound, frame-bound, key-bound)
 - 🎨 **Beautiful Themes**: Dark and light themes with customizable color palettes
@@ -292,7 +293,7 @@ Display multiple values side-by-side, split by a specific key. Key bound is requ
 
 ![DataTable](./docs/images/datatable.gif "DataTable")
 
-Display streaming data in a tabular format with column configuration.
+Display streaming data in a tabular format with rich per-column styling: trend indicators, mini charts (sparkline or bar), and conditional cell/row highlighting.
 
 ```tsx
 <StreamChart
@@ -300,50 +301,88 @@ Display streaming data in a tabular format with column configuration.
     chartType: 'table',
     tableStyles: {
       timestamp: { name: 'Time', width: 200 },
-      value: {
-        name: 'Value',
-        miniChart: 'sparkline',
+      price: {
+        name: 'Price',
+        fractionDigits: 2,
+        trend: true,                    // ▲▼ indicator; invisible placeholder preserves layout when no change
+        increaseColor: '#22c55e',
+        decreaseColor: '#ef4444',
+      },
+      volume: {
+        name: 'Volume',
+        miniChart: 'bar',               // Left-aligned bar for cross-row comparison
+      },
+      status: {
+        name: 'Status',
         color: {
           type: 'condition',
           conditions: [
-            { operator: 'gt', value: 100, color: '#22C55E' },
-            { operator: 'lt', value: 50, color: '#EF4444' },
+            { operator: 'eq', value: 'critical', color: '#EF4444', highlightRow: true },
+            { operator: 'eq', value: 'warning',  color: '#F59E0B' },
           ],
         },
       },
     },
-    temporal: {
-      mode: 'key',    // Deduplicate by key
-      field: 'id',
-    },
+    temporal: { mode: 'key', field: 'symbol' },
   }}
   data={data}
 />
 ```
 
+### Markdown
+
+Render live Markdown templates populated with values from streaming data. Supports all three temporal modes.
+
+```tsx
+<StreamChart
+  config={{
+    chartType: 'markdown',
+    temporal: { mode: 'key', field: 'city' },
+    content: `
+## Live Weather
+
+| City     | Temp        | Humidity        |
+|----------|-------------|-----------------|
+| New York | {{@New York::temp_c}} °C | {{@New York::humidity}}% |
+| London   | {{@London::temp_c}} °C  | {{@London::humidity}}%  |
+    `,
+  }}
+  data={data}
+/>
+```
+
+Use `{{fieldName}}` to insert the value from the latest row, or `{{@keyValue::fieldName}}` to look up a specific key entity (key-bound mode).
+
 ### Geo Chart
 
 ![GeoChart](./docs/images/geochart.gif "GeoChart")
 
-Display geographic data points on an interactive map with pan and zoom.
+Display geographic data points on an interactive map with pan and zoom. Two rendering engines are available via `mapEngine`:
+
+- **`'l7'`** (default) — AntV L7 + MapLibre GL, WebGL-accelerated. Smooth pan/zoom, GPU-rendered points, free CartoDB/OSM tiles — no API token required.
+- **`'canvas'`** — built-in canvas renderer, no extra dependencies.
 
 ```tsx
 <StreamChart
   config={{
     chartType: 'geo',
+    mapEngine: 'l7',        // default — WebGL-accelerated via AntV L7
     latitude: 'lat',
     longitude: 'lng',
-    color: 'category', // Color points by category
+    color: 'category',      // Color points by category
     size: {
-      key: 'value',    // Size points by value
+      key: 'value',         // Size points by numeric field
       min: 4,
       max: 20,
     },
-    zoom: 3,
-    center: [40.7128, -74.006], // [lat, lng]
+    autoFit: true,          // Fit map to data bounds on each update
     showZoomControl: true,
     showCenterDisplay: true,
     pointOpacity: 0.8,
+    temporal: {
+      mode: 'key',
+      field: 'vehicle_id',  // Track latest position per entity
+    },
   }}
   data={data}
 />
@@ -417,21 +456,25 @@ Keeps the latest value for each unique key. Supports **composite keys** by passi
 
 ## Using Individual Chart Components
 
-For complex use cases not covered by `StreamChart`, you can use the lower-level `VistralChart` with a raw grammar specification, or the specialized `SingleValueChart` and `DataTable` components.
+For complex use cases not covered by `StreamChart`, you can use the lower-level `VistralChart` with a raw grammar specification, or the specialized standalone chart components.
 
 ```tsx
 import { 
   VistralChart,
   SingleValueChart, 
-  DataTable 
+  DataTable,
+  MarkdownChart,
+  GeoChart,
 } from '@timeplus/vistral';
 
-// Advanced: Use Grammar directly
+// Advanced: Use Grammar API directly for full control
 <VistralChart spec={mySpec} source={data} />
 
-// Specialized Components
+// Standalone components (same as StreamChart routing, but direct)
 <SingleValueChart config={config} data={data} theme="dark" />
 <DataTable config={config} data={data} theme="dark" />
+<MarkdownChart config={config} data={data} theme="dark" />
+<GeoChart config={config} data={data} theme="dark" />
 ```
 
 ## Data Format
@@ -533,7 +576,7 @@ import {
 } from '@timeplus/vistral';
 
 // Multi-color palettes for categorical data
-// Available: 'Dawn', 'Morning', 'Midnight', 'Ocean', 'Sunset'
+// Available: 'Timeplus', 'Dawn', 'Morning', 'Midnight', 'Ocean', 'Sunset'
 
 // Single-color palettes for sequential data
 // Available: 'red', 'pink', 'purple', 'blue', 'green', 'orange', 'yellow', 'cyan', 'gray'
@@ -619,6 +662,8 @@ This will open http://localhost:3000 with a sidebar navigation showing all avail
 
 Built with:
 - [AntV G2](https://g2.antv.antgroup.com/) - Visualization grammar
+- [AntV L7](https://l7.antv.antgroup.com/) - WebGL geo rendering
+- [MapLibre GL](https://maplibre.org/) - Map rendering engine (via L7)
 - [React](https://reactjs.org/) - UI framework
 - [TypeScript](https://www.typescriptlang.org/) - Type safety
 

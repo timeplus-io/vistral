@@ -281,6 +281,18 @@ export interface GeoChartConfig extends ChartConfigBase {
   pointColor?: string;
   /** Automatically fit map to data bounds */
   autoFit?: boolean;
+  /**
+   * Map rendering engine.
+   * - `'l7'` (default) — AntV L7 / MapLibre GL, WebGL-accelerated, no API token required.
+   * - `'canvas'` — built-in canvas tile renderer, no external dependencies.
+   */
+  mapEngine?: 'l7' | 'canvas';
+  /**
+   * Mapbox API token. Only needed when `tileProvider` is a Mapbox-hosted style
+   * (e.g. `'mapbox-dark'`, `'mapbox-light'`) with the `l7` engine.
+   * Free tile providers (cartodb-dark, cartodb-light, openstreetmap) work without a token.
+   */
+  mapboxToken?: string;
 }
 
 // Markdown Chart Configuration

@@ -296,8 +296,8 @@ All chart types support a unified `temporal` configuration for handling streamin
 | Mode | Description | Supported Charts |
 |------|-------------|------------------|
 | `axis` | Sliding time window on X-axis | Line, Area |
-| `frame` | Filter to latest timestamp only | Table, Bar, Column, Geo, Markdown |
-| `key` | Keep latest value per unique key | Table, Bar, Column, Geo, Markdown |
+| `frame` | Filter to latest timestamp only | Table, Bar, Column, Geo (L7 + canvas), Markdown |
+| `key` | Keep latest value per unique key | Table, Bar, Column, Geo (L7 + canvas), Markdown |
 
 **Example:**
 ```tsx
@@ -561,13 +561,46 @@ function WeatherCard() {
 | `size` | `{ key?, min?, max? }` | - | Point size configuration |
 | `center` | `[number, number]` | auto | Initial center [lat, lng] |
 | `zoom` | `number` | `2` | Initial zoom level (1-18) |
-| `tileProvider` | `string` | `'cartodb-dark'` | Map tile provider |
+| `tileProvider` | `string` | `'cartodb-dark'` / `'cartodb-light'` | Tile provider (auto-selected from theme if omitted) |
 | `showZoomControl` | `boolean` | `true` | Show zoom buttons |
 | `showCenterDisplay` | `boolean` | `false` | Show center coordinates |
 | `pointOpacity` | `number` | `0.8` | Point opacity (0-1) |
-| `pointColor` | `string` | `'#3B82F6'` | Default point color |
+| `pointColor` | `string` | `'#3B82F6'` | Default point color (single-color mode) |
+| `autoFit` | `boolean` | `false` | Automatically fit zoom and center to the bounding box of all visible points. Re-fits on each data update. Supported by both `'l7'` and `'canvas'` engines. |
+| `mapEngine` | `'l7' \| 'canvas'` | `'l7'` | Rendering engine (see below) |
+| `mapboxToken` | `string` | - | Mapbox API token, required only for Mapbox-hosted styles |
 
 **Tile Providers:** `'openstreetmap'`, `'cartodb-dark'`, `'cartodb-light'`
+
+**Map Engines:**
+
+| Engine | Description | Dependencies |
+|--------|-------------|--------------|
+| `'l7'` (default) | AntV L7 + MapLibre GL — WebGL-accelerated, smooth pan/zoom, GPU-rendered points. Free tile providers work without any API token. | `@antv/l7`, `@antv/l7-maps` (bundled) |
+| `'canvas'` | Built-in canvas tile renderer — draws map tiles on a `<canvas>` element. No additional dependencies, lower performance at large point counts. | none |
+
+**Example — L7 engine (default, no token needed):**
+```tsx
+const config: GeoChartConfig = {
+  chartType: 'geo',
+  latitude: 'lat',
+  longitude: 'lng',
+  color: 'category',
+  tileProvider: 'cartodb-dark',
+  // mapEngine: 'l7',  // default, can be omitted
+};
+```
+
+**Example — canvas engine:**
+```tsx
+const config: GeoChartConfig = {
+  chartType: 'geo',
+  latitude: 'lat',
+  longitude: 'lng',
+  mapEngine: 'canvas',
+  tileProvider: 'cartodb-dark',
+};
+```
 
 **Temporal Usage:** Use `temporal.mode: 'key'` for tracking entities or `temporal.mode: 'frame'` for snapshots.
 
