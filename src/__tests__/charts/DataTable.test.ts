@@ -44,6 +44,12 @@ describe('evaluateCondition', () => {
     expect(evaluateCondition('abc', 'gt', 5)).toBe(false);
     expect(evaluateCondition('abc', 'lt', 5)).toBe(false);
   });
+
+  it('numeric operators return false for null/undefined cell values', () => {
+    expect(evaluateCondition(null, 'gt', -1)).toBe(false);
+    expect(evaluateCondition(undefined, 'lt', 100)).toBe(false);
+    expect(evaluateCondition(null, 'lte', 0)).toBe(false);
+  });
 });
 
 describe('formatCellValue', () => {
@@ -54,7 +60,9 @@ describe('formatCellValue', () => {
 
   it('applies fractionDigits to numeric values', () => {
     expect(formatCellValue(3.14159, true, 2)).toBe('3.14');
-    expect(formatCellValue(1000, true, 0)).toBe('1,000');
+    // Use parseFloat to avoid locale-specific thousand separators
+    const result = formatCellValue(1000, true, 0);
+    expect(parseFloat(result.replace(/[^0-9.]/g, ''))).toBe(1000);
   });
 
   it('ignores fractionDigits for non-numeric columns', () => {

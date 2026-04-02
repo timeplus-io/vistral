@@ -55,6 +55,7 @@ export function evaluateCondition(
   if (operator === 'eq') {
     return String(cellValue) === String(conditionValue);
   }
+  if (cellValue === null || cellValue === undefined) return false;
   const num = Number(cellValue);
   if (isNaN(num)) return false;
   const condNum = Number(conditionValue);
