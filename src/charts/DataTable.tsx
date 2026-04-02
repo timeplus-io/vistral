@@ -16,9 +16,10 @@ type TableCellColorConfig = {
   type: 'none' | 'scale' | 'condition';
   colorScale?: string;
   conditions?: Array<{
-    operator: 'gt' | 'lt' | 'eq' | 'gte' | 'lte';
-    value: number;
+    operator: 'gt' | 'lt' | 'eq' | 'gte' | 'lte' | 'contains' | '!contains';
+    value: string | number;
     color: string;
+    highlightRow?: boolean;
   }>;
 };
 
@@ -120,19 +121,25 @@ function getCellBackgroundColor(
       let matches = false;
       switch (condition.operator) {
         case 'gt':
-          matches = numValue > condition.value;
+          matches = numValue > (condition.value as number);
           break;
         case 'lt':
-          matches = numValue < condition.value;
+          matches = numValue < (condition.value as number);
           break;
         case 'eq':
-          matches = numValue === condition.value;
+          matches = numValue === condition.value || String(value) === String(condition.value);
           break;
         case 'gte':
-          matches = numValue >= condition.value;
+          matches = numValue >= (condition.value as number);
           break;
         case 'lte':
-          matches = numValue <= condition.value;
+          matches = numValue <= (condition.value as number);
+          break;
+        case 'contains':
+          matches = String(value ?? '').includes(String(condition.value));
+          break;
+        case '!contains':
+          matches = !String(value ?? '').includes(String(condition.value));
           break;
       }
       if (matches) return condition.color;
@@ -236,7 +243,7 @@ const tableStyles = `
 const TableCell: React.FC<{
   value: unknown;
   isNumeric: boolean;
-  miniChart?: 'none' | 'sparkline';
+  miniChart?: 'none' | 'sparkline' | 'bar';
   sparklineData?: number[];
   color?: TableCellColorConfig;
   wrap?: boolean;

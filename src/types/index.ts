@@ -188,28 +188,47 @@ export interface MultipleValueConfig extends ChartConfigBase {
 }
 
 // Table Chart Configuration
+// Table Chart Configuration
 export interface TableConfig extends ChartConfigBase {
   chartType: 'table';
   /** Column styles and visibility */
   tableStyles?: Record<
     string,
     {
+      /** Display name override for the column header */
       name?: string;
+      /** Whether column is visible */
       show?: boolean;
+      /** Column width in pixels */
       width?: number;
-      miniChart?: 'none' | 'sparkline';
+      /** Decimal places for numeric display */
+      fractionDigits?: number;
+      /** Show ▲▼ trend indicator when value changes */
+      trend?: boolean;
+      /** CSS color for upward trend (default: #22c55e) */
+      increaseColor?: string;
+      /** CSS color for downward trend (default: #ef4444) */
+      decreaseColor?: string;
+      /** Mini chart type rendered inside cell */
+      miniChart?: 'none' | 'sparkline' | 'bar';
+      /** Cell background color configuration */
       color?: {
         type: 'none' | 'scale' | 'condition';
         colorScale?: string;
         conditions?: Array<{
-          operator: 'gt' | 'lt' | 'eq' | 'gte' | 'lte';
-          value: number;
+          /** Comparison operator */
+          operator: 'gt' | 'lt' | 'eq' | 'gte' | 'lte' | 'contains' | '!contains';
+          /** Value to compare against (string for text operators, number for numeric) */
+          value: string | number;
+          /** CSS color to apply to the cell background */
           color: string;
+          /** When true, the entire row gets this background color at 20% opacity */
+          highlightRow?: boolean;
         }>;
       };
     }
   >;
-  /** Enable text wrapping */
+  /** Enable text wrapping in cells */
   tableWrap?: boolean;
 }
 
