@@ -28,10 +28,20 @@ const globals = {
   ramda: 'R',
 };
 
+// Suppress known circular dependency warnings from third-party packages
+function onwarn(warning, warn) {
+  if (
+    warning.code === 'CIRCULAR_DEPENDENCY' &&
+    warning.ids?.some(id => id.includes('viewport-mercator-project'))
+  ) return;
+  warn(warning);
+}
+
 export default [
   // Main bundle
   {
     input: 'src/index.ts',
+    onwarn,
     output: [
       {
         file: 'dist/index.js',
