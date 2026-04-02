@@ -196,6 +196,12 @@ export const GeoChartL7: React.FC<GeoChartL7Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Update map style when tile provider changes (theme switch) ───────────
+  useEffect(() => {
+    if (!loadedRef.current || !sceneRef.current) return;
+    sceneRef.current.setMapStyle(buildRasterStyle(tileProvider) as unknown as string);
+  }, [tileProvider]);
+
   // ── Update data when points change ───────────────────────────────────────
   useEffect(() => {
     if (!loadedRef.current || !layerRef.current) {
