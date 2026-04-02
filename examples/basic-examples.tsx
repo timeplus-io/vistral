@@ -894,6 +894,221 @@ export function AxisBoundLineChart() {
 
 
 // =============================================================================
+// Example 13: Table with Trend Indicators — Stock Ticker
+// Demonstrates ▲▼ trend arrows with fast per-key updates
+// =============================================================================
+
+export function TrendIndicatorTable() {
+  const theme = useTheme();
+  const { data, append } = useStreamingData<unknown[]>([], 500);
+
+  useEffect(() => {
+    const symbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'NVDA', 'TSLA'];
+    // Seed initial prices
+    const prices: Record<string, number> = {
+      AAPL: 185, GOOGL: 140, MSFT: 415, AMZN: 178, NVDA: 880, TSLA: 172,
+    };
+
+    const id = setInterval(() => {
+      // Update all symbols each tick for fast visible changes
+      const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+      const prev = prices[symbol];
+      const change = (Math.random() - 0.48) * prev * 0.02; // slight upward bias
+      const price = Math.max(1, prev + change);
+      prices[symbol] = price;
+      const changePct = (change / prev) * 100;
+      const volume = Math.floor(Math.random() * 50_000_000) + 1_000_000;
+
+      append([[
+        new Date().toISOString(),
+        symbol,
+        price,
+        changePct,
+        volume,
+      ]]);
+    }, 400);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const dataSource: StreamDataSource = {
+    columns: [
+      { name: 'time', type: 'datetime64' },
+      { name: 'symbol', type: 'string' },
+      { name: 'price', type: 'float64' },
+      { name: 'change_pct', type: 'float64' },
+      { name: 'volume', type: 'int64' },
+    ],
+    data,
+    isStreaming: true,
+  };
+
+  const config: TableConfig = {
+    chartType: 'table',
+    temporal: { mode: 'key', field: 'symbol' },
+    tableStyles: {
+      time: { name: 'Time', width: 180 },
+      symbol: { name: 'Symbol', width: 90 },
+      price: {
+        name: 'Price ($)',
+        width: 120,
+        fractionDigits: 2,
+        trend: true,
+        increaseColor: '#22c55e',
+        decreaseColor: '#ef4444',
+      },
+      change_pct: {
+        name: 'Change %',
+        width: 120,
+        fractionDigits: 2,
+        trend: true,
+        increaseColor: '#22c55e',
+        decreaseColor: '#ef4444',
+        color: {
+          type: 'condition',
+          conditions: [
+            { operator: 'lt', value: 0, color: 'rgba(239, 68, 68, 0.15)' },
+            { operator: 'gte', value: 0, color: 'rgba(34, 197, 94, 0.12)' },
+          ],
+        },
+      },
+      volume: {
+        name: 'Volume',
+        width: 160,
+        fractionDigits: 0,
+        miniChart: 'bar',
+      },
+    },
+  };
+
+  return (
+    <div>
+      <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
+        Stock ticker: ▲▼ trend arrows on price and change%, bar chart for volume, cell color by direction
+      </p>
+      <div style={{ width: '100%', height: '280px' }}>
+        <StreamChart config={config} data={dataSource} theme={theme} />
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Example 14: Table with Mini Bar Charts — Server Resources
+// Demonstrates bar miniChart for utilization metrics (0–100%)
+// =============================================================================
+
+export function MiniBarTable() {
+  const theme = useTheme();
+  const { data, append } = useStreamingData<unknown[]>([], 500);
+
+  useEffect(() => {
+    const hosts = ['web-01', 'web-02', 'api-01', 'api-02', 'db-primary', 'db-replica'];
+    // Seed initial utilizations
+    const state: Record<string, { cpu: number; mem: number; disk: number; rps: number }> = {};
+    hosts.forEach((h) => {
+      state[h] = {
+        cpu: 20 + Math.random() * 40,
+        mem: 30 + Math.random() * 50,
+        disk: 40 + Math.random() * 40,
+        rps: Math.floor(Math.random() * 5000) + 500,
+      };
+    });
+
+    const id = setInterval(() => {
+      const host = hosts[Math.floor(Math.random() * hosts.length)];
+      const s = state[host];
+      // Drift values slowly
+      s.cpu = Math.min(99, Math.max(1, s.cpu + (Math.random() - 0.5) * 8));
+      s.mem = Math.min(99, Math.max(10, s.mem + (Math.random() - 0.5) * 4));
+      s.disk = Math.min(99, Math.max(10, s.disk + (Math.random() - 0.45) * 1));
+      s.rps = Math.max(100, s.rps + Math.floor((Math.random() - 0.5) * 800));
+
+      append([[
+        new Date().toISOString(),
+        host,
+        s.cpu,
+        s.mem,
+        s.disk,
+        s.rps,
+      ]]);
+    }, 600);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const dataSource: StreamDataSource = {
+    columns: [
+      { name: 'time', type: 'datetime64' },
+      { name: 'host', type: 'string' },
+      { name: 'cpu_pct', type: 'float64' },
+      { name: 'mem_pct', type: 'float64' },
+      { name: 'disk_pct', type: 'float64' },
+      { name: 'rps', type: 'int64' },
+    ],
+    data,
+    isStreaming: true,
+  };
+
+  const config: TableConfig = {
+    chartType: 'table',
+    temporal: { mode: 'key', field: 'host' },
+    tableStyles: {
+      time: { name: 'Last Seen', width: 180 },
+      host: { name: 'Host', width: 110 },
+      cpu_pct: {
+        name: 'CPU %',
+        width: 150,
+        fractionDigits: 1,
+        miniChart: 'bar',
+        trend: true,
+        increaseColor: '#ef4444',
+        decreaseColor: '#22c55e',
+        color: {
+          type: 'condition',
+          conditions: [
+            { operator: 'gte', value: 90, color: 'rgba(239, 68, 68, 0.3)', highlightRow: true },
+            { operator: 'gte', value: 70, color: 'rgba(251, 146, 60, 0.2)' },
+          ],
+        },
+      },
+      mem_pct: {
+        name: 'Memory %',
+        width: 150,
+        fractionDigits: 1,
+        miniChart: 'bar',
+        trend: true,
+        increaseColor: '#f59e0b',
+        decreaseColor: '#22c55e',
+      },
+      disk_pct: {
+        name: 'Disk %',
+        width: 150,
+        fractionDigits: 1,
+        miniChart: 'bar',
+      },
+      rps: {
+        name: 'Req/s',
+        width: 130,
+        fractionDigits: 0,
+        trend: true,
+        increaseColor: '#22c55e',
+        decreaseColor: '#ef4444',
+      },
+    },
+  };
+
+  return (
+    <div>
+      <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
+        Server resources: bar charts for CPU/memory/disk utilization, trend arrows on CPU and Req/s, row highlight when CPU ≥ 90%
+      </p>
+      <div style={{ width: '100%', height: '310px' }}>
+        <StreamChart config={config} data={dataSource} theme={theme} />
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
 // Default Export - All Examples
 // =============================================================================
 
@@ -908,10 +1123,13 @@ export default {
   MetricsDashboard,
   ChartWithTableToggle,
   StreamingGeoChart,
-  // New temporal binding examples
+  // Temporal binding examples
   FrameBoundTable,
   KeyBoundTable,
   KeyBoundGeoChart,
   FrameBoundBarChart,
   AxisBoundLineChart,
+  // Table feature examples
+  TrendIndicatorTable,
+  MiniBarTable,
 };

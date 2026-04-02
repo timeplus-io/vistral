@@ -17,6 +17,8 @@ import {
   FrameBoundBarChart,
   AxisBoundLineChart,
   MultipleValueExample,
+  TrendIndicatorTable,
+  MiniBarTable,
 } from './basic-examples';
 import {
   GrammarLineChart,
@@ -72,6 +74,8 @@ const examples: ExampleItem[] = [
   { name: 'Geo Chart (Key-Bound)', component: KeyBoundGeoChart, category: 'examples' },
   { name: 'Bar Chart (Frame-Bound)', component: FrameBoundBarChart, category: 'examples' },
   { name: 'Line Chart (Axis-Bound)', component: AxisBoundLineChart, category: 'examples' },
+  { name: 'Table (Trend Indicators)', component: TrendIndicatorTable, category: 'examples' },
+  { name: 'Table (Mini Bar Charts)', component: MiniBarTable, category: 'examples' },
   { name: 'Grammar: Line Chart', component: GrammarLineChart, category: 'grammar' },
   { name: 'Grammar: Multi-Mark', component: GrammarMultiMark, category: 'grammar' },
   { name: 'Grammar: Bar Chart', component: GrammarBarChart, category: 'grammar' },
