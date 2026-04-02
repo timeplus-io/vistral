@@ -188,7 +188,6 @@ export interface MultipleValueConfig extends ChartConfigBase {
 }
 
 // Table Chart Configuration
-// Table Chart Configuration
 export interface TableConfig extends ChartConfigBase {
   chartType: 'table';
   /** Column styles and visibility */
@@ -201,7 +200,7 @@ export interface TableConfig extends ChartConfigBase {
       show?: boolean;
       /** Column width in pixels */
       width?: number;
-      /** Decimal places for numeric display */
+      /** Decimal places for numeric display; omit to preserve full precision */
       fractionDigits?: number;
       /** Show ▲▼ trend indicator when value changes */
       trend?: boolean;
