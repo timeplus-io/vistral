@@ -19,6 +19,9 @@ import {
   MultipleValueExample,
   TrendIndicatorTable,
   MiniBarTable,
+  MarkdownLatestRow,
+  MarkdownFrameBound,
+  MarkdownKeyBound,
 } from './basic-examples';
 import {
   GrammarLineChart,
@@ -76,6 +79,9 @@ const examples: ExampleItem[] = [
   { name: 'Line Chart (Axis-Bound)', component: AxisBoundLineChart, category: 'examples' },
   { name: 'Table (Trend Indicators)', component: TrendIndicatorTable, category: 'examples' },
   { name: 'Table (Mini Bar Charts)', component: MiniBarTable, category: 'examples' },
+  { name: 'Markdown (Latest Row)', component: MarkdownLatestRow, category: 'examples' },
+  { name: 'Markdown (Frame-Bound)', component: MarkdownFrameBound, category: 'examples' },
+  { name: 'Markdown (Key-Bound)', component: MarkdownKeyBound, category: 'examples' },
   { name: 'Grammar: Line Chart', component: GrammarLineChart, category: 'grammar' },
   { name: 'Grammar: Multi-Mark', component: GrammarMultiMark, category: 'grammar' },
   { name: 'Grammar: Bar Chart', component: GrammarBarChart, category: 'grammar' },

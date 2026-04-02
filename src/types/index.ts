@@ -283,6 +283,18 @@ export interface GeoChartConfig extends ChartConfigBase {
   autoFit?: boolean;
 }
 
+// Markdown Chart Configuration
+export interface MarkdownConfig extends ChartConfigBase {
+  chartType: 'markdown';
+  /**
+   * Markdown template string with placeholder syntax:
+   * - `{{fieldName}}` — replaced with the value from the latest row (frame/axis/no-temporal modes)
+   * - `{{@keyValue::fieldName}}` — replaced with the value for the row whose key field equals
+   *   `keyValue` (key mode only; `temporal.field` specifies the key column)
+   */
+  content: string;
+}
+
 // Union of all chart configurations
 export type ChartConfig =
   | TimeSeriesConfig
@@ -291,7 +303,8 @@ export type ChartConfig =
   | MultipleValueConfig
   | TableConfig
   | OHLCConfig
-  | GeoChartConfig;
+  | GeoChartConfig
+  | MarkdownConfig;
 
 // Chart Props
 export interface StreamChartProps<T extends ChartConfig = ChartConfig> {

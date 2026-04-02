@@ -1,0 +1,129 @@
+/* MarkdownChart — rendered markdown content styles */
+
+.vistral-markdown {
+  font-size: 14px;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+.vistral-markdown h1,
+.vistral-markdown h2,
+.vistral-markdown h3,
+.vistral-markdown h4,
+.vistral-markdown h5,
+.vistral-markdown h6 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.vistral-markdown h1 { font-size: 1.75em; }
+.vistral-markdown h2 { font-size: 1.4em; }
+.vistral-markdown h3 { font-size: 1.15em; }
+
+.vistral-markdown p {
+  margin-top: 0;
+  margin-bottom: 0.75em;
+}
+
+.vistral-markdown ul,
+.vistral-markdown ol {
+  padding-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.vistral-markdown li {
+  margin-bottom: 0.25em;
+}
+
+.vistral-markdown code {
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.875em;
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+}
+
+.vistral-markdown pre {
+  overflow-x: auto;
+  padding: 1em;
+  border-radius: 6px;
+  margin-bottom: 0.75em;
+}
+
+.vistral-markdown pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.vistral-markdown blockquote {
+  margin: 0 0 0.75em 0;
+  padding: 0.25em 0.75em;
+  border-left: 4px solid;
+  opacity: 0.8;
+}
+
+.vistral-markdown hr {
+  height: 1px;
+  border: none;
+  margin: 1em 0;
+}
+
+.vistral-markdown a {
+  text-decoration: underline;
+}
+
+.vistral-markdown table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 0.75em;
+}
+
+.vistral-markdown th,
+.vistral-markdown td {
+  padding: 0.35em 0.65em;
+  border: 1px solid;
+  text-align: left;
+}
+
+/* Dark theme */
+.vistral-markdown-dark .vistral-markdown code {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+.vistral-markdown-dark .vistral-markdown pre {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.vistral-markdown-dark .vistral-markdown blockquote {
+  border-left-color: #6b7280;
+}
+.vistral-markdown-dark .vistral-markdown hr {
+  background-color: #374151;
+}
+.vistral-markdown-dark .vistral-markdown a {
+  color: #60a5fa;
+}
+.vistral-markdown-dark .vistral-markdown th,
+.vistral-markdown-dark .vistral-markdown td {
+  border-color: #374151;
+}
+
+/* Light theme */
+.vistral-markdown-light .vistral-markdown code {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+.vistral-markdown-light .vistral-markdown pre {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+.vistral-markdown-light .vistral-markdown blockquote {
+  border-left-color: #d1d5db;
+}
+.vistral-markdown-light .vistral-markdown hr {
+  background-color: #e5e7eb;
+}
+.vistral-markdown-light .vistral-markdown a {
+  color: #2563eb;
+}
+.vistral-markdown-light .vistral-markdown th,
+.vistral-markdown-light .vistral-markdown td {
+  border-color: #e5e7eb;
+}

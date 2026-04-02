@@ -6,7 +6,7 @@ render_with_liquid: false
 Vistral provides two API levels:
 
 1. **Grammar API** (`VistralSpec` + `VistralChart`) — composable, low-level, full control over marks, scales, transforms, coordinates, and streaming behavior.
-2. **Chart Config API** (`TimeSeriesConfig`, `BarColumnConfig`, etc. + `StreamChart`) — high-level, opinionated presets that compile down to VistralSpec internally.
+2. **Chart Config API** (`TimeSeriesConfig`, `BarColumnConfig`, `TableConfig`, `MarkdownConfig`, etc. + `StreamChart`) — high-level, opinionated presets for common chart types including line/area, bar/column, single value, multiple value, data table, markdown, and geo map.
 
 ---
 
@@ -236,7 +236,7 @@ import { StreamChart } from '@timeplus/vistral';
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `config` | `ChartConfig` | required | Chart configuration (TimeSeriesConfig, BarColumnConfig, etc.) |
+| `config` | `ChartConfig` | required | Chart configuration — one of `TimeSeriesConfig`, `BarColumnConfig`, `SingleValueConfig`, `MultipleValueConfig`, `TableConfig`, `MarkdownConfig`, `OHLCConfig`, or `GeoChartConfig` |
 | `data` | `StreamDataSource` | required | Data source with columns and data |
 | `theme` | `string \| VistralTheme` | `'dark'` | Theme name, registered name, or `VistralTheme` object |
 | `showTable` | `boolean` | `false` | Render a data table instead of the chart |
@@ -296,8 +296,8 @@ All chart types support a unified `temporal` configuration for handling streamin
 | Mode | Description | Supported Charts |
 |------|-------------|------------------|
 | `axis` | Sliding time window on X-axis | Line, Area |
-| `frame` | Filter to latest timestamp only | Table, Bar, Column, Geo |
-| `key` | Keep latest value per unique key | Table, Bar, Column, Geo |
+| `frame` | Filter to latest timestamp only | Table, Bar, Column, Geo, Markdown |
+| `key` | Keep latest value per unique key | Table, Bar, Column, Geo, Markdown |
 
 **Example:**
 ```tsx
@@ -454,6 +454,101 @@ All chart configs extend this base:
 | `highlightRow` | `boolean` | When `true`, the entire row gets this color at 20% opacity instead of the individual cell. Cell-level coloring is suppressed for highlighted rows. |
 
 **Temporal Usage:** Use `temporal.mode: 'key'` for deduplication and per-entity trend tracking, or `temporal.mode: 'frame'` for latest snapshot.
+
+### MarkdownConfig
+
+Renders a Markdown template populated with live values from streaming data.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `chartType` | `'markdown'` | required | Chart type |
+| `content` | `string` | required | Markdown template with placeholder syntax (see below) |
+| `temporal` | `TemporalConfig` | - | Controls how data is reduced before substitution |
+
+**Template Placeholder Syntax:**
+
+| Syntax | Mode | Description |
+|--------|------|-------------|
+| `{{fieldName}}` | frame / axis / none | Replaced with the value of `fieldName` from the **latest row** in the current dataset |
+| `{{@keyValue::fieldName}}` | key | Replaced with `fieldName` from the row whose key field (`temporal.field`) equals `keyValue` |
+
+**Temporal Binding:**
+
+| `temporal.mode` | Data reduction | Substitution |
+|-----------------|---------------|--------------|
+| _(none)_ | All rows kept | Last row |
+| `'frame'` | Latest timestamp only | Last row |
+| `'axis'` | Sliding time window | Last row |
+| `'key'` | One row per key entity | `{{@key::field}}` syntax — each `keyValue` resolved independently |
+
+**Example — key mode:**
+```tsx
+const config: MarkdownConfig = {
+  chartType: 'markdown',
+  temporal: { mode: 'key', field: 'city' },
+  content: `
+## Weather
+| City | Temp |
+|------|------|
+| New York | {{@New York::temp_c}} °C |
+| London   | {{@London::temp_c}} °C |
+  `,
+};
+```
+
+**Example — latest row:**
+```tsx
+const config: MarkdownConfig = {
+  chartType: 'markdown',
+  content: '## Status\n\nService **{{service}}** — {{status}} — {{rps}} req/s',
+};
+```
+
+### MarkdownChart Component
+
+`MarkdownChart` can be used standalone or via `StreamChart`. Use standalone when you want direct access to props without the `StreamChart` routing layer.
+
+```tsx
+import { MarkdownChart, useStreamingData, type MarkdownConfig } from '@timeplus/vistral';
+
+function WeatherCard() {
+  const { data, append } = useStreamingData<unknown[]>([], 100);
+
+  // ... append streaming rows ...
+
+  const dataSource = {
+    columns: [
+      { name: 'city', type: 'string' },
+      { name: 'temp_c', type: 'float64' },
+      { name: 'humidity', type: 'int64' },
+    ],
+    data,
+  };
+
+  const config: MarkdownConfig = {
+    chartType: 'markdown',
+    temporal: { mode: 'key', field: 'city' },
+    content: `
+## Weather
+
+| City | Temp | Humidity |
+|------|------|----------|
+| Tokyo | {{@Tokyo::temp_c}} °C | {{@Tokyo::humidity}}% |
+| London | {{@London::temp_c}} °C | {{@London::humidity}}% |
+    `,
+  };
+
+  return <MarkdownChart config={config} data={dataSource} theme="dark" />;
+}
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `config` | `MarkdownConfig` | required | Markdown configuration with `content` template and optional `temporal` |
+| `data` | `StreamDataSource` | required | Streaming data source |
+| `theme` | `string \| VistralTheme` | `'dark'` | Theme name or object. Affects text color and code block backgrounds. |
+| `className` | `string` | - | CSS class for the outer wrapper div |
+| `style` | `CSSProperties` | - | Inline styles for the outer wrapper div |
 
 ### GeoChartConfig
 
