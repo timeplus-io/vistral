@@ -701,20 +701,36 @@ export function KeyBoundTable() {
         color: {
           type: 'condition',
           conditions: [
-            { operator: 'eq', value: 'down' as unknown as number, color: 'rgba(239, 68, 68, 0.3)' },
-            { operator: 'eq', value: 'degraded' as unknown as number, color: 'rgba(251, 146, 60, 0.3)' },
+            { operator: 'eq', value: 'down', color: 'rgba(239, 68, 68, 0.3)', highlightRow: true },
+            { operator: 'eq', value: 'degraded', color: 'rgba(251, 146, 60, 0.3)' },
+            { operator: 'eq', value: 'healthy', color: 'rgba(34, 197, 94, 0.2)' },
           ],
         },
       },
-      latency_ms: { name: 'Latency (ms)', width: 120 },
-      uptime: { name: 'Uptime %', width: 100 },
+      latency_ms: {
+        name: 'Latency (ms)',
+        width: 140,
+        fractionDigits: 0,
+        trend: true,
+        increaseColor: '#ef4444',
+        decreaseColor: '#22c55e',
+        miniChart: 'bar',
+      },
+      uptime: {
+        name: 'Uptime %',
+        width: 110,
+        fractionDigits: 2,
+        trend: true,
+        increaseColor: '#22c55e',
+        decreaseColor: '#ef4444',
+      },
     },
   };
 
   return (
     <div>
       <p style={{ color: '#9CA3AF', marginBottom: '8px' }}>
-        Key-bound mode: Shows latest value per service (deduplication by key)
+        Key-bound mode: latest value per service with trend indicators (▲▼), bar chart, and conditional row highlighting
       </p>
       <div style={{ width: '100%', height: '300px' }}>
         <StreamChart config={config} data={dataSource} theme={theme} />
