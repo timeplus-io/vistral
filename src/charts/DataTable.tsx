@@ -4,6 +4,7 @@
  */
 
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import './DataTable.css';
 import type { TableConfig, StreamDataSource, ColumnDefinition } from '../types';
 import type { VistralTheme } from '../types/theme';
 import { DEFAULT_MAX_ITEMS } from '../types/spec';
@@ -16,9 +17,10 @@ type TableCellColorConfig = {
   type: 'none' | 'scale' | 'condition';
   colorScale?: string;
   conditions?: Array<{
-    operator: 'gt' | 'lt' | 'eq' | 'gte' | 'lte';
-    value: number;
+    operator: 'gt' | 'lt' | 'eq' | 'gte' | 'lte' | 'contains' | '!contains';
+    value: string | number;
     color: string;
+    highlightRow?: boolean;
   }>;
 };
 
@@ -37,6 +39,65 @@ export interface DataTableProps {
   onConfigChange?: (config: TableConfig) => void;
   /** Max rows to display */
   maxRows?: number;
+}
+
+// Exported for unit testing. These are internal helpers and not part of the
+// package's public API surface (not re-exported from src/index.ts).
+export function evaluateCondition(
+  cellValue: unknown,
+  operator: 'gt' | 'lt' | 'eq' | 'gte' | 'lte' | 'contains' | '!contains',
+  conditionValue: string | number
+): boolean {
+  if (cellValue === null || cellValue === undefined) return false;
+  if (operator === 'contains') {
+    return String(cellValue).includes(String(conditionValue));
+  }
+  if (operator === '!contains') {
+    return !String(cellValue).includes(String(conditionValue));
+  }
+  if (operator === 'eq') {
+    return String(cellValue) === String(conditionValue);
+  }
+  const num = Number(cellValue);
+  if (isNaN(num)) return false;
+  const condNum = Number(conditionValue);
+  switch (operator) {
+    case 'gt':  return num > condNum;
+    case 'gte': return num >= condNum;
+    case 'lt':  return num < condNum;
+    case 'lte': return num <= condNum;
+    default:    return false;
+  }
+}
+
+/** Format a cell value for display, applying fractionDigits when column is numeric. */
+export function formatCellValue(
+  value: unknown,
+  isNumeric: boolean,
+  fractionDigits?: number
+): string {
+  if (value === null || value === undefined) return '';
+  if (isNumeric && fractionDigits !== undefined) {
+    const num = Number(value);
+    if (!isNaN(num)) {
+      return num.toLocaleString(undefined, { maximumFractionDigits: fractionDigits });
+    }
+  }
+  if (Array.isArray(value)) return JSON.stringify(value);
+  if (value !== null && typeof value === 'object') return JSON.stringify(value, null, 2);
+  return String(value);
+}
+
+/** Convert a hex color string to rgba() with the given alpha (0–1). Non-hex colors pass through unchanged. */
+export function hexToRgba(hex: string, alpha: number): string {
+  // Expand 3-digit hex: #rgb → #rrggbb
+  const normalized = hex.replace(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i, '#$1$1$2$2$3$3');
+  const match = /^#([0-9a-f]{6})$/i.exec(normalized);
+  if (!match) return hex;
+  const r = parseInt(match[1].slice(0, 2), 16);
+  const g = parseInt(match[1].slice(2, 4), 16);
+  const b = parseInt(match[1].slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 /**
@@ -108,127 +169,87 @@ const CellSparkline: React.FC<{ data: number[]; width?: number; height?: number 
  */
 function getCellBackgroundColor(
   value: unknown,
-  colorConfig?: TableCellColorConfig
+  colorConfig?: TableCellColorConfig,
+  forHighlightRow = false
 ): string | undefined {
   if (!colorConfig || colorConfig.type === 'none') return undefined;
 
   if (colorConfig.type === 'condition' && colorConfig.conditions) {
-    const numValue = Number(value);
-    if (isNaN(numValue)) return undefined;
-
     for (const condition of colorConfig.conditions) {
-      let matches = false;
-      switch (condition.operator) {
-        case 'gt':
-          matches = numValue > condition.value;
-          break;
-        case 'lt':
-          matches = numValue < condition.value;
-          break;
-        case 'eq':
-          matches = numValue === condition.value;
-          break;
-        case 'gte':
-          matches = numValue >= condition.value;
-          break;
-        case 'lte':
-          matches = numValue <= condition.value;
-          break;
+      // highlightRow conditions belong to row-level coloring, not cell-level
+      if (condition.highlightRow && !forHighlightRow) continue;
+      if (!condition.highlightRow && forHighlightRow) continue;
+      if (evaluateCondition(value, condition.operator, condition.value)) {
+        return condition.color;
       }
-      if (matches) return condition.color;
     }
   }
 
   return undefined;
 }
 
-const tableStyles = `
-  .vistral-data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 14px;
-  }
-  
-  /* Light Theme */
-  .vistral-data-table.theme-light {
-    color: #1a1c1d;
-    background-color: #ffffff;
-  }
-  .vistral-data-table.theme-light th {
-    background-color: #e0e0e0;
-    border-bottom: 1px solid #c0c0c0;
-    color: #4a4a4a;
-  }
-  .vistral-data-table.theme-light td {
-    border-bottom: 1px solid #f0f0f0;
-  }
-  .vistral-data-table.theme-light tbody tr:nth-child(even) {
-    background-color: #fafafa;
-  }
-  .vistral-data-table.theme-light tbody tr:hover {
-    background-color: #f2f7ff;
-  }
-  .vistral-data-table.theme-light td.monospace {
-    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-    color: #333;
-  }
-  
-  /* Dark Theme */
-  .vistral-data-table.theme-dark {
-    color: #e5e7eb;
-    background-color: #111827;
-  }
-  .vistral-data-table.theme-dark th {
-    background-color: #374151; /* Darker gray header */
-    border-bottom: 1px solid #4b5563;
-    color: #d1d5db;
-  }
-  .vistral-data-table.theme-dark td {
-    border-bottom: 1px solid #1f2937;
-  }
-  .vistral-data-table.theme-dark tbody tr:nth-child(even) {
-    background-color: #1f2937; /* Even row background */
-  }
-  .vistral-data-table.theme-dark tbody tr:hover {
-    background-color: #374151; /* Hover effect */
-  }
-  .vistral-data-table.theme-dark td.monospace {
-    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-    color: #d1d5db;
-  }
 
-  /* Common Cell Styles */
-  .vistral-data-table th, .vistral-data-table td {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+const CellBar: React.FC<{ value: number; maxValue: number; isDark: boolean }> = ({
+  value,
+  maxValue,
+  isDark,
+}) => {
+  const pct = maxValue > 0 ? Math.min(100, (Math.abs(value) / maxValue) * 100) : 0;
+  return (
+    <div
+      style={{
+        width: '80px',
+        height: '8px',
+        backgroundColor: isDark ? '#374151' : '#e5e7eb',
+        borderRadius: '4px',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          width: `${pct}%`,
+          height: '100%',
+          backgroundColor: isDark ? '#6366f1' : '#4f46e5',
+          borderRadius: '4px',
+        }}
+      />
+    </div>
+  );
+};
+
+function computeRowHighlight(
+  row: unknown[],
+  columns: { name: string; type: string }[],
+  styles: TableConfig['tableStyles']
+): string | undefined {
+  if (!styles) return undefined;
+  for (const col of columns) {
+    const colStyle = styles[col.name];
+    if (colStyle?.color?.type !== 'condition' || !colStyle.color.conditions) continue;
+    const colIndex = columns.indexOf(col);
+    const cellValue = row[colIndex];
+    for (const cond of colStyle.color.conditions) {
+      if (cond.highlightRow && evaluateCondition(cellValue, cond.operator, cond.value)) {
+        return hexToRgba(cond.color, 0.2);
+      }
+    }
   }
-  .vistral-data-table th {
-    padding: 8px 12px;
-    text-align: left;
-    font-weight: 500;
-    position: relative;
-  }
-  .vistral-data-table td {
-    padding: 10px 12px;
-  }
-  
-  /* Column type badge */
-  .type-badge {
-    font-size: 10px;
-    padding: 2px 4px;
-    border-radius: 4px;
-  }
-  .theme-light .type-badge {
-    background-color: #e5e7eb;
-    color: #6b7280;
-  }
-  .theme-dark .type-badge {
-    background-color: #374151;
-    color: #9ca3af;
-  }
-`;
+  return undefined;
+}
+
+function getTrend(
+  currentValue: unknown,
+  prevValue: number | undefined,
+  increaseColor = '#22c55e',
+  decreaseColor = '#ef4444'
+): { sign: '+' | '-'; color: string } | null {
+  if (prevValue === undefined) return null;
+  const curr = Number(currentValue);
+  if (isNaN(curr) || curr === prevValue) return null;
+  return curr > prevValue
+    ? { sign: '+', color: increaseColor }
+    : { sign: '-', color: decreaseColor };
+}
 
 /**
  * Table Cell Component
@@ -236,14 +257,32 @@ const tableStyles = `
 const TableCell: React.FC<{
   value: unknown;
   isNumeric: boolean;
-  miniChart?: 'none' | 'sparkline';
+  fractionDigits?: number;
+  miniChart?: 'none' | 'sparkline' | 'bar';
   sparklineData?: number[];
+  barMaxValue?: number;
   color?: TableCellColorConfig;
+  trend?: { sign: '+' | '-'; color: string } | null;
+  trendEnabled?: boolean;
   wrap?: boolean;
   isMonospace?: boolean;
-}> = ({ value, isNumeric, miniChart, sparklineData = [], color, wrap, isMonospace }) => {
+  isDark?: boolean;
+}> = ({
+  value,
+  isNumeric,
+  fractionDigits,
+  miniChart,
+  sparklineData = [],
+  barMaxValue = 0,
+  color,
+  trend,
+  trendEnabled,
+  wrap,
+  isMonospace,
+  isDark = true,
+}) => {
   const bgColor = getCellBackgroundColor(value, color);
-  const displayValue = String(value ?? '');
+  const displayValue = formatCellValue(value, isNumeric, fractionDigits);
 
   return (
     <td
@@ -251,16 +290,53 @@ const TableCell: React.FC<{
       style={{
         textAlign: isNumeric ? 'right' : 'left',
         backgroundColor: bgColor,
-        whiteSpace: wrap ? 'normal' : 'nowrap',
-        maxWidth: '200px',
+        maxWidth: '300px',
       }}
       title={String(value ?? '')}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: isNumeric ? 'flex-end' : 'flex-start' }}>
+      <div
+        className={`value-box${wrap ? ' wrap' : ''}`}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          justifyContent: isNumeric && miniChart !== 'bar' ? 'flex-end' : 'flex-start',
+        }}
+      >
         {miniChart === 'sparkline' && sparklineData.length > 0 && (
           <CellSparkline data={sparklineData} />
         )}
+        {miniChart === 'bar' && (
+          <CellBar value={Number(value)} maxValue={barMaxValue} isDark={isDark ?? true} />
+        )}
         <span>{displayValue}</span>
+        {trendEnabled && (
+          <span
+            style={{
+              display: 'inline-block',
+              width: 0,
+              height: 0,
+              marginLeft: '2px',
+              borderStyle: 'solid',
+              ...(trend
+                ? trend.sign === '+'
+                  ? {
+                      borderWidth: '0 4px 7px 4px',
+                      borderColor: `transparent transparent ${trend.color} transparent`,
+                      marginBottom: '1px',
+                    }
+                  : {
+                      borderWidth: '7px 4px 0 4px',
+                      borderColor: `${trend.color} transparent transparent transparent`,
+                      marginTop: '1px',
+                    }
+                : {
+                    borderWidth: '0 4px 7px 4px',
+                    borderColor: 'transparent',
+                  }),
+            }}
+          />
+        )}
       </div>
     </td>
   );
@@ -274,8 +350,7 @@ const TableHeaderCell: React.FC<{
   displayName?: string;
   width: number;
   onResize: (width: number) => void;
-  theme: string | VistralTheme;
-}> = ({ column, displayName, width, onResize, theme }) => {
+}> = ({ column, displayName, width, onResize }) => {
   const resizeRef = useRef<HTMLDivElement>(null);
   const [isResizing, setIsResizing] = useState(false);
 
@@ -318,27 +393,8 @@ const TableHeaderCell: React.FC<{
       </div>
       <div
         ref={resizeRef}
+        className={`resizer${isResizing ? ' is-resizing' : ''}`}
         onMouseDown={handleMouseDown}
-        style={{
-          position: 'absolute',
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: '8px',
-          cursor: 'col-resize',
-          backgroundColor: isResizing ? (isDarkTheme(theme) ? '#3B82F6' : '#2563EB') : 'transparent',
-          transition: 'background-color 0.2s',
-        }}
-        onMouseEnter={(e) => {
-          if (!isResizing) {
-            e.currentTarget.style.backgroundColor = isDarkTheme(theme) ? '#4B5563' : '#D1D5DB';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isResizing) {
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }
-        }}
       />
     </th>
   );
@@ -377,6 +433,8 @@ export const DataTable: React.FC<DataTableProps> = ({
 
   // Track sparkline data per row/column using ref to avoid infinite loops
   const sparklineHistoryRef = useRef<Record<string, number[]>>({});
+  // Trend tracking: stores previous numeric value per bucket (key value or row index) per column
+  const trendHistoryRef = useRef<Record<string, Record<string, number>>>({});
   // Version counter to trigger re-renders when sparkline data changes
   const [, setSparklineVersion] = useState(0);
 
@@ -446,6 +504,44 @@ export const DataTable: React.FC<DataTableProps> = ({
     }
   }, [displayData, config.tableStyles, dataSource.columns]);
 
+  // Update trend history after each data change
+  useEffect(() => {
+    if (!config.tableStyles) return;
+
+    const trendCols = Object.entries(config.tableStyles)
+      .filter(([, style]) => style?.trend)
+      .map(([name]) => name);
+
+    if (trendCols.length === 0) return;
+
+    const isKeyMode = config.temporal?.mode === 'key';
+    const keyField = isKeyMode
+      ? (Array.isArray(config.temporal!.field) ? config.temporal!.field[0] : config.temporal!.field)
+      : null;
+    const keyColIndex = keyField
+      ? dataSource.columns.findIndex((c) => c.name === keyField)
+      : -1;
+
+    displayData.forEach((row, rowIndex) => {
+      const bucket = isKeyMode && keyColIndex >= 0
+        ? String(row[keyColIndex])
+        : `__row_${rowIndex}`;
+
+      if (!trendHistoryRef.current[bucket]) {
+        trendHistoryRef.current[bucket] = {};
+      }
+
+      trendCols.forEach((colName) => {
+        const colIndex = dataSource.columns.findIndex((c) => c.name === colName);
+        if (colIndex < 0) return;
+        const value = Number(row[colIndex]);
+        if (!isNaN(value)) {
+          trendHistoryRef.current[bucket][colName] = value;
+        }
+      });
+    });
+  }, [displayData, config.tableStyles, config.temporal, dataSource.columns]);
+
   // Handle column resize
   const handleColumnResize = useCallback(
     (columnName: string, width: number) => {
@@ -478,20 +574,31 @@ export const DataTable: React.FC<DataTableProps> = ({
     [dataSource.columns, config.tableStyles]
   );
 
+  // Precompute max absolute value per bar-chart column (hoisted out of render loop)
+  const barMaxValues = useMemo(() => {
+    const map: Record<string, number> = {};
+    if (!config.tableStyles) return map;
+    visibleColumns.forEach((col) => {
+      const colStyle = config.tableStyles?.[col.name];
+      if (isNumericColumn(col.type) && colStyle?.miniChart === 'bar') {
+        const colIndex = dataSource.columns.findIndex((c) => c.name === col.name);
+        const values = displayData
+          .map((r) => Math.abs(Number(r[colIndex])))
+          .filter((v) => !isNaN(v));
+        map[col.name] = values.length > 0 ? Math.max(...values) : 0;
+      }
+    });
+    return map;
+  }, [displayData, visibleColumns, config.tableStyles, dataSource.columns]);
+
   return (
     <div
       ref={containerRef}
-      className={`${className || ''} vistral-data-table ${isDarkTheme(theme) ? 'theme-dark' : 'theme-light'}`}
-      style={{
-        width: '100%',
-        height: '100%',
-        overflow: 'auto',
-        ...style,
-      }}
+      className={className || ''}
+      style={{ width: '100%', height: '100%', overflow: 'auto', ...style }}
       data-testid="data-table"
     >
-      <style>{tableStyles}</style>
-      <table>
+      <table className={`vistral-table ${isDarkTheme(theme) ? 'theme-dark' : 'theme-light'}`}>
         <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
           <tr>
             <th
@@ -510,44 +617,78 @@ export const DataTable: React.FC<DataTableProps> = ({
                 displayName={config.tableStyles?.[col.name]?.name}
                 width={columnWidths[col.name] || 150}
                 onResize={(width) => handleColumnResize(col.name, width)}
-                theme={theme}
               />
             ))}
           </tr>
         </thead>
         <tbody>
-          {displayData.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              <td
-                style={{
-                  textAlign: 'center',
-                  fontWeight: 500,
-                  opacity: 0.7,
-                }}
-              >
-                {rowIndex + 1}
-              </td>
-              {visibleColumns.map((col) => {
-                const colIndex = dataSource.columns.findIndex((c) => c.name === col.name);
-                const value = row[colIndex];
-                const colStyle = config.tableStyles?.[col.name];
-                const sparklineKey = `${rowIndex}-${col.name}`;
+          {displayData.map((row, rowIndex) => {
+            // Row highlight: check all columns for highlightRow conditions
+            const rowHighlight = computeRowHighlight(
+              row,
+              dataSource.columns,
+              config.tableStyles
+            );
 
-                return (
-                  <TableCell
-                    key={col.name}
-                    value={value}
-                    isNumeric={isNumericColumn(col.type)}
-                    miniChart={colStyle?.miniChart}
-                    sparklineData={sparklineHistoryRef.current[sparklineKey]}
-                    color={colStyle?.color}
-                    wrap={config.tableWrap}
-                    isMonospace={col.type === 'string'}
-                  />
-                );
-              })}
-            </tr>
-          ))}
+            // Trend bucket key
+            const isKeyMode = config.temporal?.mode === 'key';
+            const keyField = isKeyMode
+              ? (Array.isArray(config.temporal!.field) ? config.temporal!.field[0] : config.temporal!.field)
+              : null;
+            const keyColIndex = keyField
+              ? dataSource.columns.findIndex((c) => c.name === keyField)
+              : -1;
+            const bucket = isKeyMode && keyColIndex >= 0
+              ? String(row[keyColIndex])
+              : `__row_${rowIndex}`;
+
+            return (
+              <tr key={rowIndex} style={rowHighlight ? { backgroundColor: rowHighlight } : undefined}>
+                <td
+                  style={{
+                    textAlign: 'center',
+                    fontWeight: 500,
+                    opacity: 0.7,
+                  }}
+                >
+                  {rowIndex + 1}
+                </td>
+                {visibleColumns.map((col) => {
+                  const colIndex = dataSource.columns.findIndex((c) => c.name === col.name);
+                  const value = row[colIndex];
+                  const colStyle = config.tableStyles?.[col.name];
+                  const sparklineKey = `${rowIndex}-${col.name}`;
+                  const numeric = isNumericColumn(col.type);
+
+                  // Trend: read previous value from ref (before this render's update)
+                  const prevValue = trendHistoryRef.current[bucket]?.[col.name];
+                  const trend = colStyle?.trend
+                    ? getTrend(value, prevValue, colStyle.increaseColor, colStyle.decreaseColor)
+                    : null;
+
+                  const barMaxValue = barMaxValues[col.name] ?? 0;
+
+                  return (
+                    <TableCell
+                      key={col.name}
+                      value={value}
+                      isNumeric={numeric}
+                      fractionDigits={colStyle?.fractionDigits}
+                      miniChart={colStyle?.miniChart}
+                      sparklineData={sparklineHistoryRef.current[sparklineKey]}
+                      barMaxValue={barMaxValue}
+                      color={colStyle?.color as TableCellColorConfig}
+                      trend={trend}
+                      trendEnabled={!!colStyle?.trend}
+                      wrap={config.tableWrap}
+                      isMonospace={col.type === 'string'}
+                      isDark={isDarkTheme(theme)}
+                    />
+                  );
+                })}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 

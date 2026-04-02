@@ -415,20 +415,45 @@ All chart configs extend this base:
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `chartType` | `'table'` | required | Chart type |
-| `tableStyles` | `Record<string, ColumnStyle>` | - | Per-column styling |
-| `tableWrap` | `boolean` | `false` | Enable text wrapping |
+| `tableStyles` | `Record<string, ColumnStyle>` | - | Per-column styling keyed by field name |
+| `tableWrap` | `boolean` | `false` | Enable text wrapping in cells |
 
 **ColumnStyle Properties:**
 
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `name` | `string` | field name | Display name for the column header |
+| `show` | `boolean` | `true` | Whether to show this column |
+| `width` | `number` | auto | Column width in pixels |
+| `fractionDigits` | `number` | browser default | Maximum decimal places for numeric values (uses `toLocaleString`) |
+| `trend` | `boolean` | `false` | Show ▲▼ trend indicator next to the value. Arrow direction reflects change since the last update. An invisible placeholder is always reserved so layout stays stable when there is no change. |
+| `increaseColor` | `string` | `'#22c55e'` | Arrow color when value increased. Only used when `trend: true`. |
+| `decreaseColor` | `string` | `'#ef4444'` | Arrow color when value decreased. Only used when `trend: true`. |
+| `miniChart` | `'none' \| 'sparkline' \| 'bar'` | `'none'` | Mini chart rendered inside the cell. `'bar'` draws a left-aligned horizontal bar proportional to the column maximum, enabling easy row-to-row comparison. |
+| `color` | `ColorConfig` | - | Cell or row background coloring |
+
+**Trend tracking behaviour:**
+- When `temporal.mode === 'key'`: trend compares the **current value vs the previous value for the same key entity** (e.g. same stock symbol or host). Use this for live-updating key-bound tables.
+- Otherwise: trend compares the **current last row vs the previous last row** per column.
+
+**ColorConfig:**
+
 | Property | Type | Description |
 |----------|------|-------------|
-| `name` | `string` | Display name for column header |
-| `show` | `boolean` | Whether to show this column |
-| `width` | `number` | Column width in pixels |
-| `miniChart` | `'none' \| 'sparkline'` | Show mini chart in cells |
-| `color` | `ColorConfig` | Conditional coloring |
+| `type` | `'none' \| 'scale' \| 'condition'` | Coloring strategy |
+| `colorScale` | `string` | Color scale name (used when `type: 'scale'`) |
+| `conditions` | `Condition[]` | List of conditions evaluated top-to-bottom (used when `type: 'condition'`) |
 
-**Temporal Usage:** Use `temporal.mode: 'key'` for deduplication or `temporal.mode: 'frame'` for latest snapshot.
+**Condition:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `operator` | `'gt' \| 'lt' \| 'eq' \| 'gte' \| 'lte' \| 'contains' \| '!contains'` | Comparison operator. `contains` / `!contains` perform substring matching on the string representation of the value. |
+| `value` | `string \| number` | Value to compare against |
+| `color` | `string` | Background color applied to the cell when the condition matches |
+| `highlightRow` | `boolean` | When `true`, the entire row gets this color at 20% opacity instead of the individual cell. Cell-level coloring is suppressed for highlighted rows. |
+
+**Temporal Usage:** Use `temporal.mode: 'key'` for deduplication and per-entity trend tracking, or `temporal.mode: 'frame'` for latest snapshot.
 
 ### GeoChartConfig
 
